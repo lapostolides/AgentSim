@@ -86,5 +86,5 @@ def create_literature_scout_agent() -> AgentDefinition:
             state_context="{state_context}",
         ),
         tools=["WebSearch", "WebFetch", "Read"],
-        model="sonnet",
+        model="claude-opus-4-6",
     )

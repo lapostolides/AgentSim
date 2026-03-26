@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
 
 import click
 import structlog
+from dotenv import load_dotenv
 
 from agentsim.orchestrator.config import OrchestratorConfig
 from agentsim.orchestrator.runner import run_experiment
@@ -16,10 +18,33 @@ from agentsim.utils.logging_config import configure_logging
 logger = structlog.get_logger()
 
 
+def _load_env() -> None:
+    """Load .env file from the project root, if present."""
+    env_path = Path(__file__).resolve().parents[2] / ".env"
+    if env_path.is_file():
+        load_dotenv(env_path, override=False)
+
+
+def _validate_api_key() -> None:
+    """Validate that ANTHROPIC_API_KEY is set and looks plausible."""
+    key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+    if not key:
+        raise click.ClickException(
+            "ANTHROPIC_API_KEY is not set. "
+            "Add it to your .env file or export it as an environment variable."
+        )
+    if not key.startswith("sk-ant-"):
+        raise click.ClickException(
+            "ANTHROPIC_API_KEY does not look valid (expected 'sk-ant-...' prefix). "
+            "Check your .env file."
+        )
+
+
 @click.group()
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose logging")
 def cli(verbose: bool) -> None:
     """AgentSim — Autonomous hypothesis-driven simulation."""
+    _load_env()
     configure_logging(verbose=verbose)
 
 
@@ -44,6 +69,8 @@ def run(
         agentsim run "Does surface roughness affect reconstruction accuracy?" \\
             -f scene.stl -f config.yaml
     """
+    _validate_api_key()
+
     config = OrchestratorConfig(
         max_iterations=max_iterations,
         max_budget_usd=max_budget,
@@ -85,6 +112,8 @@ def interactive(output: str, max_budget: float) -> None:
 
     Prompts for a hypothesis and lets you steer between phases.
     """
+    _validate_api_key()
+
     click.echo("AgentSim Interactive Mode")
     click.echo("=" * 40)
     click.echo("Type your hypothesis, or 'quit' to exit.\n")

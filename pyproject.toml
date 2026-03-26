@@ -9,6 +9,7 @@ dependencies = [
     "anyio>=4.0",
     "click>=8.0",
     "structlog>=24.0",
+    "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]

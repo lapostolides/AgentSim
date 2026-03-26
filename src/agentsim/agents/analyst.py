@@ -80,5 +80,5 @@ def create_analyst_agent() -> AgentDefinition:
         ),
         prompt=ANALYST_PROMPT.format(state_context="{state_context}"),
         tools=["Read", "Glob"],
-        model="opus",
+        model="claude-opus-4-6",
     )

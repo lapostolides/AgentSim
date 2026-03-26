@@ -85,5 +85,5 @@ def create_hypothesis_agent(environment_str: str) -> AgentDefinition:
             state_context="{state_context}",
         ),
         tools=["Read", "Glob"],
-        model="sonnet",
+        model="claude-opus-4-6",
     )

@@ -17,9 +17,9 @@ class TestLiteratureScoutAgent:
         assert "WebFetch" in agent.tools
         assert "Read" in agent.tools
 
-    def test_uses_sonnet_model(self):
+    def test_uses_opus_model(self):
         agent = create_literature_scout_agent()
-        assert agent.model == "sonnet"
+        assert agent.model == "claude-opus-4-6"
 
     def test_prompt_contains_schema(self):
         agent = create_literature_scout_agent()
@@ -42,10 +42,10 @@ class TestLiteratureValidatorAgent:
         assert "WebSearch" in agent.tools
         assert "Read" in agent.tools
 
-    def test_uses_sonnet_model(self):
-        """Validator uses sonnet — focused task, not deep reasoning."""
+    def test_uses_opus_model(self):
+        """Validator uses opus 4.6 for deep literature validation."""
         agent = create_literature_validator_agent()
-        assert agent.model == "sonnet"
+        assert agent.model == "claude-opus-4-6"
 
     def test_prompt_contains_schema(self):
         agent = create_literature_validator_agent()

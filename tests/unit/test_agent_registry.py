@@ -52,13 +52,13 @@ class TestBuildAgentRegistry:
 
     def test_model_assignments(self):
         registry = build_agent_registry()
-        assert registry["literature_scout"].model == "sonnet"
-        assert registry["hypothesis"].model == "sonnet"
+        assert registry["literature_scout"].model == "claude-opus-4-6"
+        assert registry["hypothesis"].model == "claude-opus-4-6"
         assert registry["scene"].model == "sonnet"
         assert registry["executor"].model == "sonnet"
         assert registry["evaluator"].model == "sonnet"
-        assert registry["analyst"].model == "opus"
-        assert registry["literature_validator"].model == "sonnet"
+        assert registry["analyst"].model == "claude-opus-4-6"
+        assert registry["literature_validator"].model == "claude-opus-4-6"
 
 
 class TestGetAgentNames:
