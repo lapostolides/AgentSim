@@ -10,6 +10,7 @@ from agentsim.state.models import (
     ExperimentStatus,
     Hypothesis,
     ParameterSpec,
+    QualityRatings,
     SceneSpec,
 )
 from agentsim.state.transitions import (
@@ -117,15 +118,27 @@ class TestTransitionChain:
         assert state.environment is not None
         assert len(state.environment.packages) == 1
 
-        # 3. Hypothesis
+        # 3. Hypothesis (with quality ratings)
         hypothesis = Hypothesis(
             raw_text="Does roughness affect accuracy?",
             formalized="Surface roughness inversely correlates with reconstruction accuracy",
             variables=["roughness", "accuracy"],
             parameter_space=[ParameterSpec(name="roughness", values=[0.1, 0.5, 0.9])],
+            quality_ratings=QualityRatings(
+                decision_relevance=0.8,
+                non_triviality=0.7,
+                informative_either_way=0.6,
+                downstream_actionability=0.9,
+                expected_impact=0.5,
+                falsifiability=0.85,
+                composite_score=0.725,
+                reasoning="Strong hypothesis with clear engineering implications.",
+            ),
         )
         state = add_hypothesis(state, hypothesis)
         assert state.status == ExperimentStatus.HYPOTHESIS_READY
+        assert state.hypothesis.quality_ratings is not None
+        assert state.hypothesis.quality_ratings.composite_score == 0.725
 
         # 4. Plan
         plan = ExperimentPlan(

@@ -13,7 +13,7 @@ class TestBuildAgentRegistry:
     def test_no_environment(self):
         registry = build_agent_registry()
         expected = {
-            "literature_scout", "hypothesis", "scene",
+            "literature_scout", "citation_auditor", "hypothesis", "scene",
             "executor", "evaluator", "analyst", "literature_validator",
         }
         assert set(registry.keys()) == expected
@@ -31,7 +31,7 @@ class TestBuildAgentRegistry:
         registry = build_agent_registry(env)
 
         # All agents should be present
-        assert len(registry) == 7
+        assert len(registry) == 8
 
         # Scene and hypothesis agents should know about packages
         assert "mitsuba" in registry["hypothesis"].prompt
@@ -43,6 +43,7 @@ class TestBuildAgentRegistry:
 
         # All agents use simple tools — no MCP patterns
         assert registry["literature_scout"].tools == ["WebSearch", "WebFetch", "Read"]
+        assert registry["citation_auditor"].tools == ["WebSearch", "WebFetch", "Read"]
         assert registry["hypothesis"].tools == ["Read", "Glob"]
         assert registry["scene"].tools == ["Read", "Bash"]
         assert registry["executor"].tools == ["Bash", "Read"]
@@ -53,6 +54,7 @@ class TestBuildAgentRegistry:
     def test_model_assignments(self):
         registry = build_agent_registry()
         assert registry["literature_scout"].model == "claude-opus-4-6"
+        assert "sonnet" in registry["citation_auditor"].model
         assert registry["hypothesis"].model == "claude-opus-4-6"
         assert registry["scene"].model == "sonnet"
         assert registry["executor"].model == "sonnet"
@@ -66,6 +68,7 @@ class TestGetAgentNames:
         names = get_agent_names()
         assert names == [
             "literature_scout",
+            "citation_auditor",
             "hypothesis",
             "scene",
             "executor",

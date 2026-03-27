@@ -20,6 +20,7 @@ from agentsim.state.models import (
     Hypothesis,
     LiteratureContext,
     LiteratureValidation,
+    ScenePreview,
     SceneSpec,
 )
 
@@ -151,6 +152,18 @@ def add_scenes(
         update={
             "scenes": (*state.scenes, *scenes),
             "status": ExperimentStatus.SCENES_READY,
+        },
+    )
+
+
+def add_scene_preview(
+    state: ExperimentState,
+    preview: ScenePreview,
+) -> ExperimentState:
+    """Record a scene preview render (does not change pipeline status)."""
+    return state.model_copy(
+        update={
+            "scene_previews": (*state.scene_previews, preview),
         },
     )
 

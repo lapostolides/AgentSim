@@ -32,6 +32,8 @@ from agentsim.state.models import (
     LiteratureContext,
     LiteratureEntry,
     LiteratureValidation,
+    OpenQuestion,
+    ScenePreview,
     SceneSpec,
 )
 from agentsim.state.serialization import serialize_state, state_to_prompt_context
@@ -41,6 +43,7 @@ from agentsim.state.transitions import (
     add_execution_result,
     add_hypothesis,
     add_plan,
+    add_scene_preview,
     add_scenes,
     mark_failed,
     set_environment,
@@ -182,6 +185,11 @@ async def run_experiment(
     if on_phase_complete:
         on_phase_complete("literature_scout", state)
 
+    # 4b. Citation audit — verify citations are real before they pollute downstream
+    state = await _run_citation_audit_phase(state, config, agents)
+    if on_phase_complete:
+        on_phase_complete("citation_auditor", state)
+
     # 5. Experiment loop
     for iteration in range(config.max_iterations):
         logger.info("iteration_start", iteration=iteration, status=state.status.value)
@@ -196,6 +204,11 @@ async def run_experiment(
             state = await _run_scene_phase(state, config, agents)
             if on_phase_complete:
                 on_phase_complete("scene", state)
+
+            # Phase 2b: Scene Preview (renders scene geometry via Blender)
+            state = await _run_preview_phase(state, config)
+            if on_phase_complete:
+                on_phase_complete("preview", state)
 
             # Phase 3: Execution
             state = await _run_executor_phase(state, config, agents)
@@ -254,15 +267,22 @@ async def _run_literature_scout_phase(
 
     data = _extract_json_from_text(response_text)
     if data:
-        # Parse entries if present
         entries = tuple(
             LiteratureEntry.model_validate(e)
             for e in data.get("entries", [])
         )
+        # Parse open_questions: accept both structured objects and plain strings
+        raw_questions = data.get("open_questions", [])
+        open_questions = tuple(
+            OpenQuestion.model_validate(q) if isinstance(q, dict)
+            else OpenQuestion(question=q)
+            for q in raw_questions
+        )
         lit_context = LiteratureContext(
             entries=entries,
             summary=data.get("summary", ""),
-            open_questions=tuple(data.get("open_questions", [])),
+            open_questions=open_questions,
+            trivial_gaps=tuple(data.get("trivial_gaps", [])),
             methodology_notes=data.get("methodology_notes", ""),
         )
         return set_literature_context(state, lit_context)
@@ -272,6 +292,91 @@ async def _run_literature_scout_phase(
         state,
         LiteratureContext(summary=response_text[:2000]),
     )
+
+
+async def _run_citation_audit_phase(
+    state: ExperimentState,
+    config: OrchestratorConfig,
+    agents: dict,
+) -> ExperimentState:
+    """Run the citation auditor to verify literature scout citations are real.
+
+    Replaces the literature context with an audited version where each
+    entry has a verification_status. Fabricated entries are removed from
+    the main entries list so downstream agents never reason from them.
+    """
+    if not state.literature_context or not state.literature_context.entries:
+        return state
+
+    context = state_to_prompt_context(state)
+    prompt = (
+        f"Verify each citation in the literature context.\n\n"
+        f"There are {len(state.literature_context.entries)} citations to check.\n\n"
+        f"{context}"
+    )
+
+    response_text, _ = await _run_agent_phase(
+        "citation_auditor", prompt, config, agents,
+    )
+
+    data = _extract_json_from_text(response_text)
+    if not data or "audited_entries" not in data:
+        logger.warning("citation_audit_parse_failed", response=response_text[:200])
+        return state
+
+    # Build a lookup from original title to audit result
+    audit_lookup: dict[str, dict] = {}
+    for audited in data["audited_entries"]:
+        original_title = audited.get("original_title", "")
+        audit_lookup[original_title.lower().strip()] = audited
+
+    # Rebuild entries with verification status, dropping fabricated ones
+    verified_entries: list[LiteratureEntry] = []
+    fabricated_count = 0
+    for entry in state.literature_context.entries:
+        audit = audit_lookup.get(entry.title.lower().strip())
+        if audit and audit.get("verification_status") == "fabricated":
+            fabricated_count += 1
+            logger.warning(
+                "fabricated_citation_removed",
+                title=entry.title,
+                note=audit.get("verification_note", ""),
+            )
+            continue
+
+        # Apply corrections from auditor if available
+        if audit:
+            corrected_entry = LiteratureEntry(
+                title=audit.get("corrected_title", entry.title),
+                authors=tuple(audit.get("corrected_authors", entry.authors)),
+                year=audit.get("corrected_year", entry.year),
+                key_findings=entry.key_findings,
+                relevance=entry.relevance,
+                url=audit.get("corrected_url", entry.url) or entry.url,
+                doi=audit.get("corrected_doi", entry.doi) or entry.doi,
+                verification_status="verified",
+                verification_note=audit.get("verification_note", ""),
+            )
+            verified_entries.append(corrected_entry)
+        else:
+            verified_entries.append(entry)
+
+    logger.info(
+        "citation_audit_complete",
+        total=len(state.literature_context.entries),
+        verified=len(verified_entries),
+        fabricated=fabricated_count,
+    )
+
+    # Replace literature context with audited version
+    audited_context = LiteratureContext(
+        entries=tuple(verified_entries),
+        summary=state.literature_context.summary,
+        open_questions=state.literature_context.open_questions,
+        trivial_gaps=state.literature_context.trivial_gaps,
+        methodology_notes=state.literature_context.methodology_notes,
+    )
+    return set_literature_context(state, audited_context)
 
 
 async def _run_hypothesis_phase(
@@ -293,7 +398,13 @@ async def _run_hypothesis_phase(
     data = _extract_json_from_text(response_text)
     if data:
         hypothesis = Hypothesis.model_validate(data)
-        return add_hypothesis(state, hypothesis)
+        state = add_hypothesis(state, hypothesis)
+        logger.info(
+            "hypothesis_quality",
+            composite_score=hypothesis.quality_ratings.composite_score
+            if hypothesis.quality_ratings else None,
+        )
+        return state
 
     # Fallback: create hypothesis from raw text
     return add_hypothesis(
@@ -325,6 +436,61 @@ async def _run_scene_phase(
         elif "scenes" in data:
             scenes = [SceneSpec.model_validate(s) for s in data["scenes"]]
             state = add_scenes(state, scenes)
+
+    return state
+
+
+async def _run_preview_phase(
+    state: ExperimentState,
+    config: OrchestratorConfig,
+) -> ExperimentState:
+    """Render scene previews via Blender before simulation execution.
+
+    This is a non-LLM phase — it reads scene descriptions from the
+    generated code's parameters and renders them directly.
+    Silently skips if Blender is not available.
+    """
+    try:
+        from agentsim.preview.renderer import preview_scene
+        from agentsim.preview.scene_description import SceneDescription
+    except ImportError:
+        logger.warning("preview_skip", reason="preview module not available")
+        return state
+
+    for scene_spec in state.scenes:
+        scene_desc_data = scene_spec.parameters.get("scene_description")
+        if not scene_desc_data:
+            logger.info("preview_skip_scene", scene_id=scene_spec.id,
+                        reason="no scene_description in parameters")
+            continue
+
+        try:
+            scene_desc = SceneDescription.model_validate(scene_desc_data)
+            output_path = config.output_dir / f"preview_{scene_spec.id}.png"
+
+            preview_scene(scene_desc, output_path)
+
+            preview = ScenePreview(
+                scene_id=scene_spec.id,
+                preview_path=str(output_path),
+            )
+            state = add_scene_preview(state, preview)
+            logger.info("preview_rendered", scene_id=scene_spec.id,
+                        path=str(output_path))
+
+        except FileNotFoundError:
+            logger.warning("preview_skip_scene", scene_id=scene_spec.id,
+                           reason="Blender not found")
+            break  # no point trying more scenes
+        except Exception as e:
+            logger.warning("preview_failed", scene_id=scene_spec.id,
+                           error=str(e))
+            preview = ScenePreview(
+                scene_id=scene_spec.id,
+                is_valid=False,
+                warnings=[str(e)],
+            )
+            state = add_scene_preview(state, preview)
 
     return state
 

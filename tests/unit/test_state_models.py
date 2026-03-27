@@ -15,6 +15,7 @@ from agentsim.state.models import (
     FileReference,
     Hypothesis,
     ParameterSpec,
+    QualityRatings,
     SceneSpec,
 )
 
@@ -78,6 +79,63 @@ class TestHypothesis:
         h = Hypothesis(raw_text="test")
         with pytest.raises(ValidationError):
             h.raw_text = "changed"  # type: ignore[misc]
+
+
+class TestQualityRatings:
+    def test_create_defaults(self):
+        qr = QualityRatings()
+        assert qr.decision_relevance == 0.0
+        assert qr.composite_score == 0.0
+        assert qr.reasoning == ""
+
+    def test_create_full(self):
+        qr = QualityRatings(
+            decision_relevance=0.8,
+            non_triviality=0.7,
+            informative_either_way=0.6,
+            downstream_actionability=0.9,
+            expected_impact=0.5,
+            falsifiability=0.85,
+            composite_score=0.725,
+            reasoning="Strong hypothesis with clear engineering implications.",
+        )
+        assert qr.composite_score == 0.725
+        assert qr.downstream_actionability == 0.9
+
+    def test_frozen(self):
+        qr = QualityRatings()
+        with pytest.raises(ValidationError):
+            qr.decision_relevance = 0.5  # type: ignore[misc]
+
+
+class TestHypothesisWithQualityRatings:
+    def test_hypothesis_without_ratings(self):
+        h = Hypothesis(raw_text="test")
+        assert h.quality_ratings is None
+
+    def test_hypothesis_with_ratings(self):
+        ratings = QualityRatings(
+            decision_relevance=0.9,
+            non_triviality=0.8,
+            composite_score=0.85,
+        )
+        h = Hypothesis(raw_text="test", quality_ratings=ratings)
+        assert h.quality_ratings is not None
+        assert h.quality_ratings.decision_relevance == 0.9
+
+    def test_serialization_roundtrip(self):
+        ratings = QualityRatings(
+            decision_relevance=0.9,
+            falsifiability=0.7,
+            composite_score=0.8,
+            reasoning="Well-scoped question.",
+        )
+        h = Hypothesis(raw_text="test", quality_ratings=ratings)
+        json_str = h.model_dump_json()
+        restored = Hypothesis.model_validate_json(json_str)
+        assert restored.quality_ratings is not None
+        assert restored.quality_ratings.decision_relevance == 0.9
+        assert restored.quality_ratings.reasoning == "Well-scoped question."
 
 
 class TestExperimentPlan:

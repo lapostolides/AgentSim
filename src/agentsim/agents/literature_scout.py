@@ -36,10 +36,15 @@ object with this exact schema:
       "doi": "<DOI if available>"
     }}
   ],
-  "summary": "<2-3 paragraph synthesis of the literature landscape>",
+  "summary": "<3-5 paragraph synthesis of the literature landscape>",
   "open_questions": [
-    "<unanswered question 1>",
-    "<unanswered question 2>"
+    {{
+      "question": "<unanswered question>",
+      "significance": "<why answering this would change design, experiments, or deployment>"
+    }}
+  ],
+  "trivial_gaps": [
+    "<gap you considered but excluded because it is an obvious consequence of known physics or would not change any downstream decision>"
   ],
   "methodology_notes": "<common methods, metrics, and best practices in this area>"
 }}
@@ -52,10 +57,26 @@ object with this exact schema:
 - Identify the established state of the art
 - Note standard evaluation metrics used in the field
 - Highlight methodological best practices
-- Identify gaps in the literature that the hypothesis might address
 - If the hypothesis has already been tested, note the results
 - Include competing or contradictory findings
 - Focus on papers with reproducible methods and open data when possible
+
+## Impact-Filtered Gap Analysis
+
+Not all gaps are worth pursuing. Before including an open question, evaluate it:
+
+- **Decision-relevance**: Would answering this change how someone designs a system,
+  runs an experiment, or makes a deployment decision? If not, it belongs in
+  trivial_gaps, not open_questions.
+- **Non-triviality**: Could a domain expert answer this from first principles in
+  5 minutes? If so, it is trivial — exclude it.
+- **Actionability**: Does the answer lead to a concrete next step (a design change,
+  a new experiment, a policy update)? If the result would just sit in a report,
+  exclude it.
+
+For every open question you include, explain its significance — the practical
+consequence of knowing the answer. Explicitly list gaps you considered but
+excluded in trivial_gaps so the filtering is visible and auditable.
 
 ## Search Strategy
 
@@ -64,6 +85,9 @@ object with this exact schema:
 3. Find seminal papers establishing key methods
 4. Look for recent papers (last 2-3 years) with state-of-the-art results
 5. Check for papers testing similar hypotheses
+6. Identify where the field has unresolved disagreements or contradictory results — these are high-impact opportunities because either outcome would be informative
+7. Look for problems where a simulation-based answer would concretely change system design, experimental protocols, or deployment decisions
+8. Flag areas where current practice relies on rules of thumb or untested assumptions that simulation could validate or overturn
 
 ## Current Experiment State
 

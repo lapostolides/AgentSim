@@ -55,6 +55,23 @@ class ParameterSpec(BaseModel, frozen=True):
     step: float | None = None
 
 
+class QualityRatings(BaseModel, frozen=True):
+    """Self-assessed quality scores for a hypothesis.
+
+    Each dimension is scored 0.0 to 1.0 by the hypothesis agent
+    during generation, guiding it toward high-value hypotheses.
+    """
+
+    decision_relevance: float = 0.0
+    non_triviality: float = 0.0
+    informative_either_way: float = 0.0
+    downstream_actionability: float = 0.0
+    expected_impact: float = 0.0
+    falsifiability: float = 0.0
+    composite_score: float = 0.0
+    reasoning: str = ""
+
+
 class Hypothesis(BaseModel, frozen=True):
     """Structured hypothesis parsed from natural language."""
 
@@ -65,6 +82,7 @@ class Hypothesis(BaseModel, frozen=True):
     parameter_space: list[ParameterSpec] = Field(default_factory=list)
     predictions: list[str] = Field(default_factory=list)
     assumptions: list[str] = Field(default_factory=list)
+    quality_ratings: QualityRatings | None = None
 
 
 class AvailablePackage(BaseModel, frozen=True):
@@ -106,6 +124,15 @@ class SceneSpec(BaseModel, frozen=True):
     file_refs: list[str] = Field(default_factory=list)
 
 
+class ScenePreview(BaseModel, frozen=True):
+    """Preview render of a scene before execution."""
+
+    scene_id: str
+    preview_path: str = ""
+    is_valid: bool = True
+    warnings: list[str] = Field(default_factory=list)
+
+
 class ExecutionResult(BaseModel, frozen=True):
     """Result of running a simulation scene."""
 
@@ -138,6 +165,15 @@ class LiteratureEntry(BaseModel, frozen=True):
     relevance: str = ""
     url: str = ""
     doi: str = ""
+    verification_status: str = "unverified"  # "verified", "unverified", "fabricated"
+    verification_note: str = ""
+
+
+class OpenQuestion(BaseModel, frozen=True):
+    """An open research question with its practical significance."""
+
+    question: str
+    significance: str = ""
 
 
 class LiteratureContext(BaseModel, frozen=True):
@@ -149,7 +185,8 @@ class LiteratureContext(BaseModel, frozen=True):
 
     entries: tuple[LiteratureEntry, ...] = ()
     summary: str = ""
-    open_questions: tuple[str, ...] = ()
+    open_questions: tuple[OpenQuestion, ...] = ()
+    trivial_gaps: tuple[str, ...] = ()
     methodology_notes: str = ""
 
 
@@ -200,6 +237,7 @@ class ExperimentState(BaseModel, frozen=True):
     hypothesis: Hypothesis | None = None
     plan: ExperimentPlan | None = None
     scenes: tuple[SceneSpec, ...] = ()
+    scene_previews: tuple[ScenePreview, ...] = ()
     execution_results: tuple[ExecutionResult, ...] = ()
     evaluations: tuple[EvaluationResult, ...] = ()
     analyses: tuple[AnalysisReport, ...] = ()

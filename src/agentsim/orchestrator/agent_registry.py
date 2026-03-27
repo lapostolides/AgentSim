@@ -9,6 +9,7 @@ from __future__ import annotations
 from claude_agent_sdk.types import AgentDefinition
 
 from agentsim.agents.analyst import create_analyst_agent
+from agentsim.agents.citation_auditor import create_citation_auditor_agent
 from agentsim.agents.evaluator import create_evaluator_agent
 from agentsim.agents.executor import create_executor_agent
 from agentsim.agents.hypothesis import create_hypothesis_agent
@@ -39,6 +40,7 @@ def build_agent_registry(
 
     return {
         "literature_scout": create_literature_scout_agent(),
+        "citation_auditor": create_citation_auditor_agent(),
         "hypothesis": create_hypothesis_agent(env_str),
         "scene": create_scene_agent(env_str),
         "executor": create_executor_agent(),
@@ -52,6 +54,7 @@ def get_agent_names() -> list[str]:
     """Return the canonical ordered list of agent phase names."""
     return [
         "literature_scout",
+        "citation_auditor",
         "hypothesis",
         "scene",
         "executor",

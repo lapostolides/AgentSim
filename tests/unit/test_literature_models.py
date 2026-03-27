@@ -9,6 +9,7 @@ from agentsim.state.models import (
     LiteratureContext,
     LiteratureEntry,
     LiteratureValidation,
+    OpenQuestion,
 )
 
 
@@ -43,14 +44,56 @@ class TestLiteratureEntry:
         assert entry.year == 2019
         assert entry.doi != ""
 
+    def test_default_verification_status(self):
+        entry = LiteratureEntry(title="Test", relevance="Test")
+        assert entry.verification_status == "unverified"
+        assert entry.verification_note == ""
+
+    def test_verified_entry(self):
+        entry = LiteratureEntry(
+            title="Test Paper",
+            relevance="Baseline",
+            verification_status="verified",
+            verification_note="Found on arxiv.org",
+        )
+        assert entry.verification_status == "verified"
+
+    def test_fabricated_entry(self):
+        entry = LiteratureEntry(
+            title="Fake Paper That Does Not Exist",
+            relevance="None",
+            verification_status="fabricated",
+            verification_note="No results found after 3 search strategies",
+        )
+        assert entry.verification_status == "fabricated"
+
     def test_frozen(self):
         entry = LiteratureEntry(title="Test", relevance="Test")
         with pytest.raises(ValidationError):
             entry.title = "Changed"  # type: ignore[misc]
 
 
+class TestOpenQuestion:
+    def test_create_minimal(self):
+        q = OpenQuestion(question="Does roughness affect accuracy?")
+        assert q.question == "Does roughness affect accuracy?"
+        assert q.significance == ""
+
+    def test_create_full(self):
+        q = OpenQuestion(
+            question="Does roughness affect accuracy?",
+            significance="Would change wall material selection for NLOS systems",
+        )
+        assert q.significance != ""
+
+    def test_frozen(self):
+        q = OpenQuestion(question="test")
+        with pytest.raises(ValidationError):
+            q.question = "changed"  # type: ignore[misc]
+
+
 class TestLiteratureContext:
-    def test_create(self):
+    def test_create_with_structured_questions(self):
         entries = (
             LiteratureEntry(title="Paper A", relevance="Method baseline"),
             LiteratureEntry(title="Paper B", relevance="Competing approach"),
@@ -58,12 +101,22 @@ class TestLiteratureContext:
         ctx = LiteratureContext(
             entries=entries,
             summary="Two key papers establish the state of the art.",
-            open_questions=("Can phasor fields handle specular surfaces?",),
+            open_questions=(
+                OpenQuestion(
+                    question="Can phasor fields handle specular surfaces?",
+                    significance="Would determine feasibility for indoor NLOS",
+                ),
+            ),
+            trivial_gaps=(
+                "Roughness increases scattering — obvious from Lambertian model",
+            ),
             methodology_notes="Standard metrics: PSNR, SSIM, LPIPS",
         )
         assert len(ctx.entries) == 2
         assert ctx.summary != ""
         assert len(ctx.open_questions) == 1
+        assert ctx.open_questions[0].significance != ""
+        assert len(ctx.trivial_gaps) == 1
         assert ctx.methodology_notes != ""
 
     def test_empty(self):
@@ -71,6 +124,7 @@ class TestLiteratureContext:
         assert ctx.entries == ()
         assert ctx.summary == ""
         assert ctx.open_questions == ()
+        assert ctx.trivial_gaps == ()
 
     def test_frozen(self):
         ctx = LiteratureContext(summary="test")
@@ -156,7 +210,10 @@ class TestExperimentStateWithLiterature:
                 ),
             ),
             summary="Summary",
-            open_questions=("Question 1",),
+            open_questions=(
+                OpenQuestion(question="Question 1", significance="Impact 1"),
+            ),
+            trivial_gaps=("Obvious gap",),
         )
         validation = LiteratureValidation(
             hypothesis_id="h1",
@@ -173,5 +230,8 @@ class TestExperimentStateWithLiterature:
         assert restored.literature_context is not None
         assert len(restored.literature_context.entries) == 1
         assert restored.literature_context.entries[0].title == "Paper A"
+        assert restored.literature_context.open_questions[0].question == "Question 1"
+        assert restored.literature_context.open_questions[0].significance == "Impact 1"
+        assert restored.literature_context.trivial_gaps == ("Obvious gap",)
         assert restored.literature_validation is not None
         assert restored.literature_validation.consistency_assessment == "Consistent"
