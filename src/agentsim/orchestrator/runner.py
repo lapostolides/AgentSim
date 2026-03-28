@@ -2,6 +2,9 @@
 
 Each phase is a separate query() call to keep context windows clean.
 State is serialized between phases as JSON in the prompt.
+
+Human-in-the-loop intervention gates pause the pipeline at key
+boundaries so the user can review, edit, or redirect.
 """
 
 from __future__ import annotations
@@ -21,6 +24,13 @@ from claude_agent_sdk.types import (
 from agentsim.environment.discovery import discover_environment
 from agentsim.orchestrator.agent_registry import build_agent_registry
 from agentsim.orchestrator.config import OrchestratorConfig
+from agentsim.orchestrator.gates import (
+    GateAction,
+    GateCheckpoint,
+    GateContext,
+    GateDecision,
+    InterventionHandler,
+)
 from agentsim.state.models import (
     AnalysisReport,
     EvaluationResult,
@@ -55,8 +65,9 @@ from agentsim.state.transitions import (
 logger = structlog.get_logger()
 
 
+# ── Text / JSON extraction ───────────────────────────────────────────
+
 def _extract_text(message: AssistantMessage) -> str:
-    """Extract text content from an assistant message."""
     parts = []
     for block in message.content:
         if isinstance(block, TextBlock):
@@ -65,17 +76,11 @@ def _extract_text(message: AssistantMessage) -> str:
 
 
 def _extract_json_from_text(text: str) -> dict | None:
-    """Try to extract a JSON object from agent response text.
-
-    Handles cases where the JSON is wrapped in markdown code fences.
-    """
-    # Try direct parse
     try:
         return json.loads(text)
     except (json.JSONDecodeError, TypeError):
         pass
 
-    # Try extracting from code fences
     if "```" in text:
         for block in text.split("```"):
             cleaned = block.strip()
@@ -86,7 +91,6 @@ def _extract_json_from_text(text: str) -> dict | None:
             except (json.JSONDecodeError, TypeError):
                 continue
 
-    # Try finding JSON-like content between braces
     start = text.find("{")
     end = text.rfind("}")
     if start != -1 and end != -1 and end > start:
@@ -98,16 +102,56 @@ def _extract_json_from_text(text: str) -> dict | None:
     return None
 
 
+# ── Gate helpers ─────────────────────────────────────────────────────
+
+async def _run_gate(
+    handler: InterventionHandler | None,
+    config: OrchestratorConfig,
+    checkpoint: GateCheckpoint,
+    state: ExperimentState,
+    *,
+    phase_just_completed: str = "",
+    phase_about_to_run: str = "",
+    message: str = "",
+    preview_paths: tuple[str, ...] = (),
+) -> tuple[GateDecision | None, ExperimentState]:
+    """Fire a gate if the handler and checkpoint are enabled.
+
+    Returns (decision, state) — decision is None if the gate was skipped.
+    """
+    if not handler or checkpoint.value not in config.intervention_checkpoints:
+        return None, state
+
+    context = GateContext(
+        checkpoint=checkpoint,
+        state=state,
+        phase_just_completed=phase_just_completed,
+        phase_about_to_run=phase_about_to_run,
+        message=message,
+        preview_paths=preview_paths,
+    )
+    decision = await handler.handle_gate(context)
+
+    if decision.action == GateAction.EDIT and decision.updated_state is not None:
+        return decision, decision.updated_state
+    if decision.action == GateAction.ABORT:
+        return decision, mark_failed(state, f"Aborted by user at {checkpoint.value}")
+
+    return decision, state
+
+
+def _is_abort(decision: GateDecision | None) -> bool:
+    return decision is not None and decision.action == GateAction.ABORT
+
+
+# ── Agent phase runner ───────────────────────────────────────────────
+
 async def _run_agent_phase(
     phase_name: str,
     prompt: str,
     config: OrchestratorConfig,
     agents: dict,
 ) -> tuple[str, ResultMessage | None]:
-    """Execute a single agent phase via query().
-
-    Returns the agent's text response and the result message.
-    """
     logger.info("starting_phase", phase=phase_name)
 
     options = ClaudeAgentOptions(
@@ -117,7 +161,7 @@ async def _run_agent_phase(
         ),
         agents=agents,
         max_turns=config.max_turns_per_phase,
-        max_budget_usd=config.max_budget_usd / 5,  # Budget per phase
+        max_budget_usd=config.max_budget_usd / 5,
         permission_mode=config.permission_mode,
         cwd=str(config.cwd),
     )
@@ -143,49 +187,51 @@ async def _run_agent_phase(
     return response_text, result_msg
 
 
+# ── Main experiment loop ─────────────────────────────────────────────
+
 async def run_experiment(
     hypothesis_text: str,
     file_paths: list[str] | None = None,
     file_descriptions: dict[str, str] | None = None,
     config: OrchestratorConfig | None = None,
     on_phase_complete: callable | None = None,
+    intervention_handler: InterventionHandler | None = None,
 ) -> ExperimentState:
-    """Run a full experiment loop.
+    """Run a full experiment loop with optional human intervention gates.
 
     Args:
         hypothesis_text: Natural language hypothesis from the user.
         file_paths: Optional paths to user-provided files.
         file_descriptions: Optional descriptions for each file.
         config: Orchestrator configuration.
-        on_phase_complete: Optional callback(phase_name, state) for interactive mode.
+        on_phase_complete: Optional callback(phase_name, state) for status updates.
+        intervention_handler: Optional handler for human-in-the-loop gates.
 
     Returns:
         Final ExperimentState after all iterations.
     """
     config = config or OrchestratorConfig()
-
-    # Ensure output directory exists
     config.output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Initialize state
+    # 1. Initialize
     state = start_experiment(hypothesis_text, file_paths, file_descriptions)
     logger.info("experiment_started", id=state.id, hypothesis=hypothesis_text[:100])
 
-    # 2. Discover environment (what Python packages are available)
+    # 2. Discover environment
     environment = discover_environment(
         extra_packages=config.extra_packages or None,
     )
     state = set_environment(state, environment)
 
-    # 3. Build agent registry with environment knowledge
+    # 3. Build agent registry
     agents = build_agent_registry(environment)
 
-    # 4. Literature scout (runs once before the experiment loop)
+    # 4. Literature scout
     state = await _run_literature_scout_phase(state, config, agents)
     if on_phase_complete:
         on_phase_complete("literature_scout", state)
 
-    # 4b. Citation audit — verify citations are real before they pollute downstream
+    # 4b. Citation audit
     state = await _run_citation_audit_phase(state, config, agents)
     if on_phase_complete:
         on_phase_complete("citation_auditor", state)
@@ -195,42 +241,129 @@ async def run_experiment(
         logger.info("iteration_start", iteration=iteration, status=state.status.value)
 
         try:
-            # Phase 1: Hypothesis
-            state = await _run_hypothesis_phase(state, config, agents)
-            if on_phase_complete:
-                on_phase_complete("hypothesis", state)
+            # ── GATE 1: Pre-hypothesis ────────────────────────────
+            decision, state = await _run_gate(
+                intervention_handler, config,
+                GateCheckpoint.PRE_HYPOTHESIS, state,
+                phase_just_completed="citation_auditor",
+                phase_about_to_run="hypothesis",
+                message="Review literature context and refine your hypothesis before formalization.",
+            )
+            if _is_abort(decision):
+                break
 
-            # Phase 2: Scene Generation
-            state = await _run_scene_phase(state, config, agents)
-            if on_phase_complete:
-                on_phase_complete("scene", state)
+            # ── Hypothesis phase (with redo loop) ─────────────────
+            user_guidance = ""
+            while True:
+                state = await _run_hypothesis_phase(
+                    state, config, agents, user_guidance=user_guidance,
+                )
+                if on_phase_complete:
+                    on_phase_complete("hypothesis", state)
 
-            # Phase 2b: Scene Preview (renders scene geometry via Blender)
-            state = await _run_preview_phase(state, config)
-            if on_phase_complete:
-                on_phase_complete("preview", state)
+                # ── GATE 2: Post-hypothesis ───────────────────────
+                decision, state = await _run_gate(
+                    intervention_handler, config,
+                    GateCheckpoint.POST_HYPOTHESIS, state,
+                    phase_just_completed="hypothesis",
+                    phase_about_to_run="scene",
+                    message="Review formalized hypothesis, quality ratings, and parameter space.",
+                )
+                if _is_abort(decision):
+                    break
+                if decision and decision.action == GateAction.REDO:
+                    user_guidance = decision.feedback_text
+                    logger.info("hypothesis_redo", guidance=user_guidance[:100])
+                    continue
+                break
 
-            # Phase 3: Execution
+            if _is_abort(decision):
+                break
+
+            # ── Scene generation (with feedback loop) ─────────────
+            user_feedback = ""
+            for feedback_round in range(config.max_scene_feedback_rounds):
+                state = await _run_scene_phase(
+                    state, config, agents, user_feedback=user_feedback,
+                )
+                if on_phase_complete:
+                    on_phase_complete("scene", state)
+
+                # Preview render
+                state = await _run_preview_phase(state, config)
+                if on_phase_complete:
+                    on_phase_complete("preview", state)
+
+                # ── GATE 3: Pre-execution (review code/params) ────
+                decision, state = await _run_gate(
+                    intervention_handler, config,
+                    GateCheckpoint.PRE_EXECUTION, state,
+                    phase_just_completed="scene",
+                    phase_about_to_run="executor",
+                    message="Review generated simulation code and parameters.",
+                )
+                if _is_abort(decision):
+                    break
+                if decision and decision.action == GateAction.REDO:
+                    user_feedback = decision.feedback_text
+                    logger.info("scene_redo", guidance=user_feedback[:100])
+                    continue
+
+                # ── GATE 4: Scene visualization ───────────────────
+                preview_paths = tuple(
+                    p.preview_path for p in state.scene_previews
+                    if p.preview_path
+                )
+                decision, state = await _run_gate(
+                    intervention_handler, config,
+                    GateCheckpoint.SCENE_VISUALIZATION, state,
+                    phase_just_completed="preview",
+                    phase_about_to_run="executor",
+                    message="Review the rendered scene visualization.",
+                    preview_paths=preview_paths,
+                )
+                if _is_abort(decision):
+                    break
+                if decision and decision.action == GateAction.FEEDBACK:
+                    user_feedback = decision.feedback_text
+                    logger.info("scene_feedback", feedback=user_feedback[:100])
+                    continue
+                break
+
+            if _is_abort(decision):
+                break
+
+            # ── Execution ─────────────────────────────────────────
             state = await _run_executor_phase(state, config, agents)
             if on_phase_complete:
                 on_phase_complete("executor", state)
 
-            # Phase 4: Evaluation
+            # ── GATE 5: Post-execution ────────────────────────────
+            decision, state = await _run_gate(
+                intervention_handler, config,
+                GateCheckpoint.POST_EXECUTION, state,
+                phase_just_completed="executor",
+                phase_about_to_run="evaluator",
+                message="Review execution results before evaluation.",
+            )
+            if _is_abort(decision):
+                break
+
+            # ── Evaluation ────────────────────────────────────────
             state = await _run_evaluator_phase(state, config, agents)
             if on_phase_complete:
                 on_phase_complete("evaluator", state)
 
-            # Phase 5: Analysis
+            # ── Analysis ──────────────────────────────────────────
             state = await _run_analyst_phase(state, config, agents)
             if on_phase_complete:
                 on_phase_complete("analyst", state)
 
-            # Phase 6: Literature validation
+            # ── Literature validation ─────────────────────────────
             state = await _run_literature_validator_phase(state, config, agents)
             if on_phase_complete:
                 on_phase_complete("literature_validator", state)
 
-            # Check if we should stop
             if state.status == ExperimentStatus.COMPLETED:
                 logger.info("experiment_completed", iteration=iteration)
                 break
@@ -247,12 +380,13 @@ async def run_experiment(
     return state
 
 
+# ── Individual phase functions ───────────────────────────────────────
+
 async def _run_literature_scout_phase(
     state: ExperimentState,
     config: OrchestratorConfig,
     agents: dict,
 ) -> ExperimentState:
-    """Run the literature scout agent phase (once, before hypothesis)."""
     context = state_to_prompt_context(state)
     prompt = (
         f"Survey the academic literature relevant to this research question.\n\n"
@@ -271,7 +405,6 @@ async def _run_literature_scout_phase(
             LiteratureEntry.model_validate(e)
             for e in data.get("entries", [])
         )
-        # Parse open_questions: accept both structured objects and plain strings
         raw_questions = data.get("open_questions", [])
         open_questions = tuple(
             OpenQuestion.model_validate(q) if isinstance(q, dict)
@@ -287,7 +420,6 @@ async def _run_literature_scout_phase(
         )
         return set_literature_context(state, lit_context)
 
-    # Fallback: store raw response as summary
     return set_literature_context(
         state,
         LiteratureContext(summary=response_text[:2000]),
@@ -299,12 +431,6 @@ async def _run_citation_audit_phase(
     config: OrchestratorConfig,
     agents: dict,
 ) -> ExperimentState:
-    """Run the citation auditor to verify literature scout citations are real.
-
-    Replaces the literature context with an audited version where each
-    entry has a verification_status. Fabricated entries are removed from
-    the main entries list so downstream agents never reason from them.
-    """
     if not state.literature_context or not state.literature_context.entries:
         return state
 
@@ -324,13 +450,11 @@ async def _run_citation_audit_phase(
         logger.warning("citation_audit_parse_failed", response=response_text[:200])
         return state
 
-    # Build a lookup from original title to audit result
     audit_lookup: dict[str, dict] = {}
     for audited in data["audited_entries"]:
         original_title = audited.get("original_title", "")
         audit_lookup[original_title.lower().strip()] = audited
 
-    # Rebuild entries with verification status, dropping fabricated ones
     verified_entries: list[LiteratureEntry] = []
     fabricated_count = 0
     for entry in state.literature_context.entries:
@@ -344,7 +468,6 @@ async def _run_citation_audit_phase(
             )
             continue
 
-        # Apply corrections from auditor if available
         if audit:
             corrected_entry = LiteratureEntry(
                 title=audit.get("corrected_title", entry.title),
@@ -368,7 +491,6 @@ async def _run_citation_audit_phase(
         fabricated=fabricated_count,
     )
 
-    # Replace literature context with audited version
     audited_context = LiteratureContext(
         entries=tuple(verified_entries),
         summary=state.literature_context.summary,
@@ -383,13 +505,24 @@ async def _run_hypothesis_phase(
     state: ExperimentState,
     config: OrchestratorConfig,
     agents: dict,
+    *,
+    user_guidance: str = "",
 ) -> ExperimentState:
-    """Run the hypothesis agent phase."""
     context = state_to_prompt_context(state)
+
+    guidance_section = ""
+    if user_guidance:
+        guidance_section = (
+            f"\n\nIMPORTANT — User feedback on previous formalization:\n"
+            f"{user_guidance}\n"
+            f"Incorporate this feedback into your revised hypothesis.\n"
+        )
+
     prompt = (
         f"Analyze this hypothesis and produce a structured experiment specification.\n\n"
         f"Hypothesis: {state.raw_hypothesis}\n\n"
         f"Files provided: {[f.path for f in state.files]}\n\n"
+        f"{guidance_section}"
         f"{context}"
     )
 
@@ -406,7 +539,6 @@ async def _run_hypothesis_phase(
         )
         return state
 
-    # Fallback: create hypothesis from raw text
     return add_hypothesis(
         state,
         Hypothesis(raw_text=state.raw_hypothesis, formalized=response_text[:500]),
@@ -417,12 +549,22 @@ async def _run_scene_phase(
     state: ExperimentState,
     config: OrchestratorConfig,
     agents: dict,
+    *,
+    user_feedback: str = "",
 ) -> ExperimentState:
-    """Run the scene generation agent phase."""
     context = state_to_prompt_context(state)
+
+    feedback_section = ""
+    if user_feedback:
+        feedback_section = (
+            f"\n\nIMPORTANT — User feedback on the scene/simulation:\n"
+            f"{user_feedback}\n"
+            f"Revise the simulation code to address this feedback.\n"
+        )
 
     prompt = (
         f"Generate simulation scenes for this experiment.\n\n"
+        f"{feedback_section}"
         f"{context}"
     )
 
@@ -444,12 +586,6 @@ async def _run_preview_phase(
     state: ExperimentState,
     config: OrchestratorConfig,
 ) -> ExperimentState:
-    """Render scene previews via Blender before simulation execution.
-
-    This is a non-LLM phase — it reads scene descriptions from the
-    generated code's parameters and renders them directly.
-    Silently skips if Blender is not available.
-    """
     try:
         from agentsim.preview.renderer import preview_scene
         from agentsim.preview.scene_description import SceneDescription
@@ -481,7 +617,7 @@ async def _run_preview_phase(
         except FileNotFoundError:
             logger.warning("preview_skip_scene", scene_id=scene_spec.id,
                            reason="Blender not found")
-            break  # no point trying more scenes
+            break
         except Exception as e:
             logger.warning("preview_failed", scene_id=scene_spec.id,
                            error=str(e))
@@ -500,7 +636,6 @@ async def _run_executor_phase(
     config: OrchestratorConfig,
     agents: dict,
 ) -> ExperimentState:
-    """Run the executor agent phase."""
     context = state_to_prompt_context(state)
     prompt = (
         f"Execute the following simulation scenes and report results.\n\n"
@@ -523,7 +658,6 @@ async def _run_evaluator_phase(
     config: OrchestratorConfig,
     agents: dict,
 ) -> ExperimentState:
-    """Run the evaluator agent phase."""
     context = state_to_prompt_context(state)
     prompt = (
         f"Evaluate the simulation results and compute metrics.\n\n"
@@ -546,7 +680,6 @@ async def _run_analyst_phase(
     config: OrchestratorConfig,
     agents: dict,
 ) -> ExperimentState:
-    """Run the analyst agent phase."""
     context = state_to_prompt_context(state)
     prompt = (
         f"Analyze the experimental results and decide next steps.\n\n"
@@ -560,7 +693,6 @@ async def _run_analyst_phase(
         report = AnalysisReport.model_validate(data)
         return add_analysis(state, report)
 
-    # Fallback: stop after failing to parse
     return add_analysis(
         state,
         AnalysisReport(
@@ -577,7 +709,6 @@ async def _run_literature_validator_phase(
     config: OrchestratorConfig,
     agents: dict,
 ) -> ExperimentState:
-    """Run the literature validator agent phase (after analyst)."""
     context = state_to_prompt_context(state)
     prompt = (
         f"Validate the experimental findings against the literature.\n\n"
@@ -593,7 +724,6 @@ async def _run_literature_validator_phase(
         validation = LiteratureValidation.model_validate(data)
         return set_literature_validation(state, validation)
 
-    # Fallback: minimal validation with raw reasoning
     hypothesis_id = state.hypothesis.id if state.hypothesis else ""
     return set_literature_validation(
         state,
@@ -605,7 +735,6 @@ async def _run_literature_validator_phase(
 
 
 def _save_state(state: ExperimentState, path: Path) -> None:
-    """Save experiment state to disk."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(serialize_state(state))
     logger.info("state_saved", path=str(path))

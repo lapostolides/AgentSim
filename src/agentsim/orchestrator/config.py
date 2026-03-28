@@ -6,6 +6,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from agentsim.orchestrator.gates import ALL_CHECKPOINTS
+
 
 class OrchestratorConfig(BaseModel, frozen=True):
     """Configuration for the experiment orchestrator."""
@@ -28,3 +30,11 @@ class OrchestratorConfig(BaseModel, frozen=True):
 
     # Working directory for simulation execution
     cwd: Path = Field(default_factory=lambda: Path.cwd())
+
+    # Human-in-the-loop intervention gates (all enabled by default)
+    intervention_checkpoints: frozenset[str] = Field(
+        default_factory=lambda: ALL_CHECKPOINTS,
+    )
+
+    # Max scene feedback rounds before forcing approval
+    max_scene_feedback_rounds: int = 5
