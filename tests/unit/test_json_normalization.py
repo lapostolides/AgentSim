@@ -424,3 +424,255 @@ class TestHypothesisParsePipeline:
         h = self._parse_hypothesis(data, "my raw hypothesis")
         assert h.formalized != ""
         assert h.raw_text == "my raw hypothesis"
+
+
+# ── Literature entries: additional cluster variants ──────────────────
+
+
+class TestExtractLiteratureEntriesVariants:
+    """Test that newly discovered cluster key names are handled."""
+
+    PAPER = {"title": "Test Paper", "authors": ["Author"], "year": 2024}
+
+    def test_topic_clusters(self):
+        """Real failure from April 2: agent used 'topic_clusters'."""
+        data = {
+            "literature_survey": {
+                "topic_clusters": [
+                    {"title": "NLOS Methods", "papers": [self.PAPER]},
+                    {"title": "Relay Walls", "papers": [self.PAPER]},
+                ]
+            }
+        }
+        entries, _ = _extract_literature_entries(data)
+        assert len(entries) == 2
+
+    def test_research_clusters(self):
+        data = {
+            "research_clusters": [
+                {"papers": [self.PAPER]},
+            ]
+        }
+        entries, _ = _extract_literature_entries(data)
+        assert len(entries) == 1
+
+    def test_citations_key(self):
+        data = {"citations": [self.PAPER, self.PAPER]}
+        entries, _ = _extract_literature_entries(data)
+        assert len(entries) == 2
+
+
+# ── Citation auditor parsing ─────────────────────────────────────────
+
+
+class TestCitationAuditorParsing:
+    """Test that citation auditor JSON is parsed robustly."""
+
+    def test_direct_audited_entries(self):
+        data = {
+            "audited_entries": [
+                {"original_title": "Paper A", "verification_status": "verified"},
+            ],
+            "summary": "1 of 1 verified",
+            "fabricated_count": 0,
+        }
+        expected = {"audited_entries", "summary", "fabricated_count"}
+        result = _unwrap_json(data, expected)
+        assert "audited_entries" in result
+        assert len(result["audited_entries"]) == 1
+
+    def test_wrapped_citation_audit(self):
+        """Agent wraps as {"citation_audit": {"audited_entries": [...]}}."""
+        data = {
+            "citation_audit": {
+                "audited_entries": [
+                    {"original_title": "Paper A", "verification_status": "verified"},
+                ],
+                "summary": "1 verified",
+                "fabricated_count": 0,
+            }
+        }
+        expected = {"audited_entries", "summary", "fabricated_count"}
+        result = _unwrap_json(data, expected)
+        assert "audited_entries" in result
+
+
+# ── Analyst parsing ──────────────────────────────────────────────────
+
+
+class TestAnalystParsing:
+    """Test analyst JSON variants."""
+
+    def test_direct_analyst_output(self):
+        data = {
+            "hypothesis_id": "abc123",
+            "findings": ["Finding 1", "Finding 2"],
+            "confidence": 0.85,
+            "supports_hypothesis": True,
+            "should_stop": False,
+            "reasoning": "Based on results...",
+        }
+        expected = {"hypothesis_id", "findings", "confidence",
+                    "supports_hypothesis", "should_stop"}
+        result = _unwrap_json(data, expected)
+        assert result["hypothesis_id"] == "abc123"
+
+    def test_wrapped_analysis(self):
+        """Agent wraps as {"analysis": {...}}."""
+        data = {
+            "analysis": {
+                "hypothesis_id": "abc123",
+                "findings": ["Finding 1"],
+                "confidence": 0.9,
+                "supports_hypothesis": True,
+                "should_stop": True,
+                "reasoning": "Clear result.",
+            }
+        }
+        expected = {"hypothesis_id", "findings", "confidence",
+                    "supports_hypothesis", "should_stop"}
+        result = _unwrap_json(data, expected)
+        assert result["hypothesis_id"] == "abc123"
+        assert result["confidence"] == 0.9
+
+
+# ── Literature validator parsing ─────────────────────────────────────
+
+
+class TestLiteratureValidatorParsing:
+    """Test literature validator JSON variants."""
+
+    def test_direct_output(self):
+        from agentsim.state.models import LiteratureValidation
+
+        data = {
+            "hypothesis_id": "hyp1",
+            "consistency_assessment": "Results align with prior work.",
+            "novel_findings": ["Novel finding 1"],
+            "concerns": [],
+            "suggested_citations": ["Smith 2024"],
+            "overall_confidence_adjustment": 0.1,
+            "reasoning": "Literature supports these findings.",
+        }
+        v = LiteratureValidation.model_validate(data)
+        assert v.hypothesis_id == "hyp1"
+
+    def test_wrapped_validation(self):
+        """Agent wraps as {"validation": {...}}."""
+        data = {
+            "validation": {
+                "hypothesis_id": "hyp1",
+                "consistency_assessment": "Consistent.",
+                "novel_findings": [],
+                "concerns": [],
+                "suggested_citations": [],
+                "overall_confidence_adjustment": 0.0,
+                "reasoning": "No issues.",
+            }
+        }
+        expected = {"hypothesis_id", "consistency_assessment",
+                    "novel_findings", "concerns", "reasoning"}
+        result = _unwrap_json(data, expected)
+        assert result["hypothesis_id"] == "hyp1"
+
+    def test_missing_hypothesis_id_handled(self):
+        """Parser should not crash if hypothesis_id is missing."""
+        data = {
+            "consistency_assessment": "Results are consistent.",
+            "reasoning": "All good.",
+        }
+        expected = {"hypothesis_id", "consistency_assessment", "reasoning"}
+        result = _unwrap_json(data, expected)
+        # hypothesis_id won't be magically added by unwrap, but shouldn't crash
+        assert "consistency_assessment" in result
+
+
+# ── Scene parsing ────────────────────────────────────────────────────
+
+
+class TestSceneParsing:
+    """Test scene JSON variants."""
+
+    def test_scenes_list(self):
+        data = {
+            "scenes": [
+                {"plan_id": "p1", "code": "print('hello')", "language": "python"},
+            ]
+        }
+        expected = {"plan_id", "scenes", "code", "language"}
+        result = _unwrap_json(data, expected)
+        assert "scenes" in result
+        assert len(result["scenes"]) == 1
+
+    def test_single_scene_no_wrapper(self):
+        """Agent returns a single scene without the 'scenes' list."""
+        data = {"code": "print('hello')", "language": "python", "parameters": {}}
+        expected = {"plan_id", "scenes", "code", "language"}
+        result = _unwrap_json(data, expected)
+        assert "code" in result
+
+    def test_wrapped_scene(self):
+        """Agent wraps as {"scene": {"code": ...}}."""
+        data = {
+            "scene": {
+                "code": "import numpy as np\nprint(np.ones(3))",
+                "language": "python",
+                "plan_id": "auto",
+            }
+        }
+        expected = {"plan_id", "scenes", "code", "language"}
+        result = _unwrap_json(data, expected)
+        assert "code" in result
+
+
+# ── Executor parsing ─────────────────────────────────────────────────
+
+
+class TestExecutorParsing:
+    """Test executor JSON variants."""
+
+    def test_results_list(self):
+        data = {
+            "results": [
+                {"scene_id": "s1", "status": "success", "duration_seconds": 1.5},
+            ]
+        }
+        expected = {"results", "scene_id", "status"}
+        result = _unwrap_json(data, expected)
+        assert "results" in result
+
+    def test_single_result_no_wrapper(self):
+        data = {"scene_id": "s1", "status": "success", "stdout": "done"}
+        expected = {"results", "scene_id", "status"}
+        result = _unwrap_json(data, expected)
+        assert "scene_id" in result
+
+
+# ── Evaluator parsing ────────────────────────────────────────────────
+
+
+class TestEvaluatorParsing:
+    """Test evaluator JSON variants."""
+
+    def test_evaluations_list(self):
+        data = {
+            "evaluations": [
+                {"scene_id": "s1", "metrics": {"psnr": 25.3}, "summary": "Good."},
+            ]
+        }
+        expected = {"evaluations", "scene_id", "metrics"}
+        result = _unwrap_json(data, expected)
+        assert "evaluations" in result
+
+    def test_wrapped_evaluation(self):
+        """Agent wraps as {"evaluation": {"scene_id": ...}}."""
+        data = {
+            "evaluation": {
+                "scene_id": "s1",
+                "metrics": {"psnr": 25.3},
+                "summary": "Good results.",
+            }
+        }
+        expected = {"evaluations", "scene_id", "metrics"}
+        result = _unwrap_json(data, expected)
+        assert "scene_id" in result
