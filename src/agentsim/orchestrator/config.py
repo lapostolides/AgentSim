@@ -25,8 +25,8 @@ class OrchestratorConfig(BaseModel, frozen=True):
     # Mapping of display_name → import_name
     extra_packages: dict[str, str] = Field(default_factory=dict)
 
-    # Permissions
-    permission_mode: str = "default"
+    # Permissions — acceptEdits auto-approves file operations
+    permission_mode: str = "acceptEdits"
 
     # Working directory for simulation execution
     cwd: Path = Field(default_factory=lambda: Path.cwd())

@@ -102,6 +102,143 @@ def _extract_json_from_text(text: str) -> dict | None:
     return None
 
 
+# ── JSON normalization ───────────────────────────────────────────────
+
+# Maps common agent output field names to expected Pydantic model fields.
+_FIELD_ALIASES: dict[str, str] = {
+    "statement": "raw_text",
+    "hypothesis_text": "raw_text",
+    "original_text": "raw_text",
+    "formalized_statement": "formalized",
+    "formalized_hypothesis": "formalized",
+    "hypothesis_formalized": "formalized",
+    "independent_variables": "variables",
+    "dependent_variables": "variables",
+    "parameters": "parameter_space",
+    "params": "parameter_space",
+}
+
+
+def _unwrap_json(data: dict, expected_keys: set[str]) -> dict:
+    """Unwrap nested JSON and normalize field names.
+
+    Agents often wrap output in an extra layer like {"hypothesis": {...}}
+    or use different field names. This normalizes both.
+    """
+    # Unwrap single-key nesting: {"hypothesis": {"raw_text": ...}} → {"raw_text": ...}
+    if len(data) == 1:
+        only_value = next(iter(data.values()))
+        if isinstance(only_value, dict):
+            data = only_value
+
+    # Check for known wrapper keys and unwrap
+    for wrapper_key in ("hypothesis", "literature_context", "analysis",
+                        "experiment", "result", "scene", "evaluation"):
+        if wrapper_key in data and isinstance(data[wrapper_key], dict):
+            inner = data[wrapper_key]
+            # Use inner dict if it has more expected keys than outer
+            inner_matches = len(expected_keys & set(inner.keys()))
+            outer_matches = len(expected_keys & set(data.keys()))
+            if inner_matches > outer_matches:
+                data = inner
+                break
+
+    # Apply field aliases
+    normalized = {}
+    for key, value in data.items():
+        mapped_key = _FIELD_ALIASES.get(key, key)
+        # Don't overwrite if the canonical key already exists
+        if mapped_key not in normalized or key == mapped_key:
+            normalized[mapped_key] = value
+        elif mapped_key in normalized and key != mapped_key:
+            # Alias collision — merge lists if both are lists
+            existing = normalized[mapped_key]
+            if isinstance(existing, list) and isinstance(value, list):
+                normalized[mapped_key] = existing + value
+
+    return normalized
+
+
+def _extract_literature_entries(data: dict) -> tuple[list[dict], dict | None]:
+    """Deep-search for paper entries in variant literature JSON structures.
+
+    Agents return wildly different shapes:
+      {"entries": [...]}
+      {"literature_context": {"entries": [...]}}
+      {"literature_survey": {"thematic_clusters": [{"papers": [...]}]}}
+      {"papers": [...]}
+
+    Returns (entries_list, flattened_data_or_None).
+    """
+    # Direct entries key
+    if "entries" in data:
+        return data["entries"], data
+
+    # Search one level deep for entries
+    for value in data.values():
+        if isinstance(value, dict) and "entries" in value:
+            return value["entries"], value
+
+    # Search for papers/references keys at any nesting level
+    for papers_key in ("papers", "references", "citations"):
+        if papers_key in data:
+            return data[papers_key], data
+        for value in data.values():
+            if isinstance(value, dict) and papers_key in value:
+                return value[papers_key], value
+
+    # Handle thematic_clusters: [{papers: [...]}, {papers: [...]}]
+    for clusters_key in ("thematic_clusters", "clusters", "sections", "categories"):
+        clusters = data.get(clusters_key)
+        if not clusters:
+            for value in data.values():
+                if isinstance(value, dict):
+                    clusters = value.get(clusters_key)
+                    if clusters:
+                        break
+        if isinstance(clusters, list):
+            all_papers: list[dict] = []
+            for cluster in clusters:
+                if isinstance(cluster, dict):
+                    for papers_key in ("papers", "entries", "references"):
+                        if papers_key in cluster and isinstance(cluster[papers_key], list):
+                            all_papers.extend(cluster[papers_key])
+            if all_papers:
+                return all_papers, data
+
+    return [], data
+
+
+def _coerce_to_str_list(value: object) -> list[str]:
+    """Coerce agent output to a flat list of strings.
+
+    Handles: list[str], list[dict] (extract 'name' key), dict with
+    'independent'/'dependent' sub-lists, or a bare string.
+    """
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, dict):
+        # e.g. {"independent": [...], "dependent": [...]}
+        items: list = []
+        for v in value.values():
+            if isinstance(v, list):
+                items.extend(v)
+        return _coerce_to_str_list(items) if items else []
+    if isinstance(value, list):
+        result: list[str] = []
+        for item in value:
+            if isinstance(item, str):
+                result.append(item)
+            elif isinstance(item, dict):
+                name = item.get("name", item.get("condition", ""))
+                desc = item.get("description", item.get("prediction", ""))
+                result.append(f"{name}: {desc}" if desc else str(name))
+            else:
+                result.append(str(item))
+        return result
+    return []
+
+
 # ── Gate helpers ─────────────────────────────────────────────────────
 
 async def _run_gate(
@@ -151,8 +288,16 @@ async def _run_agent_phase(
     prompt: str,
     config: OrchestratorConfig,
     agents: dict,
+    tools: list[str] | None = None,
 ) -> tuple[str, ResultMessage | None]:
     logger.info("starting_phase", phase=phase_name)
+
+    # Auto-resolve tools from the agent definition if not explicitly provided
+    phase_tools = tools
+    if phase_tools is None:
+        agent_def = agents.get(phase_name)
+        if agent_def and agent_def.tools:
+            phase_tools = agent_def.tools
 
     options = ClaudeAgentOptions(
         system_prompt=(
@@ -160,10 +305,13 @@ async def _run_agent_phase(
             "Follow your instructions precisely and output valid JSON."
         ),
         agents=agents,
+        tools=phase_tools if phase_tools else None,
+        allowed_tools=phase_tools if phase_tools else [],
         max_turns=config.max_turns_per_phase,
         max_budget_usd=config.max_budget_usd / 5,
         permission_mode=config.permission_mode,
         cwd=str(config.cwd),
+        setting_sources=["project"],
     )
 
     response_text = ""
@@ -237,20 +385,25 @@ async def run_experiment(
         on_phase_complete("citation_auditor", state)
 
     # 5. Experiment loop
+    max_retries = 2
+    retry_count = 0
+    pre_hyp_gate_done = False
     for iteration in range(config.max_iterations):
         logger.info("iteration_start", iteration=iteration, status=state.status.value)
 
         try:
-            # ── GATE 1: Pre-hypothesis ────────────────────────────
-            decision, state = await _run_gate(
-                intervention_handler, config,
-                GateCheckpoint.PRE_HYPOTHESIS, state,
-                phase_just_completed="citation_auditor",
-                phase_about_to_run="hypothesis",
-                message="Review literature context and refine your hypothesis before formalization.",
-            )
-            if _is_abort(decision):
-                break
+            # ── GATE 1: Pre-hypothesis (skip on retry) ───────────
+            if not pre_hyp_gate_done:
+                decision, state = await _run_gate(
+                    intervention_handler, config,
+                    GateCheckpoint.PRE_HYPOTHESIS, state,
+                    phase_just_completed="citation_auditor",
+                    phase_about_to_run="hypothesis",
+                    message="Review literature context and refine your hypothesis before formalization.",
+                )
+                if _is_abort(decision):
+                    break
+                pre_hyp_gate_done = True
 
             # ── Hypothesis phase (with redo loop) ─────────────────
             user_guidance = ""
@@ -369,9 +522,17 @@ async def run_experiment(
                 break
 
         except Exception as e:
-            logger.error("phase_error", error=str(e), iteration=iteration)
-            state = mark_failed(state, f"Error in iteration {iteration}: {e}")
-            break
+            retry_count += 1
+            logger.error("phase_error", error=str(e), iteration=iteration,
+                         retry=retry_count, max_retries=max_retries)
+            if retry_count >= max_retries:
+                state = mark_failed(
+                    state,
+                    f"Failed after {max_retries} retries in iteration {iteration}: {e}",
+                )
+                break
+            logger.info("retrying_iteration", retry=retry_count)
+            continue
 
     # Save final state
     if config.save_intermediate_state:
@@ -399,24 +560,50 @@ async def _run_literature_scout_phase(
         "literature_scout", prompt, config, agents,
     )
 
+    logger.info(
+        "literature_scout_raw_response",
+        response_length=len(response_text),
+        response_preview=response_text[:500],
+    )
+
     data = _extract_json_from_text(response_text)
+
+    # Deep-search for entries in nested/variant structures
+    entries_raw, data_flat = _extract_literature_entries(data) if data else ([], data)
+
+    logger.info("literature_scout_parsed", parsed_ok=data is not None,
+                entry_count=len(entries_raw))
     if data:
-        entries = tuple(
-            LiteratureEntry.model_validate(e)
-            for e in data.get("entries", [])
-        )
-        raw_questions = data.get("open_questions", [])
+        entries = []
+        for e in entries_raw:
+            try:
+                entries.append(LiteratureEntry.model_validate(e))
+            except Exception:
+                # Coerce partial entries — at minimum need a title
+                title = e.get("title", e.get("name", ""))
+                if title:
+                    entries.append(LiteratureEntry(
+                        title=title,
+                        authors=tuple(e.get("authors", [])),
+                        year=e.get("year"),
+                        key_findings=tuple(e.get("key_findings", e.get("findings", []))),
+                        relevance=e.get("relevance", ""),
+                        url=e.get("url", ""),
+                        doi=e.get("doi", ""),
+                    ))
+
+        raw_questions = (data_flat or data).get("open_questions", [])
         open_questions = tuple(
             OpenQuestion.model_validate(q) if isinstance(q, dict)
             else OpenQuestion(question=q)
             for q in raw_questions
         )
         lit_context = LiteratureContext(
-            entries=entries,
-            summary=data.get("summary", ""),
+            entries=tuple(entries),
+            summary=(data_flat or data).get("summary", ""),
             open_questions=open_questions,
-            trivial_gaps=tuple(data.get("trivial_gaps", [])),
-            methodology_notes=data.get("methodology_notes", ""),
+            trivial_gaps=tuple((data_flat or data).get("trivial_gaps", [])),
+            methodology_notes=(data_flat or data).get("methodology_notes", ""),
         )
         return set_literature_context(state, lit_context)
 
@@ -530,7 +717,61 @@ async def _run_hypothesis_phase(
 
     data = _extract_json_from_text(response_text)
     if data:
-        hypothesis = Hypothesis.model_validate(data)
+        expected = {"raw_text", "formalized", "variables", "parameter_space",
+                    "predictions", "assumptions", "quality_ratings"}
+        data = _unwrap_json(data, expected)
+        logger.info("hypothesis_json_keys", keys=list(data.keys()))
+
+        # Ensure raw_text is present (required field)
+        if "raw_text" not in data:
+            data["raw_text"] = state.raw_hypothesis
+
+        # Search for formalized text under variant keys
+        if not data.get("formalized"):
+            for key in ("formalized_statement", "formalized_hypothesis",
+                        "hypothesis_statement", "statement", "formal_statement",
+                        "testable_statement", "refined_hypothesis"):
+                if key in data and isinstance(data[key], str) and data[key]:
+                    data["formalized"] = data[key]
+                    break
+
+        # Pre-coerce list fields before validation
+        for list_field in ("variables", "predictions", "assumptions"):
+            if list_field in data and not all(isinstance(x, str) for x in data.get(list_field, [])):
+                data[list_field] = _coerce_to_str_list(data[list_field])
+
+        try:
+            hypothesis = Hypothesis.model_validate(data)
+        except Exception as e:
+            logger.warning("hypothesis_parse_fallback", error=str(e))
+            hypothesis = Hypothesis(
+                raw_text=state.raw_hypothesis,
+                formalized=data.get("formalized", "") or response_text[:500],
+                variables=_coerce_to_str_list(data.get("variables", [])),
+                predictions=_coerce_to_str_list(data.get("predictions", [])),
+                assumptions=_coerce_to_str_list(data.get("assumptions", [])),
+            )
+
+        # Guarantee formalized is never empty
+        if not hypothesis.formalized:
+            fallback_formalized = ""
+            for v in data.values():
+                if isinstance(v, str) and len(v) > 50:
+                    fallback_formalized = v
+                    break
+            if not fallback_formalized:
+                fallback_formalized = state.raw_hypothesis
+            hypothesis = Hypothesis(
+                id=hypothesis.id,
+                raw_text=hypothesis.raw_text,
+                formalized=fallback_formalized,
+                variables=hypothesis.variables,
+                parameter_space=hypothesis.parameter_space,
+                predictions=hypothesis.predictions,
+                assumptions=hypothesis.assumptions,
+                quality_ratings=hypothesis.quality_ratings,
+            )
+
         state = add_hypothesis(state, hypothesis)
         logger.info(
             "hypothesis_quality",
@@ -572,12 +813,22 @@ async def _run_scene_phase(
 
     data = _extract_json_from_text(response_text)
     if data:
-        if "plan_id" in data and "scenes" not in data:
-            plan = ExperimentPlan.model_validate(data)
-            state = add_plan(state, plan)
-        elif "scenes" in data:
-            scenes = [SceneSpec.model_validate(s) for s in data["scenes"]]
-            state = add_scenes(state, scenes)
+        data = _unwrap_json(data, {"plan_id", "scenes", "code", "language"})
+        try:
+            if "plan_id" in data and "scenes" not in data:
+                plan = ExperimentPlan.model_validate(data)
+                state = add_plan(state, plan)
+            elif "scenes" in data:
+                scenes = [SceneSpec.model_validate(s) for s in data["scenes"]]
+                state = add_scenes(state, scenes)
+            elif "code" in data:
+                # Single scene returned without wrapping in "scenes" list
+                if "plan_id" not in data:
+                    data["plan_id"] = state.plan.id if state.plan else "auto"
+                scene = SceneSpec.model_validate(data)
+                state = add_scenes(state, [scene])
+        except Exception as e:
+            logger.warning("scene_parse_error", error=str(e))
 
     return state
 
@@ -645,10 +896,18 @@ async def _run_executor_phase(
     response_text, _ = await _run_agent_phase("executor", prompt, config, agents)
 
     data = _extract_json_from_text(response_text)
-    if data and "results" in data:
-        for result_data in data["results"]:
-            result = ExecutionResult.model_validate(result_data)
-            state = add_execution_result(state, result)
+    if data:
+        data = _unwrap_json(data, {"results", "scene_id", "status"})
+        results_list = data.get("results", data.get("execution_results", []))
+        # If the agent returned a single result dict, wrap it
+        if not results_list and "scene_id" in data:
+            results_list = [data]
+        for result_data in results_list:
+            try:
+                result = ExecutionResult.model_validate(result_data)
+                state = add_execution_result(state, result)
+            except Exception as e:
+                logger.warning("execution_result_parse_error", error=str(e))
 
     return state
 
@@ -667,10 +926,17 @@ async def _run_evaluator_phase(
     response_text, _ = await _run_agent_phase("evaluator", prompt, config, agents)
 
     data = _extract_json_from_text(response_text)
-    if data and "evaluations" in data:
-        for eval_data in data["evaluations"]:
-            evaluation = EvaluationResult.model_validate(eval_data)
-            state = add_evaluation(state, evaluation)
+    if data:
+        data = _unwrap_json(data, {"evaluations", "scene_id", "metrics"})
+        evals_list = data.get("evaluations", [])
+        if not evals_list and "scene_id" in data:
+            evals_list = [data]
+        for eval_data in evals_list:
+            try:
+                evaluation = EvaluationResult.model_validate(eval_data)
+                state = add_evaluation(state, evaluation)
+            except Exception as e:
+                logger.warning("evaluation_parse_error", error=str(e))
 
     return state
 
@@ -690,8 +956,16 @@ async def _run_analyst_phase(
 
     data = _extract_json_from_text(response_text)
     if data:
-        report = AnalysisReport.model_validate(data)
-        return add_analysis(state, report)
+        data = _unwrap_json(data, {"hypothesis_id", "findings", "confidence",
+                                    "supports_hypothesis", "should_stop"})
+        # Ensure hypothesis_id is present
+        if "hypothesis_id" not in data:
+            data["hypothesis_id"] = state.hypothesis.id if state.hypothesis else ""
+        try:
+            report = AnalysisReport.model_validate(data)
+            return add_analysis(state, report)
+        except Exception as e:
+            logger.warning("analyst_parse_fallback", error=str(e))
 
     return add_analysis(
         state,

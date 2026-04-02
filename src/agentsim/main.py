@@ -28,18 +28,22 @@ def _load_env() -> None:
         load_dotenv(env_path, override=False)
 
 
-def _validate_api_key() -> None:
+def _validate_auth() -> None:
+    """Check for API key or OAuth login. Warn if neither is detected."""
     key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-    if not key:
-        raise click.ClickException(
-            "ANTHROPIC_API_KEY is not set. "
-            "Add it to your .env file or export it as an environment variable."
-        )
-    if not key.startswith("sk-ant-"):
-        raise click.ClickException(
-            "ANTHROPIC_API_KEY does not look valid (expected 'sk-ant-...' prefix). "
-            "Check your .env file."
-        )
+    if key:
+        return
+
+    credentials = Path.home() / ".claude" / "credentials.json"
+    if credentials.is_file():
+        return
+
+    click.echo(
+        "Warning: No ANTHROPIC_API_KEY found and no OAuth login detected.\n"
+        "  Option 1: Run 'claude login' to authenticate with your Claude account\n"
+        "  Option 2: Set ANTHROPIC_API_KEY in your .env file\n",
+        err=True,
+    )
 
 
 def _resolve_checkpoints(gates: tuple[str, ...]) -> frozenset[str]:
@@ -91,7 +95,7 @@ def run(
         agentsim run "My hypothesis" --gates none   # autonomous mode
         agentsim run "My hypothesis" -g post_hypothesis -g scene_visualization
     """
-    _validate_api_key()
+    _validate_auth()
 
     checkpoints = _resolve_checkpoints(gates)
     handler = CliInterventionHandler() if checkpoints else None
@@ -147,7 +151,7 @@ def interactive(output: str, max_budget: float, gates: tuple[str, ...]) -> None:
     All intervention gates are enabled by default. The pipeline pauses
     at each checkpoint so you can review, edit, or redirect.
     """
-    _validate_api_key()
+    _validate_auth()
 
     checkpoints = _resolve_checkpoints(gates)
     handler = CliInterventionHandler() if checkpoints else None
