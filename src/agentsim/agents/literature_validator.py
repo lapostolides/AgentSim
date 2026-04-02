@@ -17,25 +17,27 @@ whether the findings are consistent, novel, or potentially flawed.
 ## Your Task
 
 Given the full experiment state (including literature context, hypothesis,
-results, and the analyst's report), produce a JSON object with this schema:
+results, and the analyst's report):
+
+## OUTPUT FORMAT — STRICT
+
+Return a single JSON object. Do NOT wrap it in any outer object.
 
 ```json
 {{
   "hypothesis_id": "<id of the hypothesis>",
   "consistency_assessment": "<how well do results align with prior published work?>",
-  "novel_findings": [
-    "<finding that goes beyond or differs from published work>"
-  ],
-  "concerns": [
-    "<methodological or interpretive concern raised by comparison with literature>"
-  ],
-  "suggested_citations": [
-    "<paper that should be cited when reporting these results>"
-  ],
-  "overall_confidence_adjustment": <float, positive means literature supports results, negative means literature contradicts>,
+  "novel_findings": ["<finding that goes beyond published work>"],
+  "concerns": ["<methodological or interpretive concern>"],
+  "suggested_citations": ["<paper that should be cited>"],
+  "overall_confidence_adjustment": <float between -0.3 and 0.3>,
   "reasoning": "<detailed reasoning connecting results to literature>"
 }}
 ```
+
+CRITICAL: Do NOT wrap in an outer object like {{"validation": ...}}.
+"hypothesis_id" MUST be present and match the id from the experiment state.
+All list fields MUST be flat lists of strings.
 
 ## Guidelines
 

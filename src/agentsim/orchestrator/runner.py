@@ -188,7 +188,8 @@ def _extract_literature_entries(data: dict) -> tuple[list[dict], dict | None]:
                 return value[papers_key], value
 
     # Handle thematic_clusters: [{papers: [...]}, {papers: [...]}]
-    for clusters_key in ("thematic_clusters", "clusters", "sections", "categories"):
+    for clusters_key in ("thematic_clusters", "topic_clusters", "research_clusters",
+                          "clusters", "sections", "categories"):
         clusters = data.get(clusters_key)
         if not clusters:
             for value in data.values():
@@ -633,8 +634,20 @@ async def _run_citation_audit_phase(
     )
 
     data = _extract_json_from_text(response_text)
-    if not data or "audited_entries" not in data:
+    if not data:
         logger.warning("citation_audit_parse_failed", response=response_text[:200])
+        return state
+
+    # Unwrap nested structures
+    data = _unwrap_json(data, {"audited_entries", "summary", "fabricated_count"})
+    if "audited_entries" not in data:
+        # Try variant keys
+        for key in ("entries", "results", "citations", "audit_results", "audits"):
+            if key in data and isinstance(data[key], list):
+                data["audited_entries"] = data[key]
+                break
+    if "audited_entries" not in data:
+        logger.warning("citation_audit_no_entries", keys=list(data.keys()))
         return state
 
     audit_lookup: dict[str, dict] = {}
@@ -994,11 +1007,19 @@ async def _run_literature_validator_phase(
     )
 
     data = _extract_json_from_text(response_text)
-    if data:
-        validation = LiteratureValidation.model_validate(data)
-        return set_literature_validation(state, validation)
-
     hypothesis_id = state.hypothesis.id if state.hypothesis else ""
+
+    if data:
+        data = _unwrap_json(data, {"hypothesis_id", "consistency_assessment",
+                                    "novel_findings", "concerns", "reasoning"})
+        if "hypothesis_id" not in data:
+            data["hypothesis_id"] = hypothesis_id
+        try:
+            validation = LiteratureValidation.model_validate(data)
+            return set_literature_validation(state, validation)
+        except Exception as e:
+            logger.warning("literature_validation_parse_error", error=str(e))
+
     return set_literature_validation(
         state,
         LiteratureValidation(

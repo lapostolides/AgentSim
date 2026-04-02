@@ -16,7 +16,11 @@ against ground truth when available.
 ## Your Task
 
 For each executed scene, analyze the outputs and compute the metrics
-specified in the experiment plan. Output a JSON object with this schema:
+specified in the experiment plan.
+
+## OUTPUT FORMAT — STRICT
+
+Return a single JSON object. Do NOT wrap it in any outer object.
 
 ```json
 {{
@@ -25,11 +29,7 @@ specified in the experiment plan. Output a JSON object with this schema:
       "scene_id": "<id of the scene>",
       "metrics": {{"<metric_name>": <numeric_value>, ...}},
       "ground_truth_comparison": {{
-        "<metric_name>": {{
-          "predicted": <value>,
-          "ground_truth": <value>,
-          "difference": <value>
-        }}
+        "<metric_name>": {{"predicted": <value>, "ground_truth": <value>, "difference": <value>}}
       }},
       "summary": "<brief text summary of results>",
       "artifacts": ["<paths to generated plots/reports>"]
@@ -37,6 +37,10 @@ specified in the experiment plan. Output a JSON object with this schema:
   ]
 }}
 ```
+
+CRITICAL: The top-level key MUST be "evaluations" containing a list.
+Do NOT use "evaluation_results", "metrics", "analysis", or any other name.
+Each evaluation MUST have "scene_id" and "metrics" fields.
 
 ## Guidelines
 

@@ -17,25 +17,26 @@ and decide whether to continue experimenting or conclude.
 ## Your Task
 
 Review the full experiment state including all evaluations and metrics.
-Produce a JSON object with this schema:
+
+## OUTPUT FORMAT — STRICT
+
+Return a single JSON object. Do NOT wrap it in any outer object.
 
 ```json
 {{
   "hypothesis_id": "<id of the hypothesis being tested>",
-  "findings": [
-    "<key finding 1>",
-    "<key finding 2>"
-  ],
+  "findings": ["<key finding as string>", "<key finding as string>"],
   "confidence": <0.0 to 1.0>,
   "supports_hypothesis": true | false | null,
-  "next_experiments": [
-    "<proposed follow-up experiment 1>",
-    "<proposed follow-up experiment 2>"
-  ],
+  "next_experiments": ["<proposed follow-up as string>"],
   "should_stop": true | false,
   "reasoning": "<detailed reasoning for your conclusions>"
 }}
 ```
+
+CRITICAL: Do NOT wrap in an outer object like {{"analysis": ...}}.
+"findings" and "next_experiments" MUST be flat lists of strings.
+"hypothesis_id" should match the id from the experiment state.
 
 ## Decision Framework
 

@@ -17,8 +17,12 @@ identifying key papers, established methods, and open questions.
 ## Your Task
 
 Given a researcher's hypothesis and any provided files or context,
-search for and synthesize relevant academic literature. Produce a JSON
-object with this exact schema:
+search for and synthesize relevant academic literature.
+
+## OUTPUT FORMAT — STRICT
+
+Return a single JSON object. Do NOT wrap it in any outer object.
+Use EXACTLY these top-level keys — do NOT rename, nest, or reorganize them:
 
 ```json
 {{
@@ -27,10 +31,7 @@ object with this exact schema:
       "title": "<paper title>",
       "authors": ["<author 1>", "<author 2>"],
       "year": <publication year>,
-      "key_findings": [
-        "<finding 1>",
-        "<finding 2>"
-      ],
+      "key_findings": ["<finding 1>", "<finding 2>"],
       "relevance": "<why this paper matters for the hypothesis>",
       "url": "<link to paper if available>",
       "doi": "<DOI if available>"
@@ -43,12 +44,16 @@ object with this exact schema:
       "significance": "<why answering this would change design, experiments, or deployment>"
     }}
   ],
-  "trivial_gaps": [
-    "<gap you considered but excluded because it is an obvious consequence of known physics or would not change any downstream decision>"
-  ],
+  "trivial_gaps": ["<excluded gap>"],
   "methodology_notes": "<common methods, metrics, and best practices in this area>"
 }}
 ```
+
+CRITICAL: The top-level keys MUST be exactly: entries, summary, open_questions,
+trivial_gaps, methodology_notes. Do NOT use alternative names like "papers",
+"references", "literature_survey", "thematic_clusters", or "topic_clusters".
+Do NOT wrap in an outer object like {{"literature_context": ...}}.
+Each entry in "entries" MUST have "title" as a string field.
 
 ## Guidelines
 

@@ -20,13 +20,16 @@ Given a structured hypothesis and experiment plan, generate Python code for
 each scene in the plan. The code should directly use the available Python
 packages (e.g., `import mitsuba`, `import bpy`, `import numpy`).
 
-Output a JSON object with this schema:
+## OUTPUT FORMAT — STRICT
+
+Return a single JSON object. Do NOT wrap it in any outer object.
+Use EXACTLY this schema:
 
 ```json
 {{
   "scenes": [
     {{
-      "plan_id": "<plan id>",
+      "plan_id": "<plan id or 'auto' if unknown>",
       "code": "<complete Python code as a string>",
       "language": "python",
       "parameters": {{"<param_name>": <value>, ...}},
@@ -35,6 +38,12 @@ Output a JSON object with this schema:
   ]
 }}
 ```
+
+CRITICAL: The top-level key MUST be "scenes" containing a list.
+Do NOT use "simulation_scenes", "scene_code", "scripts", or any other name.
+Each scene MUST have "code" as a string field containing the full Python script.
+Do NOT use "script", "python_code", "source_code" instead of "code".
+If there is only one scene, still wrap it in the "scenes" list.
 
 ## Guidelines
 

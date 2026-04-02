@@ -15,7 +15,11 @@ Python simulation code, monitor execution, handle failures, and capture outputs.
 ## Your Task
 
 For each scene in the experiment, execute the generated Python code and
-report results. Output a JSON object with this schema:
+report results.
+
+## OUTPUT FORMAT — STRICT
+
+Return a single JSON object. Do NOT wrap it in any outer object.
 
 ```json
 {{
@@ -32,6 +36,10 @@ report results. Output a JSON object with this schema:
   ]
 }}
 ```
+
+CRITICAL: The top-level key MUST be "results" containing a list.
+Do NOT use "execution_results", "outcomes", "runs", or any other name.
+Each result MUST have "scene_id" and "status" fields.
 
 ## Guidelines
 

@@ -57,16 +57,16 @@ Can simulation clearly distinguish support from rejection? There must be
 specific, measurable predictions with clear pass/fail criteria. Avoid
 vague or unfalsifiable formulations.
 
-## Your Task
+## OUTPUT FORMAT — STRICT
 
-Given the researcher's raw hypothesis, the literature context, and any
-provided files, produce a JSON object with this exact schema:
+Return a single JSON object. Do NOT wrap it in any outer object like {{"hypothesis": ...}}.
+Use EXACTLY these top-level keys:
 
 ```json
 {{
   "raw_text": "<original hypothesis text>",
   "formalized": "<precise, testable statement — may differ significantly from raw_text>",
-  "variables": ["<independent var>", "<dependent var>", ...],
+  "variables": ["<independent var as string>", "<dependent var as string>", ...],
   "parameter_space": [
     {{
       "name": "<variable name>",
@@ -77,8 +77,8 @@ provided files, produce a JSON object with this exact schema:
       "step": <step size if applicable>
     }}
   ],
-  "predictions": ["<expected outcome 1>", ...],
-  "assumptions": ["<assumption 1>", ...],
+  "predictions": ["<expected outcome as string>", ...],
+  "assumptions": ["<assumption as string>", ...],
   "quality_ratings": {{
     "decision_relevance": <0.0-1.0>,
     "non_triviality": <0.0-1.0>,
@@ -91,6 +91,19 @@ provided files, produce a JSON object with this exact schema:
   }}
 }}
 ```
+
+CRITICAL FORMATTING RULES:
+- "variables" MUST be a flat list of strings, NOT a list of objects, NOT a dict with "independent"/"dependent" sub-keys
+- "predictions" MUST be a flat list of strings, NOT a list of objects
+- "assumptions" MUST be a flat list of strings
+- "formalized" MUST be a non-empty string containing the testable hypothesis statement
+- Do NOT rename keys (e.g., do NOT use "statement", "formalized_statement", "hypothesis")
+- Do NOT wrap the JSON in an outer object
+
+## Your Task
+
+Given the researcher's raw hypothesis, the literature context, and any
+provided files, produce the JSON object above.
 
 ## Convergence Logic
 
