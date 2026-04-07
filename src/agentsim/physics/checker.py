@@ -8,12 +8,18 @@ Composes all 6 physics checks in cost order per D-04:
 5. CFL numerical stability (<100ms)
 6. Mesh quality (<5s)
 
+Plus paradigm-dispatched checks (Step 7) when paradigm knowledge is provided.
+
 Stops at first ERROR-level finding. WARNINGs and INFOs are collected.
 """
 
 from __future__ import annotations
 
+import importlib
+import inspect
 import time
+
+import structlog
 
 from agentsim.physics.checks.ast_extract import extract_physics_from_ast
 from agentsim.physics.checks.equations import trace_dimensions_from_ast
@@ -27,6 +33,8 @@ from agentsim.physics.checks.ranges import check_parameter_ranges
 from agentsim.physics.checks.stability import check_cfl_stability
 from agentsim.physics.checks.units import check_unit_consistency
 from agentsim.physics.models import CheckResult, Severity, ValidationReport
+
+logger = structlog.get_logger()
 
 
 def _has_error(results: tuple[CheckResult, ...]) -> bool:
@@ -120,17 +128,159 @@ def run_nlos_checks(
     return _make_report(all_results, start)
 
 
+def run_paradigm_checks(
+    paradigm: "ParadigmKnowledge",
+    scene_params: dict,
+) -> ValidationReport:
+    """Run validation checks declared in a paradigm YAML file.
+
+    Dispatches two rule types:
+    - ``python_check``: imports a module + function via importlib, maps
+      matching scene_params to function parameters via inspect.signature.
+    - ``range_check``: compares a scene parameter value against declared
+      min/max bounds.
+
+    Unknown modules or missing functions log a warning and produce a
+    WARNING-level CheckResult rather than crashing the pipeline.
+
+    Args:
+        paradigm: ParadigmKnowledge loaded from a paradigm YAML file.
+        scene_params: Dict of scene parameters to validate.
+
+    Returns:
+        ValidationReport with all findings from paradigm validation rules.
+    """
+    from agentsim.physics.domains.schema import ParadigmKnowledge  # noqa: F811
+
+    start = time.perf_counter()
+    all_results: list[CheckResult] = []
+
+    for rule in paradigm.validation_rules:
+        if rule.type == "python_check":
+            _dispatch_python_check(rule, scene_params, all_results)
+        elif rule.type in ("range_check", "threshold_check"):
+            _dispatch_range_check(rule, scene_params, all_results)
+        else:
+            logger.warning(
+                "unknown_validation_rule_type",
+                rule_name=rule.name,
+                rule_type=rule.type,
+            )
+
+    return _make_report(all_results, start)
+
+
+def _dispatch_python_check(
+    rule: "ValidationRule",
+    scene_params: dict,
+    results: list[CheckResult],
+) -> None:
+    """Import and call a python_check validation function.
+
+    Uses inspect.signature to extract only matching parameters from
+    scene_params. Errors during import or execution are caught and
+    converted to WARNING-level results.
+
+    Args:
+        rule: The ValidationRule with module and function fields.
+        scene_params: Dict of scene parameters.
+        results: Mutable list to append CheckResult findings to.
+    """
+    try:
+        mod = importlib.import_module(rule.module)
+        fn = getattr(mod, rule.function)
+    except (ImportError, AttributeError) as exc:
+        logger.warning(
+            "python_check_import_error",
+            rule_name=rule.name,
+            module=rule.module,
+            function=rule.function,
+            error=str(exc),
+        )
+        results.append(CheckResult(
+            check=rule.name,
+            severity=Severity.WARNING,
+            message=f"Could not load check {rule.module}.{rule.function}: {exc}",
+        ))
+        return
+
+    try:
+        sig = inspect.signature(fn)
+        kwargs = {
+            name: scene_params[name]
+            for name in sig.parameters
+            if name in scene_params
+        }
+        check_results = fn(**kwargs)
+        if isinstance(check_results, tuple):
+            results.extend(check_results)
+        else:
+            results.append(check_results)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "python_check_execution_error",
+            rule_name=rule.name,
+            error=str(exc),
+        )
+        results.append(CheckResult(
+            check=rule.name,
+            severity=Severity.WARNING,
+            message=f"Check {rule.name} failed with error: {exc}",
+        ))
+
+
+def _dispatch_range_check(
+    rule: "ValidationRule",
+    scene_params: dict,
+    results: list[CheckResult],
+) -> None:
+    """Evaluate a declarative range_check or threshold_check rule.
+
+    Compares the scene parameter value against the rule's min/max bounds.
+    Missing parameters are silently skipped (they may not be applicable).
+
+    Args:
+        rule: The ValidationRule with parameter, min, max fields.
+        scene_params: Dict of scene parameters.
+        results: Mutable list to append CheckResult findings to.
+    """
+    value = scene_params.get(rule.parameter)
+    if value is None:
+        return
+
+    severity = Severity.ERROR if rule.severity == "error" else Severity.WARNING
+
+    if rule.min is not None and value < rule.min:
+        results.append(CheckResult(
+            check=rule.name,
+            severity=severity,
+            message=rule.message or f"{rule.parameter}={value} below minimum {rule.min}",
+        ))
+    elif rule.max is not None and value > rule.max:
+        results.append(CheckResult(
+            check=rule.name,
+            severity=severity,
+            message=rule.message or f"{rule.parameter}={value} above maximum {rule.max}",
+        ))
+
+
 def run_deterministic_checks(
     code: str,
     parameters: dict[str, tuple[float, str]],
     mesh_paths: tuple[str, ...] = (),
     domain: str = "universal",
     nlos_scene_params: dict | None = None,
+    paradigm_knowledge: "ParadigmKnowledge | None" = None,
 ) -> ValidationReport:
     """Run all 6 deterministic physics checks in cost order.
 
     Stops at the first check that produces an ERROR-level result.
     WARNINGs and INFOs are accumulated but do not halt the pipeline.
+
+    When ``paradigm_knowledge`` is provided, Step 7 dispatches validation
+    rules from the paradigm YAML instead of hardcoded NLOS checks.
+    When ``paradigm_knowledge`` is None, falls back to the legacy
+    hardcoded NLOS check path for backward compatibility.
 
     Args:
         code: Python source code of the simulation to analyze.
@@ -142,6 +292,8 @@ def run_deterministic_checks(
             relay_wall_pos, relay_wall_normal, relay_wall_size, hidden_objects,
             sensor_fov_deg. Optional: time_bin_ps, min_feature_separation_m,
             occluder_pos, occluder_size.
+        paradigm_knowledge: Optional ParadigmKnowledge for paradigm-dispatched
+            validation. When provided, replaces hardcoded NLOS checks.
 
     Returns:
         ValidationReport with all findings and pass/fail status.
@@ -185,8 +337,16 @@ def run_deterministic_checks(
     if _has_error(tuple(all_results)):
         return _make_report(all_results, start)
 
-    # Step 7: NLOS domain-specific checks (if applicable)
-    if (domain == "nlos_transient_imaging" or nlos_scene_params is not None) and nlos_scene_params:
+    # Step 7: Paradigm-specific checks (if applicable)
+    if paradigm_knowledge is not None:
+        paradigm_report = run_paradigm_checks(
+            paradigm_knowledge, nlos_scene_params or {},
+        )
+        all_results.extend(paradigm_report.results)
+    elif (
+        domain == "nlos_transient_imaging" or nlos_scene_params is not None
+    ) and nlos_scene_params:
+        # Backward compat: hardcoded NLOS checks when no paradigm provided
         nlos_report = run_nlos_checks(
             sensor_pos=nlos_scene_params["sensor_pos"],
             sensor_look_at=nlos_scene_params["sensor_look_at"],
