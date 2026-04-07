@@ -14,6 +14,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Physics Foundation and Deterministic Checks** - Physics advisor agent, constants registry, consultation logging, and all deterministic validation (AST analysis, units, ranges, CFL, mesh)
 - [ ] **Phase 2: Computational Imaging Domain Intelligence** - NLOS domain knowledge (YAML), three-bounce geometry validation, sensor FOV checks, temporal resolution validation, scene auto-fix loop, physics-informed hypothesis generation, and NLOS benchmark scenes
+- [ ] **Phase 02.1: Paradigm-Agnostic Domain Architecture** - Refactor hardcoded relay-wall NLOS into multi-paradigm YAML architecture with sensor profiles, transfer function matrices, scene prompt injection, and declarative validator dispatch
+- [ ] **Phase 02.2: Physics-Space Reasoning Agents** - Sensor/algorithm advisor agents that reason over transfer function matrices to optimize setups and propose novel experiments in computational imaging
 - [ ] **Phase 3: Smart Experimental Design** - Automatic DoE strategy selection, sensitivity analysis via SALib, and LHS parameter sampling
 - [ ] **Phase 4: Reproducibility and Reporting** - Reproducibility package generator and structured experiment metadata capture
 
@@ -57,6 +59,43 @@ Plans:
 - [x] 02-03-PLAN.md — NLOS benchmark scenes, reconstruction sanity checks, and pre-execution auto-fix loop in runner
 - [x] 02-04-PLAN.md — NLOS physics context injection into hypothesis, analyst, and physics advisor agents
 
+### Phase 02.1: Paradigm-Agnostic Domain Architecture (INSERTED)
+
+**Goal:** Refactor the hardcoded relay-wall NLOS domain into a paradigm-agnostic architecture. Multiple paradigm YAMLs (relay wall, penumbra/Plato's cave, keyhole, direct ToF) define their own geometry constraints, validation rules, and scene-generation context. Named sensor profiles (SwissSPAD2, LinoSPAD2, streak camera, gated iCCD) with hardware-specific timing parameters. Domain knowledge is injected into the scene agent prompt *before* generation (not just post-hoc validation), so scenes are physics-correct on first attempt. Validators dispatch based on paradigm tags declared in the YAML, not hardcoded Python functions.
+**Requirements**: PA-01, PA-02, PA-03, PA-04, PA-05, PA-06
+**Depends on:** Phase 2
+**Success Criteria** (what must be TRUE):
+  1. detect_paradigm(hypothesis) returns the matching paradigm(s) and the system loads the corresponding YAML(s) — not hardcoded to relay-wall NLOS
+  2. Scene agent receives paradigm-specific physics constraints (geometry, sensor parameters, published baselines) in its prompt before generating simulation code
+  3. Post-hoc validators dispatch based on paradigm declarations in the YAML, not hardcoded check functions — adding a new paradigm requires only a YAML file
+  4. Named sensor profiles (at least 3: SwissSPAD2, LinoSPAD2, streak camera) are loadable from YAML with hardware-specific timing parameters (resolution, jitter, dead time, array size)
+  5. Existing relay-wall NLOS checks still pass — no regressions from the refactor
+  6. At least 2 paradigms fully defined (relay wall + one of: penumbra, keyhole, direct ToF) with paradigm-specific validation rules
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02.1-01-PLAN.md — Paradigm/sensor Pydantic models, YAML data files (relay_wall, penumbra, sensors), refactored nlos.yaml
+- [ ] 02.1-02-PLAN.md — Paradigm loader, detector, and paradigm-dispatched validator in checker.py
+- [ ] 02.1-03-PLAN.md — Generic context formatters replacing format_nlos_*_context() functions
+- [ ] 02.1-04-PLAN.md — Runner/agent registry/scene agent integration wiring and auto-fix loop genericization
+
+### Phase 02.2: Physics-Space Reasoning Agents (INSERTED)
+
+**Goal:** Build sensor and algorithm advisor agents that reason in physics-space — not text-space — over the transfer function matrices from Phase 02.1. Given a research hypothesis, the system maps it to the computational imaging parameter space, evaluates feasible sensor+algorithm combinations, recommends optimal setups with concrete parameter values (optimizer mode), and identifies unexplored regions to propose novel experiments (explorer mode). All sensors/cameras and algorithms are scoped to computational imaging domains (NLOS, ptychography, lensless, coded aperture, etc.).
+**Requirements**: TBD
+**Depends on:** Phase 02.1
+**Success Criteria** (what must be TRUE):
+  1. Given a computational imaging hypothesis, the system identifies compatible sensor+algorithm combinations by querying transfer function matrices from paradigm and sensor YAMLs — not by text matching
+  2. Optimizer mode recommends the top-ranked setup with concrete parameter values and physics rationale (e.g., "SwissSPAD2 + LCT at 32ps bins gives 1.5mm resolution for this relay wall geometry because...")
+  3. Explorer mode identifies under-explored regions in the parameter space by comparing the hypothesis against published baselines and known configurations — proposes at least one novel experiment variation
+  4. Parameter trade-off analysis is quantitative: changing input parameter X produces a computable effect on output Y via the transfer function, not just "X affects Y"
+  5. The reasoning agents consume the same YAML data model as validation and scene generation — no separate knowledge base
+  6. At least 2 computational imaging domains supported (NLOS + one of: ptychography, lensless, coded aperture)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 02.2 to break down)
+
 ### Phase 3: Smart Experimental Design
 **Goal**: Researchers get intelligent experimental designs without needing to be statisticians -- the system selects optimal sampling strategies, generates parameter sweeps, and identifies which parameters actually matter
 **Depends on**: Phase 1
@@ -86,12 +125,14 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4
-Note: Phases 2 and 3 depend only on Phase 1 and could execute in parallel.
+Phases execute in numeric order: 1 -> 2 -> 02.1 -> 02.2 -> 3 -> 4
+Note: Phases 2 and 3 depend only on Phase 1 and could execute in parallel. Phase 02.1 depends on Phase 2, Phase 02.2 depends on Phase 02.1.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Physics Foundation and Deterministic Checks | 3/3 | Complete | 2026-04-07 |
 | 2. Computational Imaging Domain Intelligence | 0/4 | Not started | - |
+| 02.1 Paradigm-Agnostic Domain Architecture | 0/4 | Planned | - |
+| 02.2 Physics-Space Reasoning Agents | 0/? | Not started | - |
 | 3. Smart Experimental Design | 0/1 | Not started | - |
 | 4. Reproducibility and Reporting | 0/1 | Not started | - |
