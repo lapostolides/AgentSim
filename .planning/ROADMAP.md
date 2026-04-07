@@ -71,11 +71,11 @@ Plans:
   4. Named sensor profiles (at least 3: SwissSPAD2, LinoSPAD2, streak camera) are loadable from YAML with hardware-specific timing parameters (resolution, jitter, dead time, array size)
   5. Existing relay-wall NLOS checks still pass — no regressions from the refactor
   6. At least 2 paradigms fully defined (relay wall + one of: penumbra, keyhole, direct ToF) with paradigm-specific validation rules
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 - [x] 02.1-01-PLAN.md — Paradigm/sensor Pydantic models, YAML data files (relay_wall, penumbra, sensors), refactored nlos.yaml
-- [ ] 02.1-02-PLAN.md — Paradigm loader, detector, and paradigm-dispatched validator in checker.py
+- [x] 02.1-02-PLAN.md — Paradigm loader, detector, and paradigm-dispatched validator in checker.py
 - [x] 02.1-03-PLAN.md — Generic context formatters replacing format_nlos_*_context() functions
 - [ ] 02.1-04-PLAN.md — Runner/agent registry/scene agent integration wiring and auto-fix loop genericization
 
@@ -132,7 +132,7 @@ Note: Phases 2 and 3 depend only on Phase 1 and could execute in parallel. Phase
 |-------|----------------|--------|-----------|
 | 1. Physics Foundation and Deterministic Checks | 3/3 | Complete | 2026-04-07 |
 | 2. Computational Imaging Domain Intelligence | 0/4 | Not started | - |
-| 02.1 Paradigm-Agnostic Domain Architecture | 2/4 | In Progress|  |
+| 02.1 Paradigm-Agnostic Domain Architecture | 3/4 | In Progress|  |
 | 02.2 Physics-Space Reasoning Agents | 0/? | Not started | - |
 | 3. Smart Experimental Design | 0/1 | Not started | - |
 | 4. Reproducibility and Reporting | 0/1 | Not started | - |

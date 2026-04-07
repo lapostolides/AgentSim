@@ -45,11 +45,11 @@
 
 ### Paradigm-Agnostic Domain Architecture
 
-- [ ] **PA-01**: detect_paradigm(hypothesis) returns matching paradigm(s) from YAML files — not hardcoded to relay-wall NLOS
+- [x] **PA-01**: detect_paradigm(hypothesis) returns matching paradigm(s) from YAML files — not hardcoded to relay-wall NLOS
 - [x] **PA-02**: Scene agent receives paradigm-specific physics constraints (geometry, sensor parameters, published baselines) in its prompt before generating simulation code
-- [ ] **PA-03**: Post-hoc validators dispatch based on paradigm declarations in YAML, not hardcoded check functions — adding a new paradigm requires only a YAML file
+- [x] **PA-03**: Post-hoc validators dispatch based on paradigm declarations in YAML, not hardcoded check functions — adding a new paradigm requires only a YAML file
 - [x] **PA-04**: Named sensor profiles (at least 3: SwissSPAD2, LinoSPAD2, streak camera) loadable from YAML with hardware-specific timing parameters (resolution, jitter, dead time, array size)
-- [ ] **PA-05**: Existing relay-wall NLOS checks still pass — no regressions from the refactor
+- [x] **PA-05**: Existing relay-wall NLOS checks still pass — no regressions from the refactor
 - [x] **PA-06**: At least 2 paradigms fully defined (relay wall + one other) with paradigm-specific validation rules
 
 ### Smart Experimental Design
@@ -120,11 +120,11 @@
 | LINT-02 | Phase 2 | Pending |
 | PGND-01 | Phase 2 | Pending |
 | PGND-02 | Phase 2 | Pending |
-| PA-01 | Phase 02.1 | Pending |
+| PA-01 | Phase 02.1 | Complete |
 | PA-02 | Phase 02.1 | Complete |
-| PA-03 | Phase 02.1 | Pending |
+| PA-03 | Phase 02.1 | Complete |
 | PA-04 | Phase 02.1 | Complete |
-| PA-05 | Phase 02.1 | Pending |
+| PA-05 | Phase 02.1 | Complete |
 | PA-06 | Phase 02.1 | Complete |
 | SEXP-01 | Phase 3 | Pending |
 | SEXP-02 | Phase 3 | Pending |
