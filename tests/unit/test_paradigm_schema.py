@@ -2,12 +2,16 @@
 
 Tests cover: TransferFunction, ValidationRule, ParadigmKnowledge,
 TimingParameters, SpatialParameters, NoiseModel, OperationalMode,
-SensorProfile, SensorCatalog, and ReconstructionAlgorithmV2.
+SensorProfile, SensorCatalog, ReconstructionAlgorithmV2, and
+YAML file validation for paradigm/sensor data.
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
+import yaml
 
 from agentsim.physics.domains.schema import (
     DomainKnowledge,
@@ -323,3 +327,161 @@ class TestBackwardCompatibility:
         assert dk.domain == "test"
         assert dk.geometry_constraints is None
         assert dk.sensor_parameters is None
+
+
+# ---------------------------------------------------------------------------
+# YAML file validation tests (Task 2)
+# ---------------------------------------------------------------------------
+
+_DOMAINS_DIR = Path(__file__).resolve().parents[2] / "src" / "agentsim" / "physics" / "domains"
+_PARADIGMS_DIR = _DOMAINS_DIR / "paradigms"
+
+
+def _load_yaml(path: Path) -> dict:
+    """Load a YAML file and return its parsed content."""
+    with open(path) as f:
+        return yaml.safe_load(f)
+
+
+class TestRelayWallYaml:
+    """Test relay_wall.yaml validates against ParadigmKnowledge."""
+
+    def test_relay_wall_yaml_validates(self) -> None:
+        """Load relay_wall.yaml and validate as ParadigmKnowledge."""
+        raw = _load_yaml(_PARADIGMS_DIR / "relay_wall.yaml")
+        pk = ParadigmKnowledge.model_validate(raw)
+        assert pk.paradigm == "relay_wall"
+        assert pk.domain == "nlos_transient_imaging"
+
+    def test_relay_wall_has_validation_rules(self) -> None:
+        """Relay-wall paradigm has >= 4 validation_rules."""
+        raw = _load_yaml(_PARADIGMS_DIR / "relay_wall.yaml")
+        pk = ParadigmKnowledge.model_validate(raw)
+        assert len(pk.validation_rules) >= 4
+
+    def test_relay_wall_has_transfer_functions(self) -> None:
+        """Relay-wall paradigm has >= 2 transfer_functions."""
+        raw = _load_yaml(_PARADIGMS_DIR / "relay_wall.yaml")
+        pk = ParadigmKnowledge.model_validate(raw)
+        assert len(pk.transfer_functions) >= 2
+
+    def test_relay_wall_has_geometry_constraints(self) -> None:
+        """Relay-wall paradigm has geometry_constraints with relay_wall key."""
+        raw = _load_yaml(_PARADIGMS_DIR / "relay_wall.yaml")
+        pk = ParadigmKnowledge.model_validate(raw)
+        assert "relay_wall" in pk.geometry_constraints
+        assert "sensor_to_wall_distance" in pk.geometry_constraints
+
+    def test_relay_wall_has_published_baselines(self) -> None:
+        """Relay-wall paradigm has published_baselines."""
+        raw = _load_yaml(_PARADIGMS_DIR / "relay_wall.yaml")
+        pk = ParadigmKnowledge.model_validate(raw)
+        assert len(pk.published_baselines) >= 2
+
+
+class TestPenumbraYaml:
+    """Test penumbra.yaml validates against ParadigmKnowledge."""
+
+    def test_penumbra_yaml_validates(self) -> None:
+        """Load penumbra.yaml and validate as ParadigmKnowledge."""
+        raw = _load_yaml(_PARADIGMS_DIR / "penumbra.yaml")
+        pk = ParadigmKnowledge.model_validate(raw)
+        assert pk.paradigm == "penumbra"
+        assert pk.domain == "nlos_transient_imaging"
+
+    def test_penumbra_has_geometry_constraints(self) -> None:
+        """Penumbra paradigm has aperture and occluder constraints."""
+        raw = _load_yaml(_PARADIGMS_DIR / "penumbra.yaml")
+        pk = ParadigmKnowledge.model_validate(raw)
+        assert "aperture" in pk.geometry_constraints
+        assert "occluder_to_wall_distance" in pk.geometry_constraints
+
+    def test_penumbra_has_validation_rules(self) -> None:
+        """Penumbra paradigm has >= 2 validation_rules."""
+        raw = _load_yaml(_PARADIGMS_DIR / "penumbra.yaml")
+        pk = ParadigmKnowledge.model_validate(raw)
+        assert len(pk.validation_rules) >= 2
+
+    def test_penumbra_has_transfer_functions(self) -> None:
+        """Penumbra paradigm has >= 2 transfer_functions."""
+        raw = _load_yaml(_PARADIGMS_DIR / "penumbra.yaml")
+        pk = ParadigmKnowledge.model_validate(raw)
+        assert len(pk.transfer_functions) >= 2
+
+
+class TestSensorsYaml:
+    """Test sensors.yaml validates against SensorCatalog."""
+
+    def test_sensors_yaml_validates(self) -> None:
+        """Load sensors.yaml and validate as SensorCatalog."""
+        raw = _load_yaml(_DOMAINS_DIR / "sensors.yaml")
+        catalog = SensorCatalog.model_validate(raw)
+        assert len(catalog.sensors) >= 3
+
+    def test_sensors_has_three_profiles(self) -> None:
+        """SensorCatalog has swissspad2, linospad2, and streak_camera."""
+        raw = _load_yaml(_DOMAINS_DIR / "sensors.yaml")
+        catalog = SensorCatalog.model_validate(raw)
+        assert "swissspad2" in catalog.sensors
+        assert "linospad2" in catalog.sensors
+        assert "streak_camera" in catalog.sensors
+
+    def test_swissspad2_has_all_categories(self) -> None:
+        """SwissSPAD2 profile has timing, spatial, noise, and operational_modes."""
+        raw = _load_yaml(_DOMAINS_DIR / "sensors.yaml")
+        catalog = SensorCatalog.model_validate(raw)
+        sensor = catalog.sensors["swissspad2"]
+        assert sensor.timing.temporal_resolution_ps is not None
+        assert sensor.spatial.array_size == (512, 512)
+        assert sensor.noise is not None
+        assert len(sensor.operational_modes) >= 1
+
+    def test_streak_camera_has_timing(self) -> None:
+        """Streak camera has sub-picosecond temporal resolution."""
+        raw = _load_yaml(_DOMAINS_DIR / "sensors.yaml")
+        catalog = SensorCatalog.model_validate(raw)
+        sensor = catalog.sensors["streak_camera"]
+        assert sensor.timing.temporal_resolution_ps is not None
+        assert sensor.timing.temporal_resolution_ps.min < 1.0
+
+
+class TestNlosYamlV2:
+    """Test refactored nlos.yaml (v2.0) validates as DomainKnowledge."""
+
+    def test_nlos_yaml_v2_validates(self) -> None:
+        """Load refactored nlos.yaml and validate as DomainKnowledge."""
+        raw = _load_yaml(_DOMAINS_DIR / "nlos.yaml")
+        dk = DomainKnowledge.model_validate(raw)
+        assert dk.domain == "nlos_transient_imaging"
+        assert dk.version == "2.0"
+
+    def test_nlos_yaml_no_geometry_constraints(self) -> None:
+        """Refactored nlos.yaml does NOT contain geometry_constraints."""
+        raw = _load_yaml(_DOMAINS_DIR / "nlos.yaml")
+        assert "geometry_constraints" not in raw
+
+    def test_nlos_yaml_no_sensor_parameters(self) -> None:
+        """Refactored nlos.yaml does NOT contain sensor_parameters."""
+        raw = _load_yaml(_DOMAINS_DIR / "nlos.yaml")
+        assert "sensor_parameters" not in raw
+
+    def test_nlos_yaml_retains_equations(self) -> None:
+        """Refactored nlos.yaml retains governing_equations."""
+        raw = _load_yaml(_DOMAINS_DIR / "nlos.yaml")
+        dk = DomainKnowledge.model_validate(raw)
+        eq_names = {eq.name for eq in dk.governing_equations}
+        assert "transient_transport" in eq_names
+
+    def test_nlos_yaml_retains_algorithms(self) -> None:
+        """Refactored nlos.yaml retains reconstruction_algorithms."""
+        raw = _load_yaml(_DOMAINS_DIR / "nlos.yaml")
+        dk = DomainKnowledge.model_validate(raw)
+        assert "lct" in dk.reconstruction_algorithms
+        assert "fk_migration" in dk.reconstruction_algorithms
+        assert "phasor_fields" in dk.reconstruction_algorithms
+
+    def test_nlos_yaml_retains_published_index(self) -> None:
+        """Refactored nlos.yaml retains published_parameter_index."""
+        raw = _load_yaml(_DOMAINS_DIR / "nlos.yaml")
+        dk = DomainKnowledge.model_validate(raw)
+        assert len(dk.published_parameter_index) >= 4

@@ -1,0 +1,82 @@
+paradigm: penumbra
+domain: nlos_transient_imaging
+version: "1.0"
+description: "Penumbra imaging (Plato's cave) — reconstructs hidden scene from partial occlusion shadows on a visible surface. Light from the hidden scene passes through or diffracts around an occluder edge, forming penumbral patterns that encode the scene geometry."
+
+keywords:
+  - "penumbra"
+  - "plato"
+  - "shadow"
+  - "partial occlusion"
+  - "edge diffraction"
+  - "occluder edge"
+
+compatible_sensor_types:
+  - spad
+  - gated_iccd
+  - streak_camera
+
+geometry_constraints:
+  aperture:
+    min_width_m: 0.001
+    max_width_m: 0.5
+    typical_width_m: 0.05
+  occluder_to_wall_distance:
+    min_m: 0.01
+    max_m: 10.0
+    typical_m: 0.5
+  scene_to_occluder_distance:
+    min_m: 0.01
+    max_m: 50.0
+    typical_m: 1.0
+
+validation_rules:
+  - name: aperture_width_range
+    type: range_check
+    parameter: aperture_width
+    min: 0.001
+    max: 0.5
+    severity: error
+    message: "Aperture width outside physical range [0.001, 0.5] m"
+  - name: occluder_distance_range
+    type: range_check
+    parameter: occluder_to_wall_distance
+    min: 0.01
+    max: 10.0
+    severity: error
+    message: "Occluder-to-wall distance outside physical range [0.01, 10.0] m"
+  - name: scene_distance_range
+    type: range_check
+    parameter: scene_to_occluder_distance
+    min: 0.01
+    max: 50.0
+    severity: warning
+    message: "Scene-to-occluder distance outside typical range [0.01, 50.0] m"
+
+transfer_functions:
+  - input: aperture_width
+    output: angular_resolution
+    relationship: inverse
+    formula: "lambda / aperture_width"
+    description: "Diffraction-limited angular resolution from aperture size"
+    coupling_strength: strong
+  - input: temporal_resolution_ps
+    output: depth_resolution_m
+    relationship: linear
+    formula: "c * dt / 2"
+    description: "Depth resolution from time-bin width (same as relay-wall)"
+    coupling_strength: strong
+
+published_baselines:
+  bouman_2017:
+    paper: "Turning Corners into Cameras: Principles and Methods"
+    venue: "ICCV 2017"
+    aperture_type: "edge occluder"
+    sensor: "conventional camera"
+    resolution: "static scene reconstruction"
+  saunders_2019:
+    paper: "Computational Periscopy with an Ordinary Digital Camera"
+    venue: "Nature 2019"
+    aperture_type: "partial occluder"
+    sensor: "conventional camera"
+    resolution: "video-rate reconstruction from penumbral images"

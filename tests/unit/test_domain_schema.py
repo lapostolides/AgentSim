@@ -82,7 +82,7 @@ class TestNLOSYaml:
         """Test 5: Full NLOS YAML loads without errors."""
         dk = _load_nlos()
         assert dk.domain == "nlos_transient_imaging"
-        assert dk.version == "1.0"
+        assert dk.version == "2.0"
 
     def test_published_parameter_index_has_four_papers(self) -> None:
         """Test 6: Published parameter index has >= 4 entries."""
@@ -104,23 +104,12 @@ class TestNLOSYaml:
         assert "fk_migration" in dk.reconstruction_algorithms
         assert "phasor_fields" in dk.reconstruction_algorithms
 
-    def test_spad_sensor_parameters(self) -> None:
-        """Test 9: SPAD sensor parameters present with required fields."""
+    def test_sensor_parameters_removed_in_v2(self) -> None:
+        """Test 9: Sensor parameters moved to sensors.yaml in v2.0."""
         dk = _load_nlos()
-        assert dk.sensor_parameters is not None
-        spad = dk.sensor_parameters.spad
-        assert spad is not None
-        assert spad.temporal_resolution_ps is not None
-        assert spad.jitter_ps is not None
-        assert spad.dead_time_ns is not None
-        assert spad.fov_degrees is not None
-        assert spad.scan_points is not None
+        assert dk.sensor_parameters is None
 
-    def test_geometry_constraints_present(self) -> None:
-        """Test 10: Geometry constraints have three_bounce_path and relay_wall."""
+    def test_geometry_constraints_removed_in_v2(self) -> None:
+        """Test 10: Geometry constraints moved to paradigm YAMLs in v2.0."""
         dk = _load_nlos()
-        gc = dk.geometry_constraints
-        assert gc is not None
-        assert gc.three_bounce_path is not None
-        assert len(gc.three_bounce_path.requirements) >= 4
-        assert gc.relay_wall is not None
+        assert dk.geometry_constraints is None

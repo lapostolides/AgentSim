@@ -1,0 +1,103 @@
+paradigm: relay_wall
+domain: nlos_transient_imaging
+version: "1.0"
+description: "Classic relay-wall NLOS with three-bounce light path — sensor illuminates a visible (relay) wall, light bounces to hidden objects and returns via the wall to the sensor."
+
+keywords:
+  - "relay wall"
+  - "three-bounce"
+  - "confocal"
+  - "three bounce"
+  - "relay-wall"
+
+compatible_sensor_types:
+  - spad
+  - streak_camera
+
+geometry_constraints:
+  relay_wall:
+    min_size_m: 0.1
+    max_size_m: 10.0
+    typical_size_m: 2.0
+    surface: "Lambertian diffuse (high albedo preferred)"
+  sensor_to_wall_distance:
+    min_m: 0.1
+    max_m: 100.0
+    typical_m: 1.5
+  wall_to_hidden_distance:
+    min_m: 0.05
+    max_m: 50.0
+    typical_m: 1.0
+
+validation_rules:
+  - name: three_bounce_geometry
+    type: python_check
+    module: agentsim.physics.checks.nlos_geometry
+    function: check_three_bounce_geometry
+    description: "Validates three-bounce light path feasibility: sensor -> relay wall -> hidden object -> relay wall -> sensor"
+  - name: sensor_fov
+    type: python_check
+    module: agentsim.physics.checks.nlos_geometry
+    function: check_sensor_fov
+    description: "Validates sensor FOV covers the relay wall at the given distance"
+  - name: temporal_resolution
+    type: python_check
+    module: agentsim.physics.checks.nlos_geometry
+    function: check_temporal_resolution
+    description: "Validates time-bin width resolves path-length differences in the hidden geometry"
+  - name: wall_size_range
+    type: range_check
+    parameter: relay_wall_size
+    min: 0.1
+    max: 10.0
+    severity: error
+    message: "Relay wall size outside physical range [0.1, 10.0] m"
+  - name: sensor_distance_range
+    type: range_check
+    parameter: sensor_to_wall_distance
+    min: 0.1
+    max: 100.0
+    severity: warning
+    message: "Sensor-to-wall distance outside typical range [0.1, 100.0] m"
+
+transfer_functions:
+  - input: temporal_resolution_ps
+    output: spatial_resolution_m
+    relationship: linear
+    formula: "c * dt / 2"
+    description: "Round-trip spatial resolution from time bins"
+    coupling_strength: strong
+  - input: scan_points
+    output: spatial_nyquist_m
+    relationship: inverse
+    formula: "wall_size / (2 * sqrt(scan_points))"
+    description: "Spatial Nyquist limit from scan density"
+    coupling_strength: strong
+
+published_baselines:
+  otoole_2018:
+    paper: "Confocal NLOS Imaging Based on the Light-Cone Transform"
+    venue: "Nature 2018"
+    wall_size_m: 2.0
+    scan_resolution: "512x512"
+    temporal_bins: 2048
+    temporal_resolution_ps: 32
+    object_distance_m: 1.0
+    scanning: "confocal"
+  lindell_2019:
+    paper: "Wave-based NLOS Imaging using Fast f-k Migration"
+    venue: "SIGGRAPH 2019"
+    wall_size_m: 2.0
+    scan_resolution: "512x512"
+    temporal_bins: 2048
+    temporal_resolution_ps: 32
+    object_distance_m: 1.0
+    scanning: "confocal and non-confocal"
+  nam_2021:
+    paper: "Low-latency ToF NLOS Imaging at 5 fps"
+    venue: "Nature Communications 2021"
+    wall_size_m: 2.0
+    scan_resolution: "64x64"
+    temporal_resolution_ps: 55
+    frame_rate_fps: 5
+    scanning: "confocal"

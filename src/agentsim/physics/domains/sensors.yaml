@@ -1,0 +1,127 @@
+sensors:
+  swissspad2:
+    name: "SwissSPAD2"
+    sensor_type: spad
+    manufacturer: "EPFL"
+    reference: "Ulku et al. 2019"
+    timing:
+      temporal_resolution_ps:
+        min: 17.8
+        max: 17.8
+        typical: 17.8
+        description: "Fixed TDC resolution"
+      jitter_fwhm_ps:
+        min: 50
+        max: 100
+        typical: 70
+        description: "SPAD timing jitter FWHM"
+      dead_time_ns:
+        min: 5
+        max: 25
+        typical: 10
+        description: "Pixel dead time after detection"
+    spatial:
+      array_size: [512, 512]
+      pixel_pitch_um: 16.38
+      fill_factor: 0.105
+    noise:
+      dark_count_rate_hz: 100
+      afterpulsing_probability: 0.003
+      crosstalk_probability: 0.01
+      quantum_efficiency: 0.35
+    operational_modes:
+      - name: time_gated
+        timing_constraints:
+          gate_width_ns: 10.0
+        description: "Time-gated mode with programmable gate width"
+      - name: free_running
+        timing_constraints: {}
+        description: "Free-running TCSPC mode"
+    transfer_functions:
+      - input: temporal_resolution_ps
+        output: depth_resolution_m
+        relationship: linear
+        formula: "c * dt / 2"
+        description: "Depth resolution from TDC bin width"
+        coupling_strength: strong
+
+  linospad2:
+    name: "LinoSPAD2"
+    sensor_type: spad
+    manufacturer: "EPFL"
+    reference: "Gyongy et al. 2020"
+    timing:
+      temporal_resolution_ps:
+        min: 17.8
+        max: 55
+        typical: 17.8
+        description: "Configurable TDC resolution"
+      jitter_fwhm_ps:
+        min: 40
+        max: 80
+        typical: 55
+        description: "SPAD timing jitter FWHM"
+      dead_time_ns:
+        min: 5
+        max: 20
+        typical: 10
+        description: "Pixel dead time"
+    spatial:
+      array_size: [512, 1]
+      pixel_pitch_um: 26.2
+      fill_factor: 0.38
+    noise:
+      dark_count_rate_hz: 200
+      afterpulsing_probability: 0.005
+      crosstalk_probability: 0.0
+      quantum_efficiency: 0.30
+    operational_modes:
+      - name: time_correlated
+        timing_constraints:
+          correlation_window_ns: 100
+        description: "Time-correlated single photon counting mode"
+    transfer_functions:
+      - input: temporal_resolution_ps
+        output: depth_resolution_m
+        relationship: linear
+        formula: "c * dt / 2"
+        description: "Depth resolution from TDC bin width"
+        coupling_strength: strong
+
+  streak_camera:
+    name: "Hamamatsu C5680 Streak Camera"
+    sensor_type: streak_camera
+    manufacturer: "Hamamatsu"
+    reference: "Velten et al. 2012"
+    timing:
+      temporal_resolution_ps:
+        min: 0.2
+        max: 10
+        typical: 2
+        description: "Streak sweep resolution"
+      jitter_fwhm_ps:
+        min: 5
+        max: 20
+        typical: 10
+        description: "Trigger jitter FWHM"
+    spatial:
+      array_size: [640, 480]
+      pixel_pitch_um: 23.0
+      fill_factor: 1.0
+    noise:
+      dark_count_rate_hz: 0.0
+      afterpulsing_probability: 0.0
+      crosstalk_probability: 0.0
+      quantum_efficiency: 0.15
+    operational_modes:
+      - name: time_gated
+        timing_constraints:
+          sweep_range_ns: 1000
+        description: "Single-sweep streak mode with configurable sweep range"
+    transfer_functions:
+      - input: temporal_resolution_ps
+        output: depth_resolution_m
+        relationship: linear
+        formula: "c * dt / 2"
+        description: "Depth resolution from streak sweep resolution"
+        coupling_strength: strong

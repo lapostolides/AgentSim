@@ -1,6 +1,6 @@
 domain: nlos_transient_imaging
-version: "1.0"
-description: "Non-line-of-sight transient imaging via time-resolved measurements"
+version: "2.0"
+description: "Non-line-of-sight transient imaging via time-resolved measurements. Shared domain-level knowledge — paradigm-specific geometry constraints and sensor parameters live in paradigms/*.yaml and sensors.yaml respectively."
 
 governing_equations:
   - name: transient_transport
@@ -14,54 +14,6 @@ governing_equations:
       rho: "Albedo/reflectance of hidden surface"
       G: "Green's function (1/r^2 falloff with cosine terms)"
       t_path: "Total path length / speed_of_light"
-
-geometry_constraints:
-  three_bounce_path:
-    description: "Sensor -> relay wall -> hidden object -> relay wall -> sensor"
-    requirements:
-      - "Sensor must have line-of-sight to relay wall (no occluder blocking)"
-      - "Relay wall normal must face sensor hemisphere"
-      - "Hidden objects must be behind occluder from sensor perspective"
-      - "Return path relay_wall -> sensor must be unobstructed"
-  relay_wall:
-    min_size_m: 0.1
-    max_size_m: 10.0
-    typical_size_m: 2.0
-    surface: "Lambertian diffuse (high albedo preferred)"
-  sensor_to_wall_distance:
-    min_m: 0.1
-    max_m: 100.0
-    typical_m: 1.5
-  wall_to_hidden_distance:
-    min_m: 0.05
-    max_m: 50.0
-    typical_m: 1.0
-
-sensor_parameters:
-  spad:
-    temporal_resolution_ps:
-      min: 1
-      max: 1000
-      typical: 32
-      description: "Time bin width in picoseconds"
-    jitter_ps:
-      min: 10
-      max: 200
-      typical: 50
-      description: "SPAD timing jitter FWHM"
-    dead_time_ns:
-      min: 1
-      max: 1000
-      typical: 100
-    fov_degrees:
-      min: 0.1
-      max: 180.0
-      typical: 20.0
-    scan_points:
-      min: 4
-      max: 262144
-      typical: 65536
-      description: "Total scan points (e.g. 256x256 = 65536)"
 
 reconstruction_algorithms:
   lct:
