@@ -11,9 +11,12 @@ analyst.py, and physics_advisor.py with paradigm-agnostic equivalents.
 from __future__ import annotations
 
 from agentsim.physics.domains.schema import (
+    AlgorithmKnowledge,
+    DomainBundle,
     DomainKnowledge,
     ParadigmKnowledge,
     SensorCatalog,
+    SensorClass,
     SensorProfile,
 )
 
@@ -204,6 +207,69 @@ def _format_sensor_section(
     return lines
 
 
+def _format_sensor_class_section(
+    sensor_classes: tuple[SensorClass, ...],
+) -> list[str]:
+    """Render sensor classes as class-level physics descriptions.
+
+    Shows capabilities, tradeoffs, and use cases — not exact specs.
+    Agents reason at this level by default.
+    """
+    lines: list[str] = []
+    if not sensor_classes:
+        return lines
+
+    lines.append("### Available Sensor Classes")
+    for sc in sensor_classes:
+        display = sc.display_name or sc.name
+        lines.append(f"- **{display}** (`{sc.name}`)")
+        if sc.description:
+            lines.append(f"  {sc.description}")
+        if sc.timing_range and sc.timing_range.temporal_resolution_ps:
+            tr = sc.timing_range.temporal_resolution_ps
+            lines.append(f"  Timing: {tr.min}-{tr.max} ps (typical {tr.typical} ps)")
+        if sc.tradeoffs:
+            lines.append(f"  Tradeoffs: {sc.tradeoffs}")
+        if sc.use_cases:
+            lines.append(f"  Use cases: {', '.join(sc.use_cases)}")
+        if sc.typical_models:
+            lines.append(
+                f"  Reference profiles: {', '.join(sc.typical_models)} "
+                "(load for exact specs during code generation)"
+            )
+    lines.append("")
+    return lines
+
+
+def _format_algorithm_section(
+    algorithms: tuple[AlgorithmKnowledge, ...],
+) -> list[str]:
+    """Render available reconstruction algorithms with compatibility info."""
+    lines: list[str] = []
+    if not algorithms:
+        return lines
+
+    lines.append("### Available Reconstruction Algorithms")
+    for algo in algorithms:
+        confocal = " (confocal only)" if algo.requires_confocal else ""
+        lines.append(f"- **{algo.name}** (`{algo.algorithm}`){confocal}")
+        if algo.description:
+            lines.append(f"  {algo.description}")
+        if algo.spatial_resolution:
+            lines.append(f"  Resolution: {algo.spatial_resolution}")
+        if algo.compatible_sensor_classes:
+            lines.append(
+                f"  Compatible sensors: {', '.join(algo.compatible_sensor_classes)}"
+            )
+        if algo.transfer_functions:
+            for tf in algo.transfer_functions:
+                lines.append(
+                    f"  - {tf.input} → {tf.output} ({tf.relationship}): {tf.formula}"
+                )
+    lines.append("")
+    return lines
+
+
 # ---------------------------------------------------------------------------
 # Public formatters
 # ---------------------------------------------------------------------------
@@ -374,16 +440,21 @@ def format_scene_context(
     *,
     paradigm: ParadigmKnowledge | None = None,
     sensor_catalog: SensorCatalog | None = None,
+    bundle: DomainBundle | None = None,
 ) -> str:
     """Render full physics context for the scene generation agent (D-06).
 
     The scene agent gets EVERYTHING: geometry constraints, sensor parameters,
     published baselines, reconstruction requirements, and transfer functions.
 
+    When a ``bundle`` is provided, includes class-level sensor descriptions
+    and compatible algorithm details (two-tier sensor architecture).
+
     Args:
         domain: Domain knowledge model (None returns empty string).
         paradigm: Optional paradigm knowledge.
         sensor_catalog: Optional sensor catalog.
+        bundle: Optional domain bundle for sensor classes and algorithms.
 
     Returns:
         Formatted Markdown string for scene prompt.
@@ -436,6 +507,20 @@ def format_scene_context(
                 "and use its parameters."
             )
             lines.append("")
+
+    # Bundle-aware: sensor classes and algorithms
+    if bundle is not None and paradigm is not None:
+        from agentsim.physics.domains import (
+            get_compatible_algorithms,
+            get_compatible_sensor_classes,
+        )
+        compat_sensors = get_compatible_sensor_classes(bundle, paradigm)
+        if compat_sensors:
+            lines.extend(_format_sensor_class_section(compat_sensors))
+
+        compat_algos = get_compatible_algorithms(bundle, paradigm)
+        if compat_algos:
+            lines.extend(_format_algorithm_section(compat_algos))
 
     # Published baselines callout
     if paradigm is not None and paradigm.published_baselines:

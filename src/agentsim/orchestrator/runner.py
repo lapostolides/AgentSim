@@ -698,9 +698,8 @@ async def run_experiment(
     detected_domain = detect_domain(hypothesis_text)
     if detected_domain is not None:
         from agentsim.physics.domains import (
-            load_domain,
+            load_domain_bundle,
             detect_paradigm,
-            load_paradigm,
             load_sensor_catalog,
         )
         from agentsim.physics.context import (
@@ -710,11 +709,12 @@ async def run_experiment(
             format_physics_context,
         )
 
-        dk = load_domain(detected_domain)
+        bundle = load_domain_bundle(detected_domain)
+        dk = bundle.domain if bundle is not None else None
         if dk is not None:
             paradigm_name = detect_paradigm(hypothesis_text, domain=detected_domain)
-            if paradigm_name is not None:
-                paradigm = load_paradigm(paradigm_name)
+            if paradigm_name is not None and bundle is not None:
+                paradigm = bundle.paradigms.get(paradigm_name)
 
             sensor_catalog = load_sensor_catalog()
 
@@ -723,7 +723,10 @@ async def run_experiment(
                 "analyst": format_analysis_context(dk, paradigm=paradigm),
                 "advisor": format_physics_context(dk, paradigm=paradigm),
                 "scene": format_scene_context(
-                    dk, paradigm=paradigm, sensor_catalog=sensor_catalog,
+                    dk,
+                    paradigm=paradigm,
+                    sensor_catalog=sensor_catalog,
+                    bundle=bundle,
                 ),
             }
             logger.info(
