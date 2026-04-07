@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from claude_agent_sdk.types import AgentDefinition
 
+from agentsim.physics.domains.schema import DomainKnowledge
+
 HYPOTHESIS_PROMPT = """\
 You are a scientific hypothesis agent. Your goal is NOT to blindly formalize
 whatever the researcher typed. Your goal is to converge on the strongest,
@@ -124,7 +126,7 @@ provided files, produce the JSON object above.
 - If files are provided, examine them for context (mesh geometry,
   configuration parameters, marker locations, etc.)
 
-## Available Environment
+{nlos_section}## Available Environment
 
 {environment}
 
@@ -144,12 +146,80 @@ the open questions the scout flagged as most significant.
 """
 
 
-def create_hypothesis_agent(environment_str: str) -> AgentDefinition:
+def format_nlos_physics_context(domain_knowledge: DomainKnowledge) -> str:
+    """Format NLOS domain knowledge into hypothesis agent context.
+
+    Extracts governing equations, dimensionless groups, geometry constraints,
+    and reconstruction algorithm requirements for the hypothesis agent prompt.
+
+    Args:
+        domain_knowledge: Loaded NLOS DomainKnowledge from YAML.
+
+    Returns:
+        Formatted context string for inclusion in hypothesis prompt.
+    """
+    lines: list[str] = []
+    lines.append("## NLOS Transient Imaging Physics Context")
+    lines.append("")
+    lines.append(
+        "You are working on a Non-Line-of-Sight (NLOS) transient imaging problem."
+    )
+    lines.append("Ground your hypothesis in the following physics:")
+    lines.append("")
+
+    # Governing equations
+    if domain_knowledge.governing_equations:
+        lines.append("### Governing Equations")
+        for eq in domain_knowledge.governing_equations:
+            lines.append(f"- **{eq.name}**: {eq.description}")
+            if eq.latex:
+                lines.append(f"  LaTeX: {eq.latex}")
+        lines.append("")
+
+    # Dimensionless groups
+    if domain_knowledge.dimensionless_groups:
+        lines.append("### Key Dimensionless Groups")
+        for dg in domain_knowledge.dimensionless_groups:
+            lines.append(f"- **{dg.name}**: {dg.formula} -- {dg.description}")
+        lines.append("")
+
+    # Geometry constraints
+    if domain_knowledge.geometry_constraints:
+        gc = domain_knowledge.geometry_constraints
+        if gc.three_bounce_path:
+            lines.append("### Geometry Constraints (Three-Bounce Path)")
+            for req in gc.three_bounce_path.requirements:
+                lines.append(f"- {req}")
+            lines.append("")
+
+    # Reconstruction algorithms
+    if domain_knowledge.reconstruction_algorithms:
+        lines.append("### Reconstruction Algorithms")
+        for key, algo in domain_knowledge.reconstruction_algorithms.items():
+            confocal_note = " (requires confocal)" if algo.requires_confocal else ""
+            lines.append(
+                f"- **{algo.name}** ({algo.reference}){confocal_note}"
+                f": {algo.spatial_resolution}"
+            )
+        lines.append("")
+
+    lines.append(
+        "Use these physics constraints to formulate a testable, non-trivial hypothesis."
+    )
+    return "\n".join(lines)
+
+
+def create_hypothesis_agent(
+    environment_str: str,
+    nlos_physics_context: str = "",
+) -> AgentDefinition:
     """Create the Hypothesis Agent definition.
 
     Args:
         environment_str: Formatted string describing available packages.
+        nlos_physics_context: Optional NLOS physics context to inject.
     """
+    nlos_section = f"\n{nlos_physics_context}\n\n" if nlos_physics_context else ""
     return AgentDefinition(
         description=(
             "Parses natural language hypotheses into structured experiment "
@@ -160,7 +230,8 @@ def create_hypothesis_agent(environment_str: str) -> AgentDefinition:
         prompt=HYPOTHESIS_PROMPT.format(
             environment=environment_str,
             state_context="{state_context}",
+            nlos_section=nlos_section,
         ),
         tools=["Read", "Glob"],
-        model="claude-opus-4-6",
+        model="claude-sonnet-4-20250514",
     )

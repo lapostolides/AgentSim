@@ -10,6 +10,7 @@ from __future__ import annotations
 from claude_agent_sdk.types import AgentDefinition
 
 from agentsim.physics.constants import COMPUTATIONAL_IMAGING, UNIVERSAL
+from agentsim.physics.domains.schema import DomainKnowledge
 
 ADVISOR_PROMPT = """\
 You are a physics advisor agent for computational science simulations.
@@ -24,7 +25,7 @@ based on dimensional analysis and physical reasoning.
 ## Constants Registry
 {constants_registry}
 
-## Your Capabilities
+{nlos_domain_section}## Your Capabilities
 - Identify governing equations for a given physical system
 - Recommend dimensionless groups relevant to the simulation
 - Assess parameter plausibility when not in the registry (per D-02)
@@ -79,7 +80,60 @@ def _format_constants_for_prompt() -> str:
     return "\n".join(lines)
 
 
-def create_physics_advisor_agent() -> AgentDefinition:
+def format_nlos_advisor_context(domain_knowledge: DomainKnowledge) -> str:
+    """Format NLOS domain knowledge for the physics advisor prompt.
+
+    Provides governing equations, parameter ranges, and reconstruction
+    constraints for physics-grounded advisory when NLOS domain detected.
+
+    Args:
+        domain_knowledge: Loaded NLOS DomainKnowledge from YAML.
+
+    Returns:
+        Formatted context string.
+    """
+    lines: list[str] = []
+    lines.append("### NLOS Transient Imaging Domain Knowledge")
+    lines.append("")
+
+    # Equations
+    for eq in domain_knowledge.governing_equations:
+        lines.append(f"- {eq.name}: {eq.description}")
+
+    # Sensor params
+    if domain_knowledge.sensor_parameters and domain_knowledge.sensor_parameters.spad:
+        spad = domain_knowledge.sensor_parameters.spad
+        lines.append("")
+        lines.append("SPAD sensor typical parameters:")
+        if spad.temporal_resolution_ps:
+            lines.append(
+                f"- Temporal resolution: {spad.temporal_resolution_ps.typical} ps "
+                f"(range: {spad.temporal_resolution_ps.min}"
+                f"-{spad.temporal_resolution_ps.max} ps)"
+            )
+        if spad.fov_degrees:
+            lines.append(
+                f"- FOV: {spad.fov_degrees.typical} deg "
+                f"(range: {spad.fov_degrees.min}-{spad.fov_degrees.max} deg)"
+            )
+
+    # Published parameters
+    if domain_knowledge.published_parameter_index:
+        lines.append("")
+        lines.append("Published NLOS experiment parameters:")
+        for key, pub in domain_knowledge.published_parameter_index.items():
+            lines.append(
+                f"- {pub.paper} ({pub.venue}): "
+                f"wall={pub.wall_size_m}m, dt={pub.temporal_resolution_ps}ps, "
+                f"{pub.scanning}"
+            )
+
+    return "\n".join(lines)
+
+
+def create_physics_advisor_agent(
+    nlos_domain_knowledge: str = "",
+) -> AgentDefinition:
     """Create the Physics Advisor AgentDefinition.
 
     The prompt embeds the full constants registry so the agent never
@@ -89,6 +143,9 @@ def create_physics_advisor_agent() -> AgentDefinition:
         AgentDefinition configured for physics advisory with model='sonnet'.
     """
     constants_str = _format_constants_for_prompt()
+    nlos_domain_section = (
+        f"\n{nlos_domain_knowledge}\n\n" if nlos_domain_knowledge else ""
+    )
     return AgentDefinition(
         description=(
             "Physics advisor providing structured guidance on governing equations, "
@@ -97,6 +154,7 @@ def create_physics_advisor_agent() -> AgentDefinition:
         ),
         prompt=ADVISOR_PROMPT.format(
             constants_registry=constants_str,
+            nlos_domain_section=nlos_domain_section,
             query_context="{query_context}",
             state_context="{state_context}",
         ),
