@@ -1,0 +1,159 @@
+domain: nlos_transient_imaging
+version: "1.0"
+description: "Non-line-of-sight transient imaging via time-resolved measurements"
+
+governing_equations:
+  - name: transient_transport
+    latex: "H(x_l, x_s, t) = \\int_{\\mathcal{S}} \\rho(x_h) G(x_l, x_h) G(x_h, x_s) \\delta(t - t_{path}) dx_h"
+    description: "Three-bounce impulse response: laser->wall->hidden->wall->sensor"
+    variables:
+      H: "Impulse response function"
+      x_l: "Laser/illumination point on relay wall"
+      x_s: "Sensor detection point on relay wall"
+      x_h: "Point on hidden surface"
+      rho: "Albedo/reflectance of hidden surface"
+      G: "Green's function (1/r^2 falloff with cosine terms)"
+      t_path: "Total path length / speed_of_light"
+
+geometry_constraints:
+  three_bounce_path:
+    description: "Sensor -> relay wall -> hidden object -> relay wall -> sensor"
+    requirements:
+      - "Sensor must have line-of-sight to relay wall (no occluder blocking)"
+      - "Relay wall normal must face sensor hemisphere"
+      - "Hidden objects must be behind occluder from sensor perspective"
+      - "Return path relay_wall -> sensor must be unobstructed"
+  relay_wall:
+    min_size_m: 0.1
+    max_size_m: 10.0
+    typical_size_m: 2.0
+    surface: "Lambertian diffuse (high albedo preferred)"
+  sensor_to_wall_distance:
+    min_m: 0.1
+    max_m: 100.0
+    typical_m: 1.5
+  wall_to_hidden_distance:
+    min_m: 0.05
+    max_m: 50.0
+    typical_m: 1.0
+
+sensor_parameters:
+  spad:
+    temporal_resolution_ps:
+      min: 1
+      max: 1000
+      typical: 32
+      description: "Time bin width in picoseconds"
+    jitter_ps:
+      min: 10
+      max: 200
+      typical: 50
+      description: "SPAD timing jitter FWHM"
+    dead_time_ns:
+      min: 1
+      max: 1000
+      typical: 100
+    fov_degrees:
+      min: 0.1
+      max: 180.0
+      typical: 20.0
+    scan_points:
+      min: 4
+      max: 262144
+      typical: 65536
+      description: "Total scan points (e.g. 256x256 = 65536)"
+
+reconstruction_algorithms:
+  lct:
+    name: "Light Cone Transform"
+    reference: "O'Toole et al. 2018"
+    requires_confocal: true
+    spatial_resolution: "Limited by relay wall sampling density and temporal resolution"
+    frequency_constraint: "LCT kernel bandwidth sets max recoverable spatial frequency"
+    parameters:
+      wall_sampling_points:
+        min: 16
+        max: 512
+        typical: 64
+      temporal_bins:
+        min: 64
+        max: 4096
+        typical: 2048
+  fk_migration:
+    name: "f-k Migration"
+    reference: "Lindell et al. 2019"
+    requires_confocal: false
+    spatial_resolution: "Virtual aperture size / wavelength equivalent"
+    parameters:
+      wall_sampling_points:
+        min: 16
+        max: 512
+        typical: 256
+      temporal_bins:
+        min: 64
+        max: 4096
+        typical: 2048
+      temporal_resolution_ps:
+        min: 1
+        max: 100
+        typical: 32
+  phasor_fields:
+    name: "Phasor Field Virtual Wave Optics"
+    reference: "Liu et al. 2019"
+    requires_confocal: false
+    spatial_resolution: "Diffraction-limited by virtual aperture"
+    parameters:
+      virtual_wavelength_m:
+        min: 0.001
+        max: 1.0
+        typical: 0.01
+      wall_sampling_points:
+        min: 16
+        max: 512
+        typical: 128
+
+published_parameter_index:
+  otoole_2018:
+    paper: "Confocal NLOS Imaging Based on the Light-Cone Transform"
+    venue: "Nature 2018"
+    wall_size_m: 2.0
+    scan_resolution: "512x512"
+    temporal_bins: 2048
+    temporal_resolution_ps: 32
+    object_distance_m: 1.0
+    scanning: "confocal"
+  lindell_2019:
+    paper: "Wave-based NLOS Imaging using Fast f-k Migration"
+    venue: "SIGGRAPH 2019"
+    wall_size_m: 2.0
+    scan_resolution: "512x512"
+    temporal_bins: 2048
+    temporal_resolution_ps: 32
+    object_distance_m: 1.0
+    scanning: "confocal and non-confocal"
+    nonplanar_wall_size_m: 1.0
+    nonplanar_resolution: "128x128"
+  liu_2019:
+    paper: "NLOS Imaging using Phasor-Field Virtual Wave Optics"
+    venue: "Nature 2019"
+    scanning: "confocal and non-confocal"
+    virtual_wavelength_range_m: [0.001, 1.0]
+  nam_2021:
+    paper: "Low-latency ToF NLOS Imaging at 5 fps"
+    venue: "Nature Communications 2021"
+    wall_size_m: 2.0
+    scan_resolution: "64x64"
+    temporal_resolution_ps: 55
+    frame_rate_fps: 5
+    scanning: "confocal"
+
+dimensionless_groups:
+  - name: "Spatial Nyquist ratio"
+    formula: "wall_size / (2 * scan_points_per_axis)"
+    description: "Must be smaller than minimum feature size to resolve"
+  - name: "Temporal Nyquist ratio"
+    formula: "c * dt / (2 * min_feature_separation)"
+    description: "Temporal bin must resolve round-trip path differences"
+  - name: "Virtual aperture ratio"
+    formula: "wall_size / object_distance"
+    description: "Determines angular resolution of reconstruction"
