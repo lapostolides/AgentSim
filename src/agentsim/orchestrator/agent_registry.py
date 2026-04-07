@@ -15,6 +15,7 @@ from agentsim.agents.executor import create_executor_agent
 from agentsim.agents.hypothesis import create_hypothesis_agent
 from agentsim.agents.literature_scout import create_literature_scout_agent
 from agentsim.agents.literature_validator import create_literature_validator_agent
+from agentsim.agents.physics_advisor import create_physics_advisor_agent
 from agentsim.agents.scene import create_scene_agent
 from agentsim.environment.discovery import format_environment_for_prompt
 from agentsim.state.models import EnvironmentInfo
@@ -43,6 +44,7 @@ def build_agent_registry(
         "citation_auditor": create_citation_auditor_agent(),
         "hypothesis": create_hypothesis_agent(env_str),
         "scene": create_scene_agent(env_str),
+        "physics_advisor": create_physics_advisor_agent(),
         "executor": create_executor_agent(),
         "evaluator": create_evaluator_agent(),
         "analyst": create_analyst_agent(),
@@ -57,6 +59,7 @@ def get_agent_names() -> list[str]:
         "citation_auditor",
         "hypothesis",
         "scene",
+        "physics_advisor",
         "executor",
         "evaluator",
         "analyst",

@@ -47,15 +47,19 @@ from agentsim.state.models import (
     SceneSpec,
 )
 from agentsim.state.serialization import serialize_state, state_to_prompt_context
+from agentsim.physics import run_deterministic_checks
+from agentsim.physics.models import PhysicsValidation, Severity
 from agentsim.state.transitions import (
     add_analysis,
     add_evaluation,
     add_execution_result,
     add_hypothesis,
+    add_physics_validation,
     add_plan,
     add_scene_preview,
     add_scenes,
     mark_failed,
+    set_consultation_summary,
     set_environment,
     set_literature_context,
     set_literature_validation,
@@ -119,12 +123,28 @@ _FIELD_ALIASES: dict[str, str] = {
 }
 
 
-def _unwrap_json(data: dict, expected_keys: set[str]) -> dict:
+def _unwrap_json(data: dict | list, expected_keys: set[str]) -> dict:
     """Unwrap nested JSON and normalize field names.
 
     Agents often wrap output in an extra layer like {"hypothesis": {...}}
     or use different field names. This normalizes both.
     """
+    # If agent returned a bare list, wrap it in a dict
+    if isinstance(data, list):
+        # Try to infer the right key: if items look like scenes, use "scenes", etc.
+        if data and isinstance(data[0], dict):
+            if "code" in data[0]:
+                return {"scenes": data}
+            if "scene_id" in data[0] and "status" in data[0]:
+                return {"results": data}
+            if "scene_id" in data[0] and "metrics" in data[0]:
+                return {"evaluations": data}
+            if "original_title" in data[0]:
+                return {"audited_entries": data}
+            if "title" in data[0]:
+                return {"entries": data}
+        return {"items": data}
+
     # Unwrap single-key nesting: {"hypothesis": {"raw_text": ...}} → {"raw_text": ...}
     if len(data) == 1:
         only_value = next(iter(data.values()))
@@ -336,6 +356,118 @@ async def _run_agent_phase(
     return response_text, result_msg
 
 
+# ── Physics validation phase ────────────────────────────────────────
+
+
+async def _run_physics_validation_phase(
+    state: ExperimentState,
+    config: OrchestratorConfig,
+    agents: dict,
+) -> ExperimentState:
+    """Run deterministic physics validation on all scenes.
+
+    Per D-12: deterministic checks run first, LLM consultation only if needed.
+    Per D-04: fail-fast on ERROR, collect WARNINGs/INFOs.
+
+    Args:
+        state: Current experiment state with scenes populated.
+        config: Orchestrator configuration.
+        agents: Agent registry dict.
+
+    Returns:
+        New ExperimentState with physics_validations populated.
+    """
+    logger.info("physics_validation_start", scene_count=len(state.scenes))
+
+    for scene in state.scenes:
+        # Extract parameters as dict[str, tuple[float, str]] from scene.parameters
+        params: dict[str, tuple[float, str]] = {}
+        for key, val in scene.parameters.items():
+            if isinstance(val, (list, tuple)) and len(val) == 2:
+                params[key] = (float(val[0]), str(val[1]))
+            elif isinstance(val, (int, float)):
+                params[key] = (float(val), "dimensionless")
+
+        # Collect mesh paths from scene file_refs that look like mesh files
+        mesh_exts = {".stl", ".obj", ".ply", ".off"}
+        mesh_paths = tuple(
+            ref for ref in scene.file_refs
+            if any(ref.lower().endswith(ext) for ext in mesh_exts)
+        )
+
+        report = run_deterministic_checks(
+            code=scene.code,
+            parameters=params,
+            mesh_paths=mesh_paths,
+        )
+
+        # D-02: LLM fallback for parameters not in registry
+        unknown_params = [
+            r for r in report.results
+            if r.severity == Severity.INFO and "No range data" in r.message
+        ]
+        if unknown_params:
+            from agentsim.physics.consultation import (
+                consult_physics_advisor,
+                _update_consultation_summary,
+            )
+            from agentsim.physics.models import (
+                CheckResult as _CheckResult,
+                PhysicsQuery,
+                ValidationReport,
+            )
+
+            consultation_summary = state.consultation_summary
+            for info_result in unknown_params:
+                param_name = info_result.parameter
+                if param_name in params:
+                    value, unit = params[param_name]
+                    query = PhysicsQuery(
+                        query_type="parameter_plausibility",
+                        context=f"Assess plausibility of '{param_name}' = {value} {unit}",
+                        parameters={"name": param_name, "value": value, "unit": unit},
+                    )
+                    guidance, log_entry = await consult_physics_advisor(
+                        query=query,
+                        state_context=state_to_prompt_context(state),
+                        config=config,
+                        agents=agents,
+                    )
+                    consultation_summary = _update_consultation_summary(
+                        consultation_summary, log_entry
+                    )
+                    if guidance.warnings:
+                        extra_results = tuple(
+                            _CheckResult(
+                                check="advisor_range_fallback",
+                                severity=Severity.WARNING,
+                                message=w,
+                                parameter=param_name,
+                            )
+                            for w in guidance.warnings
+                        )
+                        report = ValidationReport(
+                            results=(*report.results, *extra_results),
+                            passed=report.passed,
+                            duration_seconds=report.duration_seconds,
+                        )
+            state = set_consultation_summary(state, consultation_summary)
+
+        validation = PhysicsValidation(scene_id=scene.id, report=report)
+        state = add_physics_validation(state, validation)
+
+        logger.info(
+            "physics_validation_complete",
+            scene_id=scene.id,
+            passed=report.passed,
+            errors=sum(1 for r in report.results if r.severity.value == "error"),
+            warnings=sum(1 for r in report.results if r.severity.value == "warning"),
+            duration=f"{report.duration_seconds:.3f}s",
+        )
+
+    return state
+
+
 # ── Main experiment loop ─────────────────────────────────────────────
 
 async def run_experiment(
@@ -484,6 +616,22 @@ async def run_experiment(
                     continue
                 break
 
+            if _is_abort(decision):
+                break
+
+            # ── Physics Validation ────────────────────────────────
+            state = await _run_physics_validation_phase(state, config, agents)
+            if on_phase_complete:
+                on_phase_complete("physics_validator", state)
+
+            # ── GATE: Post-physics validation ────────────────────
+            decision, state = await _run_gate(
+                intervention_handler, config,
+                GateCheckpoint.POST_PHYSICS_VALIDATION, state,
+                phase_just_completed="physics_validator",
+                phase_about_to_run="executor",
+                message="Review physics validation results before execution.",
+            )
             if _is_abort(decision):
                 break
 

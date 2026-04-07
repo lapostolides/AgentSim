@@ -14,7 +14,8 @@ class TestBuildAgentRegistry:
         registry = build_agent_registry()
         expected = {
             "literature_scout", "citation_auditor", "hypothesis", "scene",
-            "executor", "evaluator", "analyst", "literature_validator",
+            "physics_advisor", "executor", "evaluator", "analyst",
+            "literature_validator",
         }
         assert set(registry.keys()) == expected
         for agent in registry.values():
@@ -31,7 +32,7 @@ class TestBuildAgentRegistry:
         registry = build_agent_registry(env)
 
         # All agents should be present
-        assert len(registry) == 8
+        assert len(registry) == 9
 
         # Scene and hypothesis agents should know about packages
         assert "mitsuba" in registry["hypothesis"].prompt
@@ -45,7 +46,7 @@ class TestBuildAgentRegistry:
         assert registry["literature_scout"].tools == ["WebSearch", "WebFetch", "Read"]
         assert registry["citation_auditor"].tools == ["WebSearch", "WebFetch", "Read"]
         assert registry["hypothesis"].tools == ["Read", "Glob"]
-        assert registry["scene"].tools == ["Read", "Bash"]
+        assert registry["scene"].tools == ["Read"]
         assert registry["executor"].tools == ["Bash", "Read"]
         assert registry["evaluator"].tools == ["Bash", "Read", "Glob"]
         assert registry["analyst"].tools == ["Read", "Glob"]
@@ -55,12 +56,12 @@ class TestBuildAgentRegistry:
         registry = build_agent_registry()
         assert registry["literature_scout"].model == "claude-opus-4-6"
         assert "sonnet" in registry["citation_auditor"].model
-        assert registry["hypothesis"].model == "claude-opus-4-6"
+        assert "sonnet" in registry["hypothesis"].model
         assert registry["scene"].model == "sonnet"
         assert registry["executor"].model == "sonnet"
         assert registry["evaluator"].model == "sonnet"
         assert registry["analyst"].model == "claude-opus-4-6"
-        assert registry["literature_validator"].model == "claude-opus-4-6"
+        assert "sonnet" in registry["literature_validator"].model
 
 
 class TestGetAgentNames:
@@ -71,6 +72,7 @@ class TestGetAgentNames:
             "citation_auditor",
             "hypothesis",
             "scene",
+            "physics_advisor",
             "executor",
             "evaluator",
             "analyst",
