@@ -383,3 +383,134 @@ def check_temporal_resolution(
             f"min_feature_separation_m={min_feature_separation_m:.6f}"
         ),
     ),)
+
+
+# ---------------------------------------------------------------------------
+# Reconstruction sanity check
+# ---------------------------------------------------------------------------
+
+
+def check_reconstruction_sanity(
+    reconstructed_object_pos: tuple[float, float, float],
+    relay_wall_pos: tuple[float, float, float],
+    relay_wall_normal: tuple[float, float, float],
+    relay_wall_size: float,
+    sensor_pos: tuple[float, float, float],
+    max_depth_m: float | None = None,
+    temporal_bins: int | None = None,
+    temporal_resolution_ps: float | None = None,
+) -> tuple[CheckResult, ...]:
+    """Validate a reconstructed object position against physical constraints.
+
+    Checks:
+    a) Object is on the correct side of relay wall (hidden side, not sensor side).
+    b) Object is within the visibility cone (lateral extent bounded by relay wall).
+    c) Object distance does not exceed maximum resolvable depth from timing.
+
+    Args:
+        reconstructed_object_pos: Position of the reconstructed object.
+        relay_wall_pos: Center of the relay wall.
+        relay_wall_normal: Outward normal of relay wall (toward sensor).
+        relay_wall_size: Side length of the relay wall (square).
+        sensor_pos: Sensor position.
+        max_depth_m: Maximum depth override (optional).
+        temporal_bins: Number of temporal bins (optional, for depth calculation).
+        temporal_resolution_ps: Time-bin width in picoseconds (optional).
+
+    Returns:
+        Tuple of CheckResult with reconstruction sanity findings.
+    """
+    results: list[CheckResult] = []
+
+    r_pos = _to_array(reconstructed_object_pos)
+    w_pos = _to_array(relay_wall_pos)
+    w_normal = _to_array(relay_wall_normal)
+    s_pos = _to_array(sensor_pos)
+
+    w_normal_hat = _safe_normalize(w_normal)
+    if w_normal_hat is None:
+        return (CheckResult(
+            check="nlos_reconstruction_sanity",
+            severity=Severity.ERROR,
+            message="Relay wall normal is zero-length",
+        ),)
+
+    # (a) Object should be on the hidden side of the wall (opposite from sensor).
+    # Wall normal points toward sensor, so hidden objects have positive dot
+    # product with (object - wall) along normal direction... wait, normal
+    # points toward sensor. So sensor side has positive dot, hidden side
+    # has positive dot along the wall's back direction.
+    # Actually: dot(normal, object - wall) > 0 means object is on the sensor side.
+    # dot(normal, object - wall) <= 0 means object is on the hidden side (correct).
+    wall_to_obj = r_pos - w_pos
+    side_dot = float(np.dot(w_normal_hat, wall_to_obj))
+
+    if side_dot < 0:
+        # Object is on the sensor side of the wall (normal points toward sensor,
+        # negative dot means same side as normal = sensor side... No:
+        # normal points toward sensor. dot(normal, obj-wall) < 0 means obj
+        # is on the opposite side from where normal points = hidden side. That's correct.
+        pass
+    else:
+        # Object is on the sensor side (same direction as normal)
+        results.append(CheckResult(
+            check="nlos_reconstruction_sanity",
+            severity=Severity.ERROR,
+            message=(
+                f"Reconstructed object at {reconstructed_object_pos} is on the "
+                f"sensor side of the relay wall, not the hidden side"
+            ),
+        ))
+
+    # (b) Lateral extent: object should be within relay wall's visibility cone.
+    # Project object position onto the wall plane, check lateral distance
+    # from wall center is within wall_size/2.
+    # Lateral distance = distance of (obj - wall) projected onto wall plane.
+    along_normal = side_dot  # already computed
+    lateral_vec = wall_to_obj - along_normal * w_normal_hat
+    lateral_dist = float(np.linalg.norm(lateral_vec))
+    half_wall = relay_wall_size / 2.0
+
+    if lateral_dist > half_wall:
+        results.append(CheckResult(
+            check="nlos_reconstruction_sanity",
+            severity=Severity.ERROR,
+            message=(
+                f"Reconstructed object at {reconstructed_object_pos} is outside "
+                f"the relay wall visibility cone (lateral distance "
+                f"{lateral_dist:.3f} m > wall half-size {half_wall:.3f} m)"
+            ),
+        ))
+
+    # (c) Timing constraint: max resolvable depth
+    effective_max_depth = max_depth_m
+    if (
+        effective_max_depth is None
+        and temporal_bins is not None
+        and temporal_resolution_ps is not None
+    ):
+        effective_max_depth = (
+            SPEED_OF_LIGHT * temporal_bins * temporal_resolution_ps * 1e-12 / 2.0
+        )
+
+    if effective_max_depth is not None:
+        obj_depth = abs(along_normal)
+        if obj_depth > effective_max_depth:
+            results.append(CheckResult(
+                check="nlos_reconstruction_sanity",
+                severity=Severity.ERROR,
+                message=(
+                    f"Reconstructed object depth {obj_depth:.3f} m exceeds maximum "
+                    f"resolvable depth {effective_max_depth:.3f} m "
+                    f"(c * bins * dt / 2)"
+                ),
+            ))
+
+    if not results:
+        results.append(CheckResult(
+            check="nlos_reconstruction_sanity",
+            severity=Severity.INFO,
+            message="Reconstruction position is physically plausible",
+        ))
+
+    return tuple(results)
