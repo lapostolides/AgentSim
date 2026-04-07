@@ -74,7 +74,7 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 02.1-01-PLAN.md — Paradigm/sensor Pydantic models, YAML data files (relay_wall, penumbra, sensors), refactored nlos.yaml
+- [x] 02.1-01-PLAN.md — Paradigm/sensor Pydantic models, YAML data files (relay_wall, penumbra, sensors), refactored nlos.yaml
 - [ ] 02.1-02-PLAN.md — Paradigm loader, detector, and paradigm-dispatched validator in checker.py
 - [ ] 02.1-03-PLAN.md — Generic context formatters replacing format_nlos_*_context() functions
 - [ ] 02.1-04-PLAN.md — Runner/agent registry/scene agent integration wiring and auto-fix loop genericization
@@ -132,7 +132,7 @@ Note: Phases 2 and 3 depend only on Phase 1 and could execute in parallel. Phase
 |-------|----------------|--------|-----------|
 | 1. Physics Foundation and Deterministic Checks | 3/3 | Complete | 2026-04-07 |
 | 2. Computational Imaging Domain Intelligence | 0/4 | Not started | - |
-| 02.1 Paradigm-Agnostic Domain Architecture | 0/4 | Planned | - |
+| 02.1 Paradigm-Agnostic Domain Architecture | 1/4 | In Progress | - |
 | 02.2 Physics-Space Reasoning Agents | 0/? | Not started | - |
 | 3. Smart Experimental Design | 0/1 | Not started | - |
 | 4. Reproducibility and Reporting | 0/1 | Not started | - |
