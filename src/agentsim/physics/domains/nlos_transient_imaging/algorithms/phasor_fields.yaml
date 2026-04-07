@@ -1,0 +1,62 @@
+name: "Phasor Field Virtual Wave Optics"
+algorithm: phasor_fields
+reference: "Liu et al. 2019"
+description: "Models NLOS light transport as phasor field wave propagation solved by the Rayleigh-Sommerfeld diffraction integral. Supports non-confocal data. Resolution is diffraction-limited by the virtual aperture (relay wall). Equivalent to a virtual LOS system placed at the relay wall."
+requires_confocal: false
+spatial_resolution: "Diffraction-limited by virtual aperture (relay wall size)"
+frequency_constraint: "Smallest achievable virtual wavelength > 2 * max(spatial_sampling, c * temporal_resolution)"
+
+compatible_paradigms:
+  - relay_wall
+  - penumbra
+
+compatible_sensor_classes:
+  - spad_array
+  - spad_linear
+  - streak_camera
+  - gated_iccd
+
+parameters:
+  virtual_wavelength_m:
+    min: 0.001
+    max: 1.0
+    typical: 0.01
+  wall_sampling_points:
+    min: 16
+    max: 512
+    typical: 128
+
+input_requirements:
+  - confocal_scanning: false
+  - min_scan_points: 16
+
+output_characteristics:
+  - "Diffraction-limited resolution from virtual aperture"
+  - "Constant angular resolution independent of scene depth"
+  - "Handles non-confocal and non-planar relay surfaces"
+
+transfer_functions:
+  - input: relay_wall_size_m
+    output: angular_resolution_rad
+    relationship: inverse
+    formula: "delta_theta ≈ lambda_virtual / wall_size"
+    description: "Virtual aperture diffraction limit — Rayleigh criterion for NLOS"
+    coupling_strength: strong
+  - input: virtual_wavelength_m
+    output: lateral_resolution_m
+    relationship: linear
+    formula: "delta_x ≈ 0.5 * lambda_virtual * distance / wall_size"
+    description: "Lateral resolution from virtual wavelength and aperture geometry"
+    coupling_strength: strong
+  - input: temporal_resolution_ps
+    output: min_virtual_wavelength_m
+    relationship: linear
+    formula: "lambda_min = c * dt"
+    description: "Temporal sampling sets floor on achievable virtual wavelength"
+    coupling_strength: strong
+  - input: scan_spacing_m
+    output: min_virtual_wavelength_m
+    relationship: linear
+    formula: "lambda_min = 2 * scan_spacing"
+    description: "Spatial Nyquist sets floor on achievable virtual wavelength"
+    coupling_strength: strong

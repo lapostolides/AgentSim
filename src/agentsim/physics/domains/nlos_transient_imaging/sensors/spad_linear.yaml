@@ -1,0 +1,68 @@
+name: spad_linear
+display_name: "Linear SPAD Arrays"
+description: "One-dimensional SPAD arrays optimized for high timing precision. Fewer pixels than 2D arrays but often higher fill factor and lower jitter per pixel. Used for line-scanning NLOS or when a single spatial dimension suffices."
+sensor_type: spad
+
+timing_range:
+  temporal_resolution_ps:
+    min: 10
+    max: 60
+    typical: 18
+    description: "TDC resolution — often better than 2D arrays due to simpler readout"
+  jitter_fwhm_ps:
+    min: 30
+    max: 100
+    typical: 55
+    description: "Per-pixel timing jitter"
+  dead_time_ns:
+    min: 5
+    max: 30
+    typical: 10
+    description: "Per-pixel dead time"
+
+spatial_range:
+  array_size: [512, 1]
+  pixel_pitch_um: 26.0
+  fill_factor: 0.38
+
+noise_range:
+  dark_count_rate_hz: 200
+  afterpulsing_probability: 0.005
+  crosstalk_probability: 0.0
+  quantum_efficiency: 0.30
+
+transfer_functions:
+  - input: dead_time_ns
+    output: max_count_rate_mhz
+    relationship: inverse
+    formula: "max_rate ≈ 1 / dead_time"
+    description: "Pile-up limit per pixel"
+    coupling_strength: strong
+  - input: jitter_fwhm_ps
+    output: effective_temporal_resolution_ps
+    relationship: sqrt
+    formula: "sigma_eff = sqrt(sigma_jitter^2 + sigma_tdc^2)"
+    description: "Timing jitter adds in quadrature with TDC resolution"
+    coupling_strength: strong
+  - input: quantum_efficiency
+    output: min_exposure_time_s
+    relationship: inverse
+    formula: "t_min ∝ 1 / QE"
+    description: "QE determines photon collection efficiency"
+    coupling_strength: moderate
+  - input: temporal_resolution_ps
+    output: depth_resolution_m
+    relationship: linear
+    formula: "c * dt / 2"
+    description: "Depth resolution from TDC bin width"
+    coupling_strength: strong
+
+tradeoffs: "Higher fill factor and potentially lower jitter than 2D arrays, but only 1D spatial sampling — requires mechanical scanning for 2D relay wall coverage. Good for line-scan NLOS or when relay wall geometry is 1D."
+
+typical_models:
+  - linospad2
+
+use_cases:
+  - "Line-scan NLOS with 1D relay wall sampling"
+  - "High-precision single-point TCSPC measurements"
+  - "Compact NLOS systems where 2D arrays are too expensive"

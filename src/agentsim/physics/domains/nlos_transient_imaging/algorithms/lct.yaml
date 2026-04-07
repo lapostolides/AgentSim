@@ -1,0 +1,54 @@
+name: "Light Cone Transform"
+algorithm: lct
+reference: "O'Toole et al. 2018"
+description: "Closed-form confocal NLOS reconstruction via the light cone in space-time. Fast and memory-efficient but restricted to confocal scanning on planar relay walls. Assumes Lambertian hidden surfaces."
+requires_confocal: true
+spatial_resolution: "Limited by relay wall sampling density and temporal resolution"
+frequency_constraint: "LCT kernel bandwidth sets max recoverable spatial frequency"
+
+compatible_paradigms:
+  - relay_wall
+
+compatible_sensor_classes:
+  - spad_array
+  - streak_camera
+
+parameters:
+  wall_sampling_points:
+    min: 16
+    max: 512
+    typical: 64
+  temporal_bins:
+    min: 64
+    max: 4096
+    typical: 2048
+
+input_requirements:
+  - confocal_scanning: true
+  - planar_relay_wall: true
+  - min_scan_points: 16
+
+output_characteristics:
+  - "Spatial resolution limited by relay wall sampling and temporal bin width"
+  - "Depth resolution set by temporal resolution"
+  - "Assumes Lambertian hidden surfaces — specular objects reconstructed poorly"
+
+transfer_functions:
+  - input: temporal_resolution_ps
+    output: depth_resolution_m
+    relationship: linear
+    formula: "c * dt / 2"
+    description: "LCT depth resolution directly from temporal bin width"
+    coupling_strength: strong
+  - input: wall_sampling_points
+    output: lateral_resolution_m
+    relationship: inverse
+    formula: "wall_size / scan_points"
+    description: "Lateral resolution limited by scan grid density"
+    coupling_strength: strong
+  - input: temporal_bins
+    output: max_depth_m
+    relationship: linear
+    formula: "c * N_bins * dt / 2"
+    description: "Maximum reconstruction depth from histogram window"
+    coupling_strength: strong

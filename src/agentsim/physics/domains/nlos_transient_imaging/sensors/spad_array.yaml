@@ -1,0 +1,74 @@
+name: spad_array
+display_name: "Research-Grade SPAD Arrays"
+description: "Two-dimensional single-photon avalanche diode arrays for time-resolved imaging. Single-photon sensitivity enables photon-starved NLOS measurements. Array format parallelizes acquisition — no mechanical scanning needed for wide-field modes. Primary workhorse for modern NLOS research."
+sensor_type: spad
+
+timing_range:
+  temporal_resolution_ps:
+    min: 10
+    max: 100
+    typical: 20
+    description: "TDC resolution across research SPAD arrays"
+  jitter_fwhm_ps:
+    min: 40
+    max: 150
+    typical: 70
+    description: "SPAD timing jitter FWHM — floors effective temporal resolution"
+  dead_time_ns:
+    min: 5
+    max: 50
+    typical: 15
+    description: "Per-pixel dead time after photon detection"
+
+spatial_range:
+  array_size: [512, 512]
+  pixel_pitch_um: 16.0
+  fill_factor: 0.10
+  fov_degrees:
+    min: 5
+    max: 40
+    typical: 20
+    description: "Field of view with standard optics"
+
+noise_range:
+  dark_count_rate_hz: 100
+  afterpulsing_probability: 0.005
+  crosstalk_probability: 0.01
+  quantum_efficiency: 0.35
+
+transfer_functions:
+  - input: dead_time_ns
+    output: max_count_rate_mhz
+    relationship: inverse
+    formula: "max_rate ≈ 1 / dead_time"
+    description: "Pile-up limit: maximum photon count rate per pixel before saturation"
+    coupling_strength: strong
+  - input: jitter_fwhm_ps
+    output: effective_temporal_resolution_ps
+    relationship: sqrt
+    formula: "sigma_eff = sqrt(sigma_jitter^2 + sigma_tdc^2)"
+    description: "Timing jitter adds in quadrature with TDC resolution"
+    coupling_strength: strong
+  - input: quantum_efficiency
+    output: min_exposure_time_s
+    relationship: inverse
+    formula: "t_min ∝ 1 / QE"
+    description: "Higher QE requires fewer photons per measurement"
+    coupling_strength: moderate
+  - input: temporal_resolution_ps
+    output: depth_resolution_m
+    relationship: linear
+    formula: "c * dt / 2"
+    description: "Depth resolution from TDC bin width"
+    coupling_strength: strong
+
+tradeoffs: "Single-photon sensitivity enables photon-starved NLOS, but pile-up limits count rate (~1-10 MHz/pixel). Low fill factor (5-15%) reduces light collection. Afterpulsing increases with shorter dead times. Array readout can limit frame rate."
+
+typical_models:
+  - swissspad2
+  - linospad2
+
+use_cases:
+  - "Confocal scanning NLOS (raster scan with focused laser)"
+  - "Wide-field time-gated NLOS (flood illumination)"
+  - "Photon-starved long-range NLOS"

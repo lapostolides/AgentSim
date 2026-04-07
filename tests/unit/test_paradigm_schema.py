@@ -360,10 +360,22 @@ class TestRelayWallYaml:
         assert len(pk.validation_rules) >= 4
 
     def test_relay_wall_has_transfer_functions(self) -> None:
-        """Relay-wall paradigm has >= 2 transfer_functions."""
+        """Relay-wall paradigm has >= 10 transfer_functions (SNR, resolution, geometry)."""
         raw = _load_yaml(_PARADIGMS_DIR / "relay_wall.yaml")
         pk = ParadigmKnowledge.model_validate(raw)
-        assert len(pk.transfer_functions) >= 2
+        assert len(pk.transfer_functions) >= 10
+
+    def test_relay_wall_transfer_function_categories(self) -> None:
+        """Relay-wall transfer functions cover SNR, resolution, and geometry."""
+        raw = _load_yaml(_PARADIGMS_DIR / "relay_wall.yaml")
+        pk = ParadigmKnowledge.model_validate(raw)
+        outputs = {tf.output for tf in pk.transfer_functions}
+        # SNR category
+        assert "signal_intensity" in outputs or "snr" in outputs
+        # Resolution category
+        assert "angular_resolution_rad" in outputs
+        # Geometry category
+        assert "laser_spot_size_m" in outputs or "depth_ambiguity_m" in outputs
 
     def test_relay_wall_has_geometry_constraints(self) -> None:
         """Relay-wall paradigm has geometry_constraints with relay_wall key."""
@@ -403,10 +415,19 @@ class TestPenumbraYaml:
         assert len(pk.validation_rules) >= 2
 
     def test_penumbra_has_transfer_functions(self) -> None:
-        """Penumbra paradigm has >= 2 transfer_functions."""
+        """Penumbra paradigm has >= 6 transfer_functions (optical, SNR, geometry)."""
         raw = _load_yaml(_PARADIGMS_DIR / "penumbra.yaml")
         pk = ParadigmKnowledge.model_validate(raw)
-        assert len(pk.transfer_functions) >= 2
+        assert len(pk.transfer_functions) >= 6
+
+    def test_penumbra_transfer_function_categories(self) -> None:
+        """Penumbra transfer functions cover SNR and geometry-specific couplings."""
+        raw = _load_yaml(_PARADIGMS_DIR / "penumbra.yaml")
+        pk = ParadigmKnowledge.model_validate(raw)
+        outputs = {tf.output for tf in pk.transfer_functions}
+        assert "signal_intensity" in outputs  # SNR
+        assert "magnification" in outputs  # penumbra-specific
+        assert "penumbra_width_m" in outputs  # penumbra-specific
 
 
 class TestSensorsYaml:
@@ -444,6 +465,24 @@ class TestSensorsYaml:
         assert sensor.timing.temporal_resolution_ps is not None
         assert sensor.timing.temporal_resolution_ps.min < 1.0
 
+    def test_sensors_have_hardware_transfer_functions(self) -> None:
+        """Each sensor has >= 3 transfer functions (depth + hardware-specific)."""
+        raw = _load_yaml(_DOMAINS_DIR / "sensors.yaml")
+        catalog = SensorCatalog.model_validate(raw)
+        for name, sensor in catalog.sensors.items():
+            assert len(sensor.transfer_functions) >= 3, (
+                f"Sensor {name} has {len(sensor.transfer_functions)} transfer_functions, expected >= 3"
+            )
+
+    def test_spad_sensors_have_pile_up_transfer_function(self) -> None:
+        """SPAD sensors have dead_time -> max_count_rate transfer function."""
+        raw = _load_yaml(_DOMAINS_DIR / "sensors.yaml")
+        catalog = SensorCatalog.model_validate(raw)
+        for name in ("swissspad2", "linospad2"):
+            sensor = catalog.sensors[name]
+            inputs = {tf.input for tf in sensor.transfer_functions}
+            assert "dead_time_ns" in inputs, f"SPAD {name} missing dead_time transfer function"
+
 
 class TestNlosYamlV2:
     """Test refactored nlos.yaml (v2.0) validates as DomainKnowledge."""
@@ -464,6 +503,15 @@ class TestNlosYamlV2:
         """Refactored nlos.yaml does NOT contain sensor_parameters."""
         raw = _load_yaml(_DOMAINS_DIR / "nlos.yaml")
         assert "sensor_parameters" not in raw
+
+    def test_nlos_yaml_has_domain_transfer_functions(self) -> None:
+        """nlos.yaml has domain-level transfer functions shared across paradigms."""
+        raw = _load_yaml(_DOMAINS_DIR / "nlos.yaml")
+        dk = DomainKnowledge.model_validate(raw)
+        assert len(dk.transfer_functions) >= 3
+        inputs = {tf.input for tf in dk.transfer_functions}
+        assert "background_ambient_lux" in inputs
+        assert "laser_repetition_rate_hz" in inputs
 
     def test_nlos_yaml_retains_equations(self) -> None:
         """Refactored nlos.yaml retains governing_equations."""

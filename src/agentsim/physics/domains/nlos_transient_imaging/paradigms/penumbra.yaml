@@ -16,6 +16,15 @@ compatible_sensor_types:
   - gated_iccd
   - streak_camera
 
+compatible_sensor_classes:
+  - spad_array
+  - gated_iccd
+  - streak_camera
+
+compatible_algorithms:
+  - fk_migration
+  - phasor_fields
+
 geometry_constraints:
   aperture:
     min_width_m: 0.001

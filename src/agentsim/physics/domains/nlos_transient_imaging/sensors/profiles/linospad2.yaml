@@ -1,0 +1,59 @@
+name: "LinoSPAD2"
+sensor_type: spad
+manufacturer: "EPFL"
+reference: "Gyongy et al. 2020"
+timing:
+  temporal_resolution_ps:
+    min: 17.8
+    max: 55
+    typical: 17.8
+    description: "Configurable TDC resolution"
+  jitter_fwhm_ps:
+    min: 40
+    max: 80
+    typical: 55
+    description: "SPAD timing jitter FWHM"
+  dead_time_ns:
+    min: 5
+    max: 20
+    typical: 10
+    description: "Pixel dead time"
+spatial:
+  array_size: [512, 1]
+  pixel_pitch_um: 26.2
+  fill_factor: 0.38
+noise:
+  dark_count_rate_hz: 200
+  afterpulsing_probability: 0.005
+  crosstalk_probability: 0.0
+  quantum_efficiency: 0.30
+operational_modes:
+  - name: time_correlated
+    timing_constraints:
+      correlation_window_ns: 100
+    description: "Time-correlated single photon counting mode"
+transfer_functions:
+  - input: temporal_resolution_ps
+    output: depth_resolution_m
+    relationship: linear
+    formula: "c * dt / 2"
+    description: "Depth resolution from TDC bin width"
+    coupling_strength: strong
+  - input: dead_time_ns
+    output: max_count_rate_mhz
+    relationship: inverse
+    formula: "max_rate ≈ 1 / dead_time"
+    description: "Pile-up limit per pixel"
+    coupling_strength: strong
+  - input: jitter_fwhm_ps
+    output: effective_temporal_resolution_ps
+    relationship: sqrt
+    formula: "sigma_eff = sqrt(sigma_jitter^2 + sigma_tdc^2)"
+    description: "Timing jitter adds in quadrature with TDC resolution"
+    coupling_strength: strong
+  - input: quantum_efficiency
+    output: min_exposure_time_s
+    relationship: inverse
+    formula: "t_min ∝ 1 / QE"
+    description: "QE determines photon collection efficiency"
+    coupling_strength: moderate

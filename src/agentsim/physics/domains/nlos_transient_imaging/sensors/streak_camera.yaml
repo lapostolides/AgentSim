@@ -1,0 +1,57 @@
+name: streak_camera
+display_name: "Streak Cameras"
+description: "Ultrafast optical detectors that convert temporal information to spatial position via electron beam deflection. Sub-picosecond temporal resolution — orders of magnitude faster than SPADs. High dynamic range but bulky, expensive, and single-shot (no photon counting). The original NLOS imaging sensor (Velten et al. 2012)."
+sensor_type: streak_camera
+
+timing_range:
+  temporal_resolution_ps:
+    min: 0.2
+    max: 10
+    typical: 2
+    description: "Streak sweep resolution — sub-picosecond achievable"
+  jitter_fwhm_ps:
+    min: 5
+    max: 30
+    typical: 10
+    description: "Trigger jitter FWHM"
+
+spatial_range:
+  array_size: [640, 480]
+  pixel_pitch_um: 23.0
+  fill_factor: 1.0
+
+noise_range:
+  dark_count_rate_hz: 0.0
+  afterpulsing_probability: 0.0
+  crosstalk_probability: 0.0
+  quantum_efficiency: 0.15
+
+transfer_functions:
+  - input: temporal_resolution_ps
+    output: depth_resolution_m
+    relationship: linear
+    formula: "c * dt / 2"
+    description: "Depth resolution from streak sweep resolution"
+    coupling_strength: strong
+  - input: jitter_fwhm_ps
+    output: effective_temporal_resolution_ps
+    relationship: sqrt
+    formula: "sigma_eff = sqrt(sigma_jitter^2 + sigma_sweep^2)"
+    description: "Trigger jitter adds in quadrature with sweep resolution"
+    coupling_strength: strong
+  - input: quantum_efficiency
+    output: min_exposure_time_s
+    relationship: inverse
+    formula: "t_min ∝ 1 / QE"
+    description: "Low QE (0.15) means streak cameras need more photons per frame than SPADs"
+    coupling_strength: moderate
+
+tradeoffs: "Best temporal resolution available (sub-ps) and high dynamic range, but low QE (~15%), no single-photon sensitivity, requires a pulsed laser for triggering, and physically bulky/expensive (~$100K+). Each streak records one 1D time-resolved slice — full 2D relay wall requires mechanical scanning."
+
+typical_models:
+  - hamamatsu_c5680
+
+use_cases:
+  - "Ultra-high temporal resolution NLOS (sub-ps depth features)"
+  - "Lab-scale NLOS demonstrations"
+  - "Transient imaging research where photon budget is not limited"

@@ -1,0 +1,59 @@
+name: "f-k Migration"
+algorithm: fk_migration
+reference: "Lindell et al. 2019"
+description: "Wave-based NLOS reconstruction adapted from seismology. Works with both confocal and non-confocal data, handles specular and complex reflectance, and supports non-planar relay surfaces. Fast Fourier-domain implementation."
+requires_confocal: false
+spatial_resolution: "Virtual aperture size / wavelength equivalent"
+frequency_constraint: "Bandwidth limited by temporal sampling and spatial grid"
+
+compatible_paradigms:
+  - relay_wall
+  - penumbra
+
+compatible_sensor_classes:
+  - spad_array
+  - spad_linear
+  - streak_camera
+
+parameters:
+  wall_sampling_points:
+    min: 16
+    max: 512
+    typical: 256
+  temporal_bins:
+    min: 64
+    max: 4096
+    typical: 2048
+  temporal_resolution_ps:
+    min: 1
+    max: 100
+    typical: 32
+
+input_requirements:
+  - confocal_scanning: false
+  - min_scan_points: 16
+
+output_characteristics:
+  - "Handles non-confocal and non-planar relay surfaces"
+  - "Robust to specular and complex BRDF hidden surfaces"
+  - "Spatial resolution limited by virtual aperture (relay wall size)"
+
+transfer_functions:
+  - input: temporal_resolution_ps
+    output: depth_resolution_m
+    relationship: linear
+    formula: "c * dt / 2"
+    description: "Depth resolution from temporal sampling"
+    coupling_strength: strong
+  - input: relay_wall_size_m
+    output: lateral_resolution_m
+    relationship: inverse
+    formula: "lambda_virtual * distance / wall_size"
+    description: "Virtual aperture determines lateral resolution — larger wall = finer detail"
+    coupling_strength: strong
+  - input: scan_density_per_m
+    output: max_spatial_frequency
+    relationship: proportional
+    formula: "f_max = scan_density / 2"
+    description: "Nyquist limit on recoverable spatial frequency from scan grid"
+    coupling_strength: strong

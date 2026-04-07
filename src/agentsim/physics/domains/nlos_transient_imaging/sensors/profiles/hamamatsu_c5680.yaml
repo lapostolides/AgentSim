@@ -1,0 +1,48 @@
+name: "Hamamatsu C5680 Streak Camera"
+sensor_type: streak_camera
+manufacturer: "Hamamatsu"
+reference: "Velten et al. 2012"
+timing:
+  temporal_resolution_ps:
+    min: 0.2
+    max: 10
+    typical: 2
+    description: "Streak sweep resolution"
+  jitter_fwhm_ps:
+    min: 5
+    max: 20
+    typical: 10
+    description: "Trigger jitter FWHM"
+spatial:
+  array_size: [640, 480]
+  pixel_pitch_um: 23.0
+  fill_factor: 1.0
+noise:
+  dark_count_rate_hz: 0.0
+  afterpulsing_probability: 0.0
+  crosstalk_probability: 0.0
+  quantum_efficiency: 0.15
+operational_modes:
+  - name: time_gated
+    timing_constraints:
+      sweep_range_ns: 1000
+    description: "Single-sweep streak mode with configurable sweep range"
+transfer_functions:
+  - input: temporal_resolution_ps
+    output: depth_resolution_m
+    relationship: linear
+    formula: "c * dt / 2"
+    description: "Depth resolution from streak sweep resolution"
+    coupling_strength: strong
+  - input: jitter_fwhm_ps
+    output: effective_temporal_resolution_ps
+    relationship: sqrt
+    formula: "sigma_eff = sqrt(sigma_jitter^2 + sigma_tdc^2)"
+    description: "Trigger jitter adds in quadrature with sweep resolution"
+    coupling_strength: strong
+  - input: quantum_efficiency
+    output: min_exposure_time_s
+    relationship: inverse
+    formula: "t_min ∝ 1 / QE"
+    description: "Low QE (0.15) means more photons needed per acquisition"
+    coupling_strength: moderate

@@ -14,6 +14,16 @@ compatible_sensor_types:
   - spad
   - streak_camera
 
+compatible_sensor_classes:
+  - spad_array
+  - spad_linear
+  - streak_camera
+
+compatible_algorithms:
+  - lct
+  - fk_migration
+  - phasor_fields
+
 geometry_constraints:
   relay_wall:
     min_size_m: 0.1

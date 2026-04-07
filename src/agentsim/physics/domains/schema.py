@@ -119,6 +119,7 @@ class DomainKnowledge(BaseModel, frozen=True):
         default_factory=dict,
     )
     dimensionless_groups: tuple[DimensionlessGroup, ...] = ()
+    transfer_functions: tuple["TransferFunction", ...] = ()
 
 
 # ---------------------------------------------------------------------------
@@ -213,7 +214,9 @@ class ParadigmKnowledge(BaseModel, frozen=True):
     version: str = "1.0"
     description: str = ""
     keywords: tuple[str, ...] = ()
-    compatible_sensor_types: tuple[str, ...] = ()
+    compatible_sensor_types: tuple[str, ...] = ()  # deprecated: use compatible_sensor_classes
+    compatible_sensor_classes: tuple[str, ...] = ()
+    compatible_algorithms: tuple[str, ...] = ()
     geometry_constraints: dict[str, dict[str, float | str]] = Field(
         default_factory=dict,
     )
@@ -351,3 +354,66 @@ class ReconstructionAlgorithmV2(BaseModel, frozen=True):
     input_requirements: tuple[dict[str, bool | int | str], ...] = ()
     output_characteristics: tuple[str, ...] = ()
     transfer_functions: tuple[TransferFunction, ...] = ()
+
+
+# ---------------------------------------------------------------------------
+# Directory-per-domain models (domain restructure)
+# ---------------------------------------------------------------------------
+
+
+class SensorClass(BaseModel, frozen=True):
+    """Class-level sensor description — physics capabilities and tradeoffs.
+
+    Represents a category of sensors (e.g. "research-grade SPAD arrays")
+    rather than a specific model. Agents reason at this level by default
+    and only drill into SensorProfile when exact specs are needed.
+    """
+
+    name: str
+    display_name: str = ""
+    description: str = ""
+    sensor_type: str = ""
+    timing_range: TimingParameters | None = None
+    spatial_range: SpatialParameters | None = None
+    noise_range: NoiseModel | None = None
+    transfer_functions: tuple[TransferFunction, ...] = ()
+    tradeoffs: str = ""
+    typical_models: tuple[str, ...] = ()
+    use_cases: tuple[str, ...] = ()
+
+
+class AlgorithmKnowledge(BaseModel, frozen=True):
+    """Reconstruction algorithm as a first-class domain resource.
+
+    Extracted from domain YAML into its own file with explicit
+    paradigm and sensor compatibility declarations.
+    """
+
+    name: str
+    algorithm: str = ""
+    reference: str = ""
+    description: str = ""
+    requires_confocal: bool = False
+    spatial_resolution: str = ""
+    frequency_constraint: str = ""
+    compatible_paradigms: tuple[str, ...] = ()
+    compatible_sensor_classes: tuple[str, ...] = ()
+    parameters: dict[str, ParameterRange | dict] = Field(default_factory=dict)
+    input_requirements: tuple[dict[str, bool | int | str], ...] = ()
+    output_characteristics: tuple[str, ...] = ()
+    transfer_functions: tuple[TransferFunction, ...] = ()
+
+
+class DomainBundle(BaseModel, frozen=True):
+    """Complete loaded domain — all resources resolved and accessible.
+
+    The bundle is the primary unit returned by load_domain_bundle().
+    It contains the domain knowledge plus all paradigms, sensor classes,
+    sensor profiles, and algorithms within the domain directory.
+    """
+
+    domain: DomainKnowledge
+    paradigms: dict[str, ParadigmKnowledge] = Field(default_factory=dict)
+    sensor_classes: dict[str, SensorClass] = Field(default_factory=dict)
+    sensor_profiles: dict[str, SensorProfile] = Field(default_factory=dict)
+    algorithms: dict[str, AlgorithmKnowledge] = Field(default_factory=dict)

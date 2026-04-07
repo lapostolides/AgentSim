@@ -44,6 +44,24 @@ sensors:
         formula: "c * dt / 2"
         description: "Depth resolution from TDC bin width"
         coupling_strength: strong
+      - input: dead_time_ns
+        output: max_count_rate_mhz
+        relationship: inverse
+        formula: "max_rate ≈ 1 / dead_time"
+        description: "Pile-up limit: maximum photon count rate before saturation"
+        coupling_strength: strong
+      - input: jitter_fwhm_ps
+        output: effective_temporal_resolution_ps
+        relationship: sqrt
+        formula: "sigma_eff = sqrt(sigma_jitter^2 + sigma_tdc^2)"
+        description: "Timing jitter adds in quadrature with TDC resolution to floor achievable timing"
+        coupling_strength: strong
+      - input: quantum_efficiency
+        output: min_exposure_time_s
+        relationship: inverse
+        formula: "t_min ∝ 1 / QE"
+        description: "Higher quantum efficiency requires fewer incident photons, enabling shorter exposures"
+        coupling_strength: moderate
 
   linospad2:
     name: "LinoSPAD2"
@@ -87,6 +105,24 @@ sensors:
         formula: "c * dt / 2"
         description: "Depth resolution from TDC bin width"
         coupling_strength: strong
+      - input: dead_time_ns
+        output: max_count_rate_mhz
+        relationship: inverse
+        formula: "max_rate ≈ 1 / dead_time"
+        description: "Pile-up limit: maximum photon count rate before saturation"
+        coupling_strength: strong
+      - input: jitter_fwhm_ps
+        output: effective_temporal_resolution_ps
+        relationship: sqrt
+        formula: "sigma_eff = sqrt(sigma_jitter^2 + sigma_tdc^2)"
+        description: "Timing jitter adds in quadrature with TDC resolution to floor achievable timing"
+        coupling_strength: strong
+      - input: quantum_efficiency
+        output: min_exposure_time_s
+        relationship: inverse
+        formula: "t_min ∝ 1 / QE"
+        description: "Higher quantum efficiency requires fewer incident photons, enabling shorter exposures"
+        coupling_strength: moderate
 
   streak_camera:
     name: "Hamamatsu C5680 Streak Camera"
@@ -125,3 +161,15 @@ sensors:
         formula: "c * dt / 2"
         description: "Depth resolution from streak sweep resolution"
         coupling_strength: strong
+      - input: jitter_fwhm_ps
+        output: effective_temporal_resolution_ps
+        relationship: sqrt
+        formula: "sigma_eff = sqrt(sigma_jitter^2 + sigma_tdc^2)"
+        description: "Trigger jitter adds in quadrature with sweep resolution to floor achievable timing"
+        coupling_strength: strong
+      - input: quantum_efficiency
+        output: min_exposure_time_s
+        relationship: inverse
+        formula: "t_min ∝ 1 / QE"
+        description: "Lower QE (0.15) means streak cameras need more photons per acquisition than SPADs"
+        coupling_strength: moderate

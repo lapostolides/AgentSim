@@ -1,6 +1,6 @@
 domain: nlos_transient_imaging
-version: "2.0"
-description: "Non-line-of-sight transient imaging via time-resolved measurements. Shared domain-level knowledge — paradigm-specific geometry constraints and sensor parameters live in paradigms/*.yaml and sensors.yaml respectively."
+version: "3.0"
+description: "Non-line-of-sight transient imaging via time-resolved measurements. Domain-level knowledge shared across all paradigms — algorithms, sensors, and paradigms are in subdirectories."
 
 governing_equations:
   - name: transient_transport
@@ -14,55 +14,6 @@ governing_equations:
       rho: "Albedo/reflectance of hidden surface"
       G: "Green's function (1/r^2 falloff with cosine terms)"
       t_path: "Total path length / speed_of_light"
-
-reconstruction_algorithms:
-  lct:
-    name: "Light Cone Transform"
-    reference: "O'Toole et al. 2018"
-    requires_confocal: true
-    spatial_resolution: "Limited by relay wall sampling density and temporal resolution"
-    frequency_constraint: "LCT kernel bandwidth sets max recoverable spatial frequency"
-    parameters:
-      wall_sampling_points:
-        min: 16
-        max: 512
-        typical: 64
-      temporal_bins:
-        min: 64
-        max: 4096
-        typical: 2048
-  fk_migration:
-    name: "f-k Migration"
-    reference: "Lindell et al. 2019"
-    requires_confocal: false
-    spatial_resolution: "Virtual aperture size / wavelength equivalent"
-    parameters:
-      wall_sampling_points:
-        min: 16
-        max: 512
-        typical: 256
-      temporal_bins:
-        min: 64
-        max: 4096
-        typical: 2048
-      temporal_resolution_ps:
-        min: 1
-        max: 100
-        typical: 32
-  phasor_fields:
-    name: "Phasor Field Virtual Wave Optics"
-    reference: "Liu et al. 2019"
-    requires_confocal: false
-    spatial_resolution: "Diffraction-limited by virtual aperture"
-    parameters:
-      virtual_wavelength_m:
-        min: 0.001
-        max: 1.0
-        typical: 0.01
-      wall_sampling_points:
-        min: 16
-        max: 512
-        typical: 128
 
 published_parameter_index:
   otoole_2018:

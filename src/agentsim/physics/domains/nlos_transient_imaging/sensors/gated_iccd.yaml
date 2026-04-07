@@ -1,0 +1,50 @@
+name: gated_iccd
+display_name: "Gated Intensified CCD Cameras"
+description: "Intensified CCD cameras with nanosecond-scale electronic gating. Wide field of view captures the entire relay wall in a single exposure — no scanning required. Lower temporal resolution than SPADs or streak cameras but higher spatial resolution and fill factor. Used in penumbra/shadow-based NLOS where temporal precision is less critical."
+sensor_type: gated_iccd
+
+timing_range:
+  temporal_resolution_ps:
+    min: 200
+    max: 5000
+    typical: 500
+    description: "Gate width resolution — nanosecond scale, much coarser than SPADs"
+  jitter_fwhm_ps:
+    min: 50
+    max: 500
+    typical: 200
+    description: "Gate timing jitter"
+
+spatial_range:
+  array_size: [1024, 1024]
+  pixel_pitch_um: 13.0
+  fill_factor: 0.90
+
+noise_range:
+  dark_count_rate_hz: 0.0
+  afterpulsing_probability: 0.0
+  crosstalk_probability: 0.0
+  quantum_efficiency: 0.40
+
+transfer_functions:
+  - input: temporal_resolution_ps
+    output: depth_resolution_m
+    relationship: linear
+    formula: "c * dt / 2"
+    description: "Depth resolution from gate width"
+    coupling_strength: strong
+  - input: quantum_efficiency
+    output: min_exposure_time_s
+    relationship: inverse
+    formula: "t_min ∝ 1 / QE"
+    description: "Good QE (0.40) with intensifier gain gives strong signal per gate"
+    coupling_strength: moderate
+
+tradeoffs: "High spatial resolution (megapixel) and wide FOV eliminate scanning, but coarse temporal gating (ns-scale) limits depth resolution. Intensifier adds noise (MCP gain fluctuations). Best for penumbra imaging where spatial resolution matters more than temporal precision."
+
+typical_models: []
+
+use_cases:
+  - "Penumbra/shadow-based NLOS (wide-field, moderate timing)"
+  - "Single-shot relay wall capture (no scanning needed)"
+  - "Outdoor NLOS where photon budget requires intensification"
