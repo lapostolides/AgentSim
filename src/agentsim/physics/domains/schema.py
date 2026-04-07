@@ -119,3 +119,235 @@ class DomainKnowledge(BaseModel, frozen=True):
         default_factory=dict,
     )
     dimensionless_groups: tuple[DimensionlessGroup, ...] = ()
+
+
+# ---------------------------------------------------------------------------
+# Paradigm-agnostic models (Phase 02.1)
+# ---------------------------------------------------------------------------
+
+
+class TransferFunction(BaseModel, frozen=True):
+    """A computable physics relationship between parameters.
+
+    Stores structured mappings from input parameters to output quantities
+    with functional relationships. Data-only in Phase 02.1; Phase 02.2
+    adds evaluation logic.
+
+    Args:
+        input: Source parameter name (e.g. "temporal_resolution_ps").
+        output: Derived quantity name (e.g. "spatial_resolution_m").
+        relationship: Functional form — one of "linear", "inverse", "sqrt",
+            "quadratic", "logarithmic", "proportional", "inverse_sqrt".
+        formula: Human-readable formula string (not evaluated).
+        description: Explanation of the physics coupling.
+        coupling_strength: Qualitative strength — "strong", "moderate", "weak".
+    """
+
+    input: str
+    output: str
+    relationship: str
+    formula: str = ""
+    description: str = ""
+    coupling_strength: str = ""
+
+
+class ValidationRule(BaseModel, frozen=True):
+    """A validation rule declaration — either declarative or Python reference.
+
+    For ``python_check``: references a module + function that performs
+    complex geometry validation (e.g. three-bounce path tracing).
+
+    For ``range_check`` / ``threshold_check``: declarative YAML-only rule
+    evaluated by the generic dispatcher without custom Python.
+
+    Args:
+        name: Unique rule identifier within a paradigm.
+        type: One of "python_check", "range_check", "threshold_check".
+        description: Human-readable explanation.
+        module: Python dotted path for python_check rules.
+        function: Function name within module for python_check rules.
+        parameter: Parameter name for range_check / threshold_check.
+        min: Lower bound for range_check (inclusive).
+        max: Upper bound for range_check (inclusive).
+        severity: "error" or "warning".
+        message: Custom message on rule violation.
+    """
+
+    name: str
+    type: str
+    description: str = ""
+    # python_check fields
+    module: str = ""
+    function: str = ""
+    # range_check / threshold_check fields
+    parameter: str = ""
+    min: float | None = None
+    max: float | None = None
+    severity: str = "error"
+    message: str = ""
+
+
+class ParadigmKnowledge(BaseModel, frozen=True):
+    """Paradigm-level knowledge loaded from a paradigm YAML file.
+
+    A paradigm is a specific experimental approach within a domain.
+    For example, within the ``nlos_transient_imaging`` domain, ``relay_wall``
+    and ``penumbra`` are distinct paradigms with different geometry
+    constraints, validation rules, and compatible sensor types.
+
+    Args:
+        paradigm: Paradigm identifier (e.g. "relay_wall", "penumbra").
+        domain: Parent domain identifier.
+        version: Schema version string.
+        description: Human-readable paradigm description.
+        keywords: Keyword phrases for paradigm auto-detection.
+        compatible_sensor_types: Sensor type tags (e.g. "spad", "streak_camera").
+        geometry_constraints: Paradigm-specific geometry parameters as nested dicts.
+        validation_rules: Ordered tuple of validation rule declarations.
+        transfer_functions: Physics coupling relationships.
+        published_baselines: Published experiment baselines keyed by identifier.
+    """
+
+    paradigm: str
+    domain: str
+    version: str = "1.0"
+    description: str = ""
+    keywords: tuple[str, ...] = ()
+    compatible_sensor_types: tuple[str, ...] = ()
+    geometry_constraints: dict[str, dict[str, float | str]] = Field(
+        default_factory=dict,
+    )
+    validation_rules: tuple[ValidationRule, ...] = ()
+    transfer_functions: tuple[TransferFunction, ...] = ()
+    published_baselines: dict[str, dict] = Field(default_factory=dict)
+
+
+class TimingParameters(BaseModel, frozen=True):
+    """Temporal characteristics of a sensor.
+
+    Args:
+        temporal_resolution_ps: Time-bin width range in picoseconds.
+        jitter_fwhm_ps: Timing jitter FWHM range in picoseconds.
+        dead_time_ns: Dead-time range in nanoseconds.
+        gate_width_ns: Gate width range in nanoseconds (time-gated sensors).
+    """
+
+    temporal_resolution_ps: ParameterRange | None = None
+    jitter_fwhm_ps: ParameterRange | None = None
+    dead_time_ns: ParameterRange | None = None
+    gate_width_ns: ParameterRange | None = None
+
+
+class SpatialParameters(BaseModel, frozen=True):
+    """Spatial characteristics of a sensor array.
+
+    Args:
+        array_size: Pixel array dimensions (rows, columns).
+        pixel_pitch_um: Pixel pitch in micrometres.
+        fill_factor: Active area fraction (0–1).
+        fov_degrees: Field-of-view range in degrees.
+    """
+
+    array_size: tuple[int, int]
+    pixel_pitch_um: float
+    fill_factor: float = 1.0
+    fov_degrees: ParameterRange | None = None
+
+
+class NoiseModel(BaseModel, frozen=True):
+    """Noise characteristics of a sensor.
+
+    Args:
+        dark_count_rate_hz: Dark count rate in Hz.
+        afterpulsing_probability: Afterpulsing probability (0–1).
+        crosstalk_probability: Optical crosstalk probability (0–1).
+        quantum_efficiency: Photon detection efficiency (0–1).
+    """
+
+    dark_count_rate_hz: float = 0.0
+    afterpulsing_probability: float = 0.0
+    crosstalk_probability: float = 0.0
+    quantum_efficiency: float = 0.0
+
+
+class OperationalMode(BaseModel, frozen=True):
+    """An operational mode for a sensor (e.g. time-gated, free-running).
+
+    Args:
+        name: Mode identifier.
+        timing_constraints: Mode-specific timing limits.
+        description: Human-readable explanation.
+    """
+
+    name: str
+    timing_constraints: dict[str, float] = Field(default_factory=dict)
+    description: str = ""
+
+
+class SensorProfile(BaseModel, frozen=True):
+    """A named sensor hardware profile with full characterisation.
+
+    Sensor profiles are paradigm-independent — a SwissSPAD2 can be used
+    in relay-wall NLOS or penumbra imaging.
+
+    Args:
+        name: Display name (e.g. "SwissSPAD2").
+        sensor_type: Type tag matching paradigm compatible_sensor_types.
+        manufacturer: Hardware manufacturer.
+        reference: Primary reference publication.
+        timing: Temporal parameters.
+        spatial: Spatial / array parameters.
+        noise: Noise model (optional).
+        operational_modes: Available operating modes.
+        transfer_functions: Sensor-level physics couplings.
+    """
+
+    name: str
+    sensor_type: str
+    manufacturer: str = ""
+    reference: str = ""
+    timing: TimingParameters
+    spatial: SpatialParameters
+    noise: NoiseModel | None = None
+    operational_modes: tuple[OperationalMode, ...] = ()
+    transfer_functions: tuple[TransferFunction, ...] = ()
+
+
+class SensorCatalog(BaseModel, frozen=True):
+    """A collection of named sensor profiles.
+
+    Loaded from sensors.yaml. Keys are lowercase identifiers
+    (e.g. "swissspad2", "linospad2", "streak_camera").
+    """
+
+    sensors: dict[str, SensorProfile] = Field(default_factory=dict)
+
+
+class ReconstructionAlgorithmV2(BaseModel, frozen=True):
+    """Extended reconstruction algorithm with structured physics knowledge.
+
+    Extends the original ReconstructionAlgorithm with input requirements,
+    output characteristics, and transfer functions per D-15.
+    The original model is kept unchanged for backward compatibility.
+
+    Args:
+        name: Algorithm display name.
+        reference: Primary publication reference.
+        requires_confocal: Whether confocal scanning is required.
+        spatial_resolution: Resolution description.
+        frequency_constraint: Frequency-domain constraint description.
+        parameters: Legacy parameter ranges (backward compat).
+        input_requirements: Structured input requirements as dicts.
+        output_characteristics: Qualitative output descriptions.
+        transfer_functions: Parameter-to-quality physics couplings.
+    """
+
+    name: str
+    reference: str = ""
+    requires_confocal: bool = False
+    spatial_resolution: str = ""
+    frequency_constraint: str = ""
+    parameters: dict[str, ParameterRange | dict] = Field(default_factory=dict)
+    input_requirements: tuple[dict[str, bool | int | str], ...] = ()
+    output_characteristics: tuple[str, ...] = ()
+    transfer_functions: tuple[TransferFunction, ...] = ()
