@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from agentsim.physics.models import PhysicsConsultationSummary, PhysicsValidation
 from agentsim.state.models import (
     AnalysisReport,
     EnvironmentInfo,
@@ -206,6 +207,29 @@ def add_analysis(
             "status": new_status,
             "iteration": state.iteration + 1,
         },
+    )
+
+
+def add_physics_validation(
+    state: ExperimentState,
+    validation: PhysicsValidation,
+) -> ExperimentState:
+    """Transition: physics validation completed for a scene."""
+    return state.model_copy(
+        update={
+            "physics_validations": (*state.physics_validations, validation),
+            "status": ExperimentStatus.PHYSICS_VALIDATED,
+        },
+    )
+
+
+def set_consultation_summary(
+    state: ExperimentState,
+    summary: PhysicsConsultationSummary,
+) -> ExperimentState:
+    """Record physics consultation summary (supplementary -- does not change status)."""
+    return state.model_copy(
+        update={"consultation_summary": summary},
     )
 
 

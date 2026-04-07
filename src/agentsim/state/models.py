@@ -13,6 +13,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from agentsim.physics.models import PhysicsConsultationSummary, PhysicsValidation
+
 
 def _new_id() -> str:
     return uuid.uuid4().hex[:12]
@@ -28,6 +30,7 @@ class ExperimentStatus(str, Enum):
     HYPOTHESIS_READY = "hypothesis_ready"
     PLAN_READY = "plan_ready"
     SCENES_READY = "scenes_ready"
+    PHYSICS_VALIDATED = "physics_validated"
     EXECUTED = "executed"
     EVALUATED = "evaluated"
     ANALYZED = "analyzed"
@@ -248,6 +251,10 @@ class ExperimentState(BaseModel, frozen=True):
     # Literature grounding
     literature_context: LiteratureContext | None = None
     literature_validation: LiteratureValidation | None = None
+
+    # Physics validation
+    physics_validations: tuple[PhysicsValidation, ...] = ()
+    consultation_summary: PhysicsConsultationSummary | None = None
 
     # Error tracking
     errors: tuple[str, ...] = ()
