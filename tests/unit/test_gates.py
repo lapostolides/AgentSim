@@ -33,7 +33,7 @@ class TestGateCheckpoint:
             assert cp.value in ALL_CHECKPOINTS
 
     def test_checkpoint_count(self):
-        assert len(ALL_CHECKPOINTS) == 5
+        assert len(ALL_CHECKPOINTS) == 6
 
 
 class TestGateContext:
