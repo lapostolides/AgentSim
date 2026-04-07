@@ -201,3 +201,109 @@ def test_has_error_helper():
     assert _has_error((warning_result, info_result)) is False
     assert _has_error((warning_result, error_result)) is True
     assert _has_error(()) is False
+
+
+# ---------------------------------------------------------------------------
+# NLOS pipeline integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_run_nlos_checks_valid_confocal():
+    """Test 1: run_nlos_checks with valid confocal geometry returns passed=True."""
+    from agentsim.physics.checker import run_nlos_checks
+
+    report = run_nlos_checks(
+        sensor_pos=(0, -1.5, 0),
+        sensor_look_at=(0, 0, 0),
+        relay_wall_pos=(0, 0, 0),
+        relay_wall_normal=(0, -1, 0),
+        relay_wall_size=2.0,
+        hidden_objects=((0, 1, 0),),
+    )
+    assert isinstance(report, ValidationReport)
+    assert report.passed is True
+
+
+def test_run_nlos_checks_invalid_geometry():
+    """Test 2: run_nlos_checks with sensor behind wall returns passed=False."""
+    from agentsim.physics.checker import run_nlos_checks
+
+    report = run_nlos_checks(
+        sensor_pos=(0, 1, 0),
+        sensor_look_at=(0, 0, 0),
+        relay_wall_pos=(0, 0, 0),
+        relay_wall_normal=(0, -1, 0),
+        relay_wall_size=2.0,
+        hidden_objects=((0, 2, 0),),
+    )
+    assert report.passed is False
+
+
+def test_run_nlos_checks_insufficient_temporal():
+    """Test 3: run_nlos_checks with insufficient temporal resolution returns ERROR."""
+    from agentsim.physics.checker import run_nlos_checks
+
+    report = run_nlos_checks(
+        sensor_pos=(0, -1.5, 0),
+        sensor_look_at=(0, 0, 0),
+        relay_wall_pos=(0, 0, 0),
+        relay_wall_normal=(0, -1, 0),
+        relay_wall_size=2.0,
+        hidden_objects=((0, 1, 0),),
+        time_bin_ps=1000.0,
+        min_feature_separation_m=0.01,
+    )
+    assert report.passed is False
+    error_checks = {r.check for r in report.results if r.severity == Severity.ERROR}
+    assert "nlos_temporal_resolution" in error_checks
+
+
+def test_deterministic_checks_with_nlos_domain():
+    """Test 4: run_deterministic_checks with nlos domain and nlos_scene_params
+    includes NLOS checks in results."""
+    from agentsim.physics.checker import run_deterministic_checks
+
+    nlos_params = {
+        "sensor_pos": (0, -1.5, 0),
+        "sensor_look_at": (0, 0, 0),
+        "relay_wall_pos": (0, 0, 0),
+        "relay_wall_normal": (0, -1, 0),
+        "relay_wall_size": 2.0,
+        "hidden_objects": ((0, 1, 0),),
+        "sensor_fov_deg": 20.0,
+    }
+    report = run_deterministic_checks(
+        code=VALID_CODE,
+        parameters=VALID_PARAMS,
+        domain="nlos_transient_imaging",
+        nlos_scene_params=nlos_params,
+    )
+    nlos_checks = {r.check for r in report.results if r.check.startswith("nlos_")}
+    assert len(nlos_checks) > 0, "Expected NLOS checks in results"
+
+
+def test_deterministic_checks_universal_no_nlos():
+    """Test 5: run_deterministic_checks with domain='universal' does NOT run NLOS checks."""
+    from agentsim.physics.checker import run_deterministic_checks
+
+    report = run_deterministic_checks(
+        code=VALID_CODE,
+        parameters=VALID_PARAMS,
+        domain="universal",
+    )
+    nlos_checks = [r for r in report.results if r.check.startswith("nlos_")]
+    assert len(nlos_checks) == 0, f"Unexpected NLOS checks: {nlos_checks}"
+
+
+def test_existing_pipeline_no_regression():
+    """Test 6: Existing pipeline tests still pass (no regressions)."""
+    from agentsim.physics.checker import run_deterministic_checks
+
+    # Run with standard params -- should behave exactly as before
+    report = run_deterministic_checks(
+        code=VALID_CODE,
+        parameters=VALID_PARAMS,
+    )
+    assert isinstance(report, ValidationReport)
+    assert report.passed is True
+    assert report.duration_seconds > 0

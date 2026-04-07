@@ -15,7 +15,7 @@ class OrchestratorConfig(BaseModel, frozen=True):
     # Experiment loop
     max_iterations: int = 5
     max_budget_usd: float = 10.0
-    max_turns_per_phase: int = 30
+    max_turns_per_phase: int = 15
 
     # Output
     output_dir: Path = Field(default_factory=lambda: Path("./output"))

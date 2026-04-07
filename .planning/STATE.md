@@ -79,6 +79,10 @@ Recent decisions affecting current work:
 - [Phase 02.1]: ReconstructionAlgorithmV2 added alongside original for backward compat
 - [Phase 02.1]: Transfer function formulas stored as strings only; evaluation deferred to Phase 02.2
 
+### Roadmap Evolution
+
+- Phase 02.1 inserted after Phase 02: Paradigm-Agnostic Domain Architecture (URGENT) — refactor hardcoded relay-wall NLOS domain into paradigm-agnostic architecture with multiple YAML paradigms, sensor profiles, and scene-prompt injection
+
 ### Pending Todos
 
 None yet.

@@ -216,3 +216,4 @@ output/
 *.pdf
 .olauth
 .DS_Store
+.planning/

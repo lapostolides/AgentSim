@@ -6,6 +6,6 @@ Import: from agentsim.physics import run_deterministic_checks
 
 from __future__ import annotations
 
-from agentsim.physics.checker import run_deterministic_checks
+from agentsim.physics.checker import run_deterministic_checks, run_nlos_checks
 
-__all__ = ["run_deterministic_checks"]
+__all__ = ["run_deterministic_checks", "run_nlos_checks"]

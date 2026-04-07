@@ -86,6 +86,6 @@ def create_scene_agent(environment_str: str) -> AgentDefinition:
             environment=environment_str,
             state_context="{state_context}",
         ),
-        tools=["Read", "Bash"],
+        tools=["Read"],
         model="sonnet",
     )

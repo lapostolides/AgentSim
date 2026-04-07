@@ -80,5 +80,5 @@ def create_literature_validator_agent() -> AgentDefinition:
             state_context="{state_context}",
         ),
         tools=["WebSearch", "Read"],
-        model="claude-opus-4-6",
+        model="claude-sonnet-4-20250514",
     )

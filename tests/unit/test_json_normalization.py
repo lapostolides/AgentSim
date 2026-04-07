@@ -676,3 +676,61 @@ class TestEvaluatorParsing:
         expected = {"evaluations", "scene_id", "metrics"}
         result = _unwrap_json(data, expected)
         assert "scene_id" in result
+
+
+# ── Bare list handling ───────────────────────────────────────────────
+
+
+class TestBareListHandling:
+    """Test that _unwrap_json handles bare lists (not wrapped in a dict).
+
+    Real failure: scene agent returned [{code: ...}] instead of {scenes: [...]}.
+    """
+
+    def test_bare_list_of_scenes(self):
+        data = [
+            {"code": "print('hello')", "language": "python", "plan_id": "auto"},
+            {"code": "print('world')", "language": "python", "plan_id": "auto"},
+        ]
+        expected = {"scenes", "code", "language"}
+        result = _unwrap_json(data, expected)
+        assert "scenes" in result
+        assert len(result["scenes"]) == 2
+
+    def test_bare_list_of_results(self):
+        data = [
+            {"scene_id": "s1", "status": "success"},
+            {"scene_id": "s2", "status": "error"},
+        ]
+        expected = {"results", "scene_id", "status"}
+        result = _unwrap_json(data, expected)
+        assert "results" in result
+        assert len(result["results"]) == 2
+
+    def test_bare_list_of_evaluations(self):
+        data = [{"scene_id": "s1", "metrics": {"psnr": 25.0}}]
+        expected = {"evaluations", "scene_id", "metrics"}
+        result = _unwrap_json(data, expected)
+        assert "evaluations" in result
+
+    def test_bare_list_of_entries(self):
+        data = [
+            {"title": "Paper A", "authors": ["Smith"], "year": 2024},
+            {"title": "Paper B", "authors": ["Jones"], "year": 2023},
+        ]
+        expected = {"entries", "title"}
+        result = _unwrap_json(data, expected)
+        assert "entries" in result
+        assert len(result["entries"]) == 2
+
+    def test_bare_list_of_audited_entries(self):
+        data = [
+            {"original_title": "Paper A", "verification_status": "verified"},
+        ]
+        expected = {"audited_entries"}
+        result = _unwrap_json(data, expected)
+        assert "audited_entries" in result
+
+    def test_empty_list(self):
+        result = _unwrap_json([], {"scenes"})
+        assert isinstance(result, dict)

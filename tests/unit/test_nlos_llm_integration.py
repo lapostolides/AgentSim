@@ -101,3 +101,81 @@ class TestFormatNlosAdvisorContext:
         ctx = "### NLOS Transient Imaging Domain Knowledge\nSome knowledge."
         agent = create_physics_advisor_agent(nlos_domain_knowledge=ctx)
         assert "NLOS Transient Imaging Domain Knowledge" in agent.prompt
+
+
+# ---------------------------------------------------------------------------
+# Task 2: Analyst agent NLOS context
+# ---------------------------------------------------------------------------
+
+
+class TestFormatNlosAnalysisContext:
+    """Tests for format_nlos_analysis_context (analyst agent)."""
+
+    def test_includes_inverse_square_and_temporal_peaks(
+        self, nlos_domain: DomainKnowledge,
+    ) -> None:
+        """Test 1: Returns string with inverse-square falloff and temporal peak locations."""
+        from agentsim.agents.analyst import format_nlos_analysis_context
+
+        ctx = format_nlos_analysis_context(nlos_domain)
+        assert "inverse-square falloff" in ctx
+        assert "temporal peak locations" in ctx.lower() or "Temporal peak" in ctx
+
+    def test_includes_reconstruction_resolution_limits(
+        self, nlos_domain: DomainKnowledge,
+    ) -> None:
+        """Test 2: Includes reconstruction resolution limits."""
+        from agentsim.agents.analyst import format_nlos_analysis_context
+
+        ctx = format_nlos_analysis_context(nlos_domain)
+        assert "resolution" in ctx.lower()
+
+
+class TestAnalystAgentNlosSection:
+    """Tests for create_analyst_agent with NLOS context."""
+
+    def test_empty_context_no_nlos_section(self) -> None:
+        """Test 3: create_analyst_agent with nlos_analysis_context='' has no NLOS section."""
+        from agentsim.agents.analyst import create_analyst_agent
+
+        agent = create_analyst_agent(nlos_analysis_context="")
+        assert "NLOS Transient Imaging" not in agent.prompt
+
+    def test_nonempty_context_includes_nlos_section(self) -> None:
+        """Test 4: create_analyst_agent with non-empty context includes NLOS section."""
+        from agentsim.agents.analyst import create_analyst_agent
+
+        ctx = "## NLOS Transient Imaging Result Validation\nSome validation."
+        agent = create_analyst_agent(nlos_analysis_context=ctx)
+        assert "NLOS Transient Imaging Result Validation" in agent.prompt
+
+
+# ---------------------------------------------------------------------------
+# Task 2: Agent registry with NLOS context
+# ---------------------------------------------------------------------------
+
+
+class TestBuildAgentRegistryNlos:
+    """Tests for build_agent_registry with nlos_context parameter."""
+
+    def test_with_nlos_context_produces_nlos_agents(self) -> None:
+        """Test 5: build_agent_registry with nlos_context includes NLOS in agent prompts."""
+        from agentsim.orchestrator.agent_registry import build_agent_registry
+
+        nlos_ctx = {
+            "hypothesis": "## NLOS Transient Imaging Physics Context\nHyp content.",
+            "analyst": "## NLOS Transient Imaging Result Validation\nAna content.",
+            "advisor": "### NLOS Transient Imaging Domain Knowledge\nAdv content.",
+        }
+        registry = build_agent_registry(nlos_context=nlos_ctx)
+        assert "NLOS Transient Imaging Physics Context" in registry["hypothesis"].prompt
+        assert "NLOS Transient Imaging Result Validation" in registry["analyst"].prompt
+        assert "NLOS Transient Imaging Domain Knowledge" in registry["physics_advisor"].prompt
+
+    def test_without_nlos_context_backward_compatible(self) -> None:
+        """Test 6: build_agent_registry without nlos_context produces standard agents."""
+        from agentsim.orchestrator.agent_registry import build_agent_registry
+
+        registry = build_agent_registry()
+        assert "NLOS Transient Imaging" not in registry["hypothesis"].prompt
+        assert "NLOS Transient Imaging" not in registry["analyst"].prompt

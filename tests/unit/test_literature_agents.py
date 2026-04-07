@@ -70,10 +70,10 @@ class TestLiteratureValidatorAgent:
         assert "WebSearch" in agent.tools
         assert "Read" in agent.tools
 
-    def test_uses_opus_model(self):
-        """Validator uses opus 4.6 for deep literature validation."""
+    def test_uses_sonnet_model(self):
+        """Validator uses sonnet for efficient literature validation."""
         agent = create_literature_validator_agent()
-        assert agent.model == "claude-opus-4-6"
+        assert "sonnet" in agent.model
 
     def test_prompt_contains_schema(self):
         agent = create_literature_validator_agent()

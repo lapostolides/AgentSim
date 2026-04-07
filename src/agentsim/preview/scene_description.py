@@ -53,6 +53,10 @@ class Sensor(BaseModel, frozen=True):
         default_factory=lambda: Vec3(x=0.2, y=0, z=0.15),
         description="Point on the relay wall where the laser is aimed",
     )
+    fov_degrees: float = Field(
+        default=20.0,
+        description="Sensor field of view in degrees",
+    )
 
 
 class Occluder(BaseModel, frozen=True):
