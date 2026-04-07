@@ -22,6 +22,7 @@ from claude_agent_sdk.types import (
 )
 
 from agentsim.environment.discovery import discover_environment
+from agentsim.physics.domains import detect_domain
 from agentsim.orchestrator.agent_registry import build_agent_registry
 from agentsim.orchestrator.config import OrchestratorConfig
 from agentsim.orchestrator.gates import (
@@ -67,6 +68,145 @@ from agentsim.state.transitions import (
 )
 
 logger = structlog.get_logger()
+
+
+# ── NLOS auto-fix helpers ────────────────────────────────────────────
+
+
+def _extract_nlos_scene_params(
+    scene: SceneSpec,
+) -> dict | None:
+    """Extract NLOS geometry parameters from scene.parameters dict.
+
+    Returns dict suitable for run_nlos_checks, or None if scene
+    is not an NLOS scene (missing required NLOS keys).
+
+    Args:
+        scene: A SceneSpec from the experiment state.
+
+    Returns:
+        Dict of NLOS geometry parameters, or None.
+    """
+    params = scene.parameters
+    required_keys = {"sensor_pos", "relay_wall_pos", "relay_wall_size", "hidden_objects"}
+    if not required_keys.issubset(params.keys()):
+        return None
+    return {
+        "sensor_pos": tuple(params["sensor_pos"]),
+        "sensor_look_at": tuple(params.get("sensor_look_at", (0, 0, 0))),
+        "relay_wall_pos": tuple(params["relay_wall_pos"]),
+        "relay_wall_normal": tuple(params.get("relay_wall_normal", (0, -1, 0))),
+        "relay_wall_size": float(params["relay_wall_size"]),
+        "hidden_objects": tuple(tuple(p) for p in params["hidden_objects"]),
+        "sensor_fov_deg": float(params.get("sensor_fov_deg", 20.0)),
+        "time_bin_ps": (
+            float(params["time_bin_ps"]) if "time_bin_ps" in params else None
+        ),
+        "min_feature_separation_m": (
+            float(params["min_feature_separation_m"])
+            if "min_feature_separation_m" in params
+            else None
+        ),
+        "occluder_pos": (
+            tuple(params["occluder_pos"]) if "occluder_pos" in params else None
+        ),
+        "occluder_size": (
+            tuple(params["occluder_size"]) if "occluder_size" in params else None
+        ),
+    }
+
+
+async def _run_nlos_autofix_loop(
+    state: ExperimentState,
+    config: OrchestratorConfig,
+    agents: dict,
+    max_retries: int = 3,
+) -> ExperimentState:
+    """Run NLOS geometry checks with auto-fix feedback loop.
+
+    For each scene with NLOS parameters:
+    1. Run deterministic NLOS checks
+    2. If checks pass, continue
+    3. If checks fail, consult physics advisor for fix guidance
+    4. Re-run scene phase with fix guidance as feedback
+    5. Repeat up to max_retries times
+
+    Args:
+        state: Current experiment state with scenes.
+        config: Orchestrator configuration.
+        agents: Agent registry.
+        max_retries: Maximum fix attempts per scene.
+
+    Returns:
+        New ExperimentState (scenes may be regenerated).
+    """
+    from agentsim.physics import run_nlos_checks
+    from agentsim.physics.consultation import consult_physics_advisor
+    from agentsim.physics.models import PhysicsQuery
+
+    for scene in state.scenes:
+        nlos_params = _extract_nlos_scene_params(scene)
+        if nlos_params is None:
+            continue
+
+        for retry in range(max_retries):
+            report = run_nlos_checks(**nlos_params)
+            if report.passed:
+                logger.info("nlos_autofix_passed", scene_id=scene.id, retry=retry)
+                break
+
+            error_messages = [
+                r.message for r in report.results
+                if r.severity == Severity.ERROR
+            ]
+            logger.warning(
+                "nlos_autofix_failed",
+                scene_id=scene.id,
+                retry=retry,
+                errors=error_messages,
+            )
+
+            if retry >= max_retries - 1:
+                logger.error("nlos_autofix_exhausted", scene_id=scene.id)
+                break
+
+            # Consult physics advisor for fix guidance
+            fix_query = PhysicsQuery(
+                query_type="nlos_geometry_fix",
+                context=(
+                    f"NLOS geometry validation failed for scene {scene.id}. "
+                    f"Errors: {'; '.join(error_messages)}. "
+                    f"Provide specific fix instructions for the scene agent."
+                ),
+                parameters=nlos_params,
+            )
+            guidance, _ = await consult_physics_advisor(
+                query=fix_query,
+                state_context=state_to_prompt_context(state),
+                config=config,
+                agents=agents,
+            )
+
+            # Re-run scene phase with physics fix guidance as feedback
+            fix_feedback = (
+                "PHYSICS VALIDATION FAILED. Fix these issues:\n"
+                + "\n".join(f"- {e}" for e in error_messages)
+                + "\n\nPhysics advisor recommendations:\n"
+                + "\n".join(f"- {r}" for r in guidance.recommendations)
+            )
+            state = await _run_scene_phase(
+                state, config, agents, user_feedback=fix_feedback,
+            )
+
+            # Re-extract params from regenerated scene
+            if state.scenes:
+                latest_scene = state.scenes[-1]
+                nlos_params_new = _extract_nlos_scene_params(latest_scene)
+                if nlos_params_new is not None:
+                    nlos_params = nlos_params_new
+                    scene = latest_scene
+
+    return state
 
 
 # ── Text / JSON extraction ───────────────────────────────────────────
@@ -504,8 +644,26 @@ async def run_experiment(
     )
     state = set_environment(state, environment)
 
+    # 2b. Detect domain and load domain knowledge for LLM context
+    nlos_context: dict[str, str] | None = None
+    detected_domain = detect_domain(hypothesis_text)
+    if detected_domain == "nlos_transient_imaging":
+        from agentsim.physics.domains import load_domain
+        from agentsim.agents.hypothesis import format_nlos_physics_context
+        from agentsim.agents.analyst import format_nlos_analysis_context
+        from agentsim.agents.physics_advisor import format_nlos_advisor_context
+
+        dk = load_domain("nlos_transient_imaging")
+        if dk is not None:
+            nlos_context = {
+                "hypothesis": format_nlos_physics_context(dk),
+                "analyst": format_nlos_analysis_context(dk),
+                "advisor": format_nlos_advisor_context(dk),
+            }
+            logger.info("nlos_domain_detected", domain=detected_domain)
+
     # 3. Build agent registry
-    agents = build_agent_registry(environment)
+    agents = build_agent_registry(environment, nlos_context=nlos_context)
 
     # 4. Literature scout
     state = await _run_literature_scout_phase(state, config, agents)
@@ -634,6 +792,15 @@ async def run_experiment(
             )
             if _is_abort(decision):
                 break
+
+            # ── NLOS Auto-Fix (if NLOS domain detected) ──────────
+            detected_domain = (
+                detect_domain(state.raw_hypothesis) if state.raw_hypothesis else None
+            )
+            if detected_domain == "nlos_transient_imaging":
+                state = await _run_nlos_autofix_loop(state, config, agents)
+                if on_phase_complete:
+                    on_phase_complete("nlos_autofix", state)
 
             # ── Execution ─────────────────────────────────────────
             state = await _run_executor_phase(state, config, agents)
