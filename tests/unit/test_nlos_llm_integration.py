@@ -52,13 +52,15 @@ class TestFormatNlosPhysicsContext:
                 algo = nlos_domain.reconstruction_algorithms[key]
                 assert algo.name in ctx, f"Missing algorithm: {algo.name}"
 
-    def test_includes_geometry_constraints(
+    def test_includes_reconstruction_algorithms(
         self, nlos_domain: DomainKnowledge,
     ) -> None:
         from agentsim.agents.hypothesis import format_nlos_physics_context
 
         ctx = format_nlos_physics_context(nlos_domain)
-        assert "Geometry Constraints" in ctx
+        # nlos.yaml v2.0 moved geometry_constraints to paradigm files;
+        # the deprecated formatter still renders domain-level data
+        assert "Reconstruction" in ctx or "reconstruction" in ctx
 
     def test_empty_context_excluded_from_prompt(self) -> None:
         from agentsim.agents.hypothesis import create_hypothesis_agent
