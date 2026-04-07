@@ -53,9 +53,9 @@ Plans:
 
 Plans:
 - [x] 02-01-PLAN.md — Domain knowledge Pydantic schema, NLOS YAML with published parameters, and cached loader with auto-detection
-- [ ] 02-02-PLAN.md — NLOS geometry checks (three-bounce, sensor FOV, temporal resolution) and checker pipeline integration
-- [ ] 02-03-PLAN.md — NLOS benchmark scenes, reconstruction sanity checks, and pre-execution auto-fix loop in runner
-- [ ] 02-04-PLAN.md — NLOS physics context injection into hypothesis, analyst, and physics advisor agents
+- [x] 02-02-PLAN.md — NLOS geometry checks (three-bounce, sensor FOV, temporal resolution) and checker pipeline integration
+- [x] 02-03-PLAN.md — NLOS benchmark scenes, reconstruction sanity checks, and pre-execution auto-fix loop in runner
+- [x] 02-04-PLAN.md — NLOS physics context injection into hypothesis, analyst, and physics advisor agents
 
 ### Phase 3: Smart Experimental Design
 **Goal**: Researchers get intelligent experimental designs without needing to be statisticians -- the system selects optimal sampling strategies, generates parameter sweeps, and identifies which parameters actually matter
