@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Physics Foundation and Deterministic Checks** - Physics advisor agent, constants registry, consultation logging, and all deterministic validation (AST analysis, units, ranges, CFL, mesh)
 - [ ] **Phase 2: Computational Imaging Domain Intelligence** - NLOS domain knowledge (YAML), three-bounce geometry validation, sensor FOV checks, temporal resolution validation, scene auto-fix loop, physics-informed hypothesis generation, and NLOS benchmark scenes
-- [ ] **Phase 02.1: Paradigm-Agnostic Domain Architecture** - Refactor hardcoded relay-wall NLOS into multi-paradigm YAML architecture with sensor profiles, transfer function matrices, scene prompt injection, and declarative validator dispatch
+- [x] **Phase 02.1: Paradigm-Agnostic Domain Architecture** - Refactor hardcoded relay-wall NLOS into multi-paradigm YAML architecture with sensor profiles, transfer function matrices, scene prompt injection, and declarative validator dispatch (completed 2026-04-07)
 - [ ] **Phase 02.2: Physics-Space Reasoning Agents** - Sensor/algorithm advisor agents that reason over transfer function matrices to optimize setups and propose novel experiments in computational imaging
 - [ ] **Phase 3: Smart Experimental Design** - Automatic DoE strategy selection, sensitivity analysis via SALib, and LHS parameter sampling
 - [ ] **Phase 4: Reproducibility and Reporting** - Reproducibility package generator and structured experiment metadata capture
@@ -71,7 +71,7 @@ Plans:
   4. Named sensor profiles (at least 3: SwissSPAD2, LinoSPAD2, streak camera) are loadable from YAML with hardware-specific timing parameters (resolution, jitter, dead time, array size)
   5. Existing relay-wall NLOS checks still pass — no regressions from the refactor
   6. At least 2 paradigms fully defined (relay wall + one of: penumbra, keyhole, direct ToF) with paradigm-specific validation rules
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 02.1-01-PLAN.md — Paradigm/sensor Pydantic models, YAML data files (relay_wall, penumbra, sensors), refactored nlos.yaml
@@ -132,7 +132,7 @@ Note: Phases 2 and 3 depend only on Phase 1 and could execute in parallel. Phase
 |-------|----------------|--------|-----------|
 | 1. Physics Foundation and Deterministic Checks | 3/3 | Complete | 2026-04-07 |
 | 2. Computational Imaging Domain Intelligence | 0/4 | Not started | - |
-| 02.1 Paradigm-Agnostic Domain Architecture | 3/4 | In Progress|  |
+| 02.1 Paradigm-Agnostic Domain Architecture | 3/4 | Complete    | 2026-04-07 |
 | 02.2 Physics-Space Reasoning Agents | 0/? | Not started | - |
 | 3. Smart Experimental Design | 0/1 | Not started | - |
 | 4. Reproducibility and Reporting | 0/1 | Not started | - |
