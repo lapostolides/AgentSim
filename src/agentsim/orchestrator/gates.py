@@ -31,6 +31,7 @@ class GateCheckpoint(str, Enum):
     POST_HYPOTHESIS = "post_hypothesis"
     PRE_EXECUTION = "pre_execution"
     SCENE_VISUALIZATION = "scene_visualization"
+    POST_PHYSICS_VALIDATION = "post_physics_validation"
     POST_EXECUTION = "post_execution"
 
 
