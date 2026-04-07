@@ -23,15 +23,15 @@ from agentsim.state.models import EnvironmentInfo
 
 def build_agent_registry(
     environment: EnvironmentInfo | None = None,
-    nlos_context: dict[str, str] | None = None,
+    domain_context: dict[str, str] | None = None,
 ) -> dict[str, AgentDefinition]:
     """Build the complete agent registry.
 
     Args:
         environment: Discovered environment info (available packages).
-        nlos_context: Optional NLOS context strings keyed by agent role
-            ("hypothesis", "analyst", "advisor"). When provided, the
-            corresponding agents receive NLOS-specific prompt sections.
+        domain_context: Optional physics context strings keyed by agent role
+            ("hypothesis", "analyst", "advisor", "scene"). When provided,
+            the corresponding agents receive domain-specific prompt sections.
 
     Returns:
         Dictionary mapping agent names to their AgentDefinitions,
@@ -43,23 +43,26 @@ def build_agent_registry(
         else "No environment info available. Probe with `python3 -c 'import <pkg>'` as needed."
     )
 
-    nlos = nlos_context or {}
+    ctx = domain_context or {}
 
     return {
         "literature_scout": create_literature_scout_agent(),
         "citation_auditor": create_citation_auditor_agent(),
         "hypothesis": create_hypothesis_agent(
             env_str,
-            nlos_physics_context=nlos.get("hypothesis", ""),
+            physics_context=ctx.get("hypothesis", ""),
         ),
-        "scene": create_scene_agent(env_str),
+        "scene": create_scene_agent(
+            env_str,
+            physics_context=ctx.get("scene", ""),
+        ),
         "physics_advisor": create_physics_advisor_agent(
-            nlos_domain_knowledge=nlos.get("advisor", ""),
+            domain_knowledge=ctx.get("advisor", ""),
         ),
         "executor": create_executor_agent(),
         "evaluator": create_evaluator_agent(),
         "analyst": create_analyst_agent(
-            nlos_analysis_context=nlos.get("analyst", ""),
+            analysis_context=ctx.get("analyst", ""),
         ),
         "literature_validator": create_literature_validator_agent(),
     }

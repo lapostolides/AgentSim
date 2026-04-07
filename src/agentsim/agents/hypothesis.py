@@ -126,7 +126,7 @@ provided files, produce the JSON object above.
 - If files are provided, examine them for context (mesh geometry,
   configuration parameters, marker locations, etc.)
 
-{nlos_section}## Available Environment
+{physics_section}## Available Environment
 
 {environment}
 
@@ -148,6 +148,8 @@ the open questions the scout flagged as most significant.
 
 def format_nlos_physics_context(domain_knowledge: DomainKnowledge) -> str:
     """Format NLOS domain knowledge into hypothesis agent context.
+
+    Deprecated: use agentsim.physics.context.format_hypothesis_context instead.
 
     Extracts governing equations, dimensionless groups, geometry constraints,
     and reconstruction algorithm requirements for the hypothesis agent prompt.
@@ -211,15 +213,15 @@ def format_nlos_physics_context(domain_knowledge: DomainKnowledge) -> str:
 
 def create_hypothesis_agent(
     environment_str: str,
-    nlos_physics_context: str = "",
+    physics_context: str = "",
 ) -> AgentDefinition:
     """Create the Hypothesis Agent definition.
 
     Args:
         environment_str: Formatted string describing available packages.
-        nlos_physics_context: Optional NLOS physics context to inject.
+        physics_context: Optional physics context to inject into prompt.
     """
-    nlos_section = f"\n{nlos_physics_context}\n\n" if nlos_physics_context else ""
+    physics_section = f"\n{physics_context}\n\n" if physics_context else ""
     return AgentDefinition(
         description=(
             "Parses natural language hypotheses into structured experiment "
@@ -230,7 +232,7 @@ def create_hypothesis_agent(
         prompt=HYPOTHESIS_PROMPT.format(
             environment=environment_str,
             state_context="{state_context}",
-            nlos_section=nlos_section,
+            physics_section=physics_section,
         ),
         tools=["Read", "Glob"],
         model="claude-sonnet-4-20250514",

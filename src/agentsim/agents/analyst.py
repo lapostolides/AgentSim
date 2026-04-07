@@ -64,7 +64,7 @@ CRITICAL: Do NOT wrap in an outer object like {{"analysis": ...}}.
 - Consider statistical significance where applicable
 - Track how confidence has evolved across iterations
 
-{nlos_section}## Current Experiment State
+{physics_section}## Current Experiment State
 
 {state_context}
 """
@@ -72,6 +72,8 @@ CRITICAL: Do NOT wrap in an outer object like {{"analysis": ...}}.
 
 def format_nlos_analysis_context(domain_knowledge: DomainKnowledge) -> str:
     """Format NLOS-specific validation criteria for the analyst.
+
+    Deprecated: use agentsim.physics.context.format_analysis_context instead.
 
     Tells the analyst what physics-based checks to apply when
     evaluating NLOS transient imaging results.
@@ -134,16 +136,16 @@ def format_nlos_analysis_context(domain_knowledge: DomainKnowledge) -> str:
 
 
 def create_analyst_agent(
-    nlos_analysis_context: str = "",
+    analysis_context: str = "",
 ) -> AgentDefinition:
     """Create the Analyst Agent definition.
 
     Args:
-        nlos_analysis_context: Optional NLOS validation criteria to inject.
+        analysis_context: Optional physics validation criteria to inject.
 
     Uses opus model for deeper reasoning on result interpretation.
     """
-    nlos_section = f"\n{nlos_analysis_context}\n\n" if nlos_analysis_context else ""
+    physics_section = f"\n{analysis_context}\n\n" if analysis_context else ""
     return AgentDefinition(
         description=(
             "Interprets experimental results, assesses hypothesis support, "
@@ -152,7 +154,7 @@ def create_analyst_agent(
         ),
         prompt=ANALYST_PROMPT.format(
             state_context="{state_context}",
-            nlos_section=nlos_section,
+            physics_section=physics_section,
         ),
         tools=["Read", "Glob"],
         model="claude-opus-4-6",

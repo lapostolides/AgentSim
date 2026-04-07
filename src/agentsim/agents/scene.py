@@ -63,17 +63,25 @@ If there is only one scene, still wrap it in the "scenes" list.
 Use ONLY packages that are listed above. If a critical package is missing,
 note it in the code comments and raise a clear error.
 
+## Physics Constraints
+
+{physics_context}
+
 ## Current Experiment State
 
 {state_context}
 """
 
 
-def create_scene_agent(environment_str: str) -> AgentDefinition:
+def create_scene_agent(
+    environment_str: str,
+    physics_context: str = "",
+) -> AgentDefinition:
     """Create the Scene Agent definition.
 
     Args:
         environment_str: Formatted string describing available packages.
+        physics_context: Optional physics constraints context to inject.
     """
     return AgentDefinition(
         description=(
@@ -84,6 +92,7 @@ def create_scene_agent(environment_str: str) -> AgentDefinition:
         ),
         prompt=SCENE_PROMPT.format(
             environment=environment_str,
+            physics_context=physics_context,
             state_context="{state_context}",
         ),
         tools=["Read"],

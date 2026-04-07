@@ -25,7 +25,7 @@ based on dimensional analysis and physical reasoning.
 ## Constants Registry
 {constants_registry}
 
-{nlos_domain_section}## Your Capabilities
+{domain_knowledge_section}## Your Capabilities
 - Identify governing equations for a given physical system
 - Recommend dimensionless groups relevant to the simulation
 - Assess parameter plausibility when not in the registry (per D-02)
@@ -83,6 +83,8 @@ def _format_constants_for_prompt() -> str:
 def format_nlos_advisor_context(domain_knowledge: DomainKnowledge) -> str:
     """Format NLOS domain knowledge for the physics advisor prompt.
 
+    Deprecated: use agentsim.physics.context.format_physics_context instead.
+
     Provides governing equations, parameter ranges, and reconstruction
     constraints for physics-grounded advisory when NLOS domain detected.
 
@@ -132,19 +134,22 @@ def format_nlos_advisor_context(domain_knowledge: DomainKnowledge) -> str:
 
 
 def create_physics_advisor_agent(
-    nlos_domain_knowledge: str = "",
+    domain_knowledge: str = "",
 ) -> AgentDefinition:
     """Create the Physics Advisor AgentDefinition.
 
     The prompt embeds the full constants registry so the agent never
     needs to recall constants from training data.
 
+    Args:
+        domain_knowledge: Optional domain knowledge context to inject.
+
     Returns:
         AgentDefinition configured for physics advisory with model='sonnet'.
     """
     constants_str = _format_constants_for_prompt()
-    nlos_domain_section = (
-        f"\n{nlos_domain_knowledge}\n\n" if nlos_domain_knowledge else ""
+    domain_knowledge_section = (
+        f"\n{domain_knowledge}\n\n" if domain_knowledge else ""
     )
     return AgentDefinition(
         description=(
@@ -154,7 +159,7 @@ def create_physics_advisor_agent(
         ),
         prompt=ADVISOR_PROMPT.format(
             constants_registry=constants_str,
-            nlos_domain_section=nlos_domain_section,
+            domain_knowledge_section=domain_knowledge_section,
             query_context="{query_context}",
             state_context="{state_context}",
         ),
