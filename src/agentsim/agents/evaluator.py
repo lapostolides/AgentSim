@@ -42,6 +42,35 @@ CRITICAL: The top-level key MUST be "evaluations" containing a list.
 Do NOT use "evaluation_results", "metrics", "analysis", or any other name.
 Each evaluation MUST have "scene_id" and "metrics" fields.
 
+## One-Shot Example
+
+```json
+{{
+  "evaluations": [
+    {{
+      "scene_id": "scene-001",
+      "metrics": {{
+        "psnr_db": 24.3,
+        "ssim": 0.87,
+        "mse": 0.0037,
+        "execution_time_s": 12.5
+      }},
+      "ground_truth_comparison": {{
+        "psnr_db": {{"predicted": 24.3, "ground_truth": 26.1, "difference": -1.8}}
+      }},
+      "summary": "Reconstruction achieves 24.3 dB PSNR, 1.8 dB below ground truth. SSIM of 0.87 indicates good structural similarity. Main loss is in high-frequency edge detail.",
+      "artifacts": ["/tmp/output/comparison_plot.png"]
+    }}
+  ]
+}}
+```
+
+## Final Checklist
+- [ ] Top-level key is "evaluations" (a list)
+- [ ] Each evaluation has: scene_id, metrics, assessment, issues
+- [ ] If only one evaluation, still wrapped in "evaluations" list
+- [ ] No JSON wrapping
+
 ## Guidelines
 
 - Compute ALL metrics specified in the experiment plan
