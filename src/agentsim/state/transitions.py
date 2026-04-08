@@ -21,6 +21,7 @@ from agentsim.state.models import (
     Hypothesis,
     LiteratureContext,
     LiteratureValidation,
+    PhysicsRecommendation,
     ScenePreview,
     SceneSpec,
 )
@@ -230,6 +231,16 @@ def set_consultation_summary(
     """Record physics consultation summary (supplementary -- does not change status)."""
     return state.model_copy(
         update={"consultation_summary": summary},
+    )
+
+
+def set_physics_recommendation(
+    state: ExperimentState,
+    recommendation: PhysicsRecommendation,
+) -> ExperimentState:
+    """Record physics-space reasoning recommendation (supplementary -- does not change status)."""
+    return state.model_copy(
+        update={"physics_recommendation": recommendation},
     )
 
 

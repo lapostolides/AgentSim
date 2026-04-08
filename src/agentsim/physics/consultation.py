@@ -23,6 +23,58 @@ logger = structlog.get_logger()
 
 
 # ---------------------------------------------------------------------------
+# D-02 reasoning query routing
+# ---------------------------------------------------------------------------
+
+# D-02 query type mapping: SensorQuery, AlgorithmQuery -> optimize_setup;
+# ExplorerQuery -> find_novel_regions. optimize_setup is the combined mode.
+_OPTIMIZER_QUERY_TYPES = frozenset({"optimize_setup", "sensor_query", "algorithm_query"})
+
+
+def _route_reasoning_query(
+    query: PhysicsQuery,
+    bundle: Any,
+    paradigm: Any,
+) -> Any:
+    """Route reasoning query types to deterministic computation.
+
+    Returns deterministic result for known query types, None for unknown
+    (which should be handled by the standard LLM advisor path).
+
+    Per D-02, three named sub-query types are supported:
+    - sensor_query: which sensor class for these constraints (routes to optimize_setup)
+    - algorithm_query: which algorithm for this paradigm+sensor combo (routes to optimize_setup)
+    - optimize_setup: combined sensor+algorithm optimization
+    - explore_novel: parameter regions not covered by published baselines
+
+    Args:
+        query: Physics query with query_type and parameters.
+        bundle: Loaded domain bundle (required for optimize_setup).
+        paradigm: Detected paradigm (required for both modes).
+
+    Returns:
+        OptimizerResult, ExplorerResult, or None.
+    """
+    if paradigm is None:
+        return None
+
+    hypothesis_params = {
+        k: v for k, v in query.parameters.items()
+        if isinstance(v, (int, float))
+    }
+
+    if query.query_type in _OPTIMIZER_QUERY_TYPES and bundle is not None:
+        from agentsim.physics.reasoning import optimize_setup
+        return optimize_setup(hypothesis_params, bundle, paradigm)
+
+    if query.query_type == "explore_novel":
+        from agentsim.physics.reasoning import find_novel_regions
+        return find_novel_regions(hypothesis_params, paradigm)
+
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Prompt building
 # ---------------------------------------------------------------------------
 
