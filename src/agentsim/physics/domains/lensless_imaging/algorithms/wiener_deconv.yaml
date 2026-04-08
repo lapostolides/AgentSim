@@ -1,0 +1,44 @@
+name: "Wiener Deconvolution"
+algorithm: wiener_deconv
+reference: "Antipa et al. 2018"
+description: "Closed-form inverse filtering in Fourier domain with noise regularization. Fast (single FFT pair) but sensitive to PSF calibration errors and noise. Optimal for Gaussian noise and known PSF."
+requires_confocal: false
+spatial_resolution: "Limited by PSF bandwidth and SNR-dependent regularization"
+frequency_constraint: "Cannot recover frequencies where MTF falls below noise floor"
+
+compatible_paradigms:
+  - diffusercam
+
+compatible_sensor_classes:
+  - cmos_array
+  - computational_camera
+
+parameters:
+  regularization_parameter:
+    min: 0.001
+    max: 1.0
+    typical: 0.01
+    description: "Wiener filter regularization (higher = smoother, lower = sharper but noisier)"
+
+input_requirements:
+  - calibrated_psf: true
+  - single_channel: false
+
+output_characteristics:
+  - "Resolution limited by SNR — ringing artifacts at low SNR"
+  - "Single-shot reconstruction (no iteration needed)"
+  - "Assumes shift-invariant PSF (spatially varying PSF degrades quality)"
+
+transfer_functions:
+  - input: snr
+    output: effective_resolution_lp_mm
+    relationship: logarithmic
+    formula: "resolution ~ log(SNR) * f_cutoff"
+    description: "Effective resolution depends on SNR — low SNR forces aggressive regularization"
+    coupling_strength: strong
+  - input: regularization_parameter
+    output: noise_amplification
+    relationship: inverse
+    formula: "amplification ~ 1 / lambda"
+    description: "Lower regularization amplifies noise more"
+    coupling_strength: strong

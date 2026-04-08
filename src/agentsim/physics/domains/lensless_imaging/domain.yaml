@@ -1,0 +1,41 @@
+domain: lensless_imaging
+version: "1.0"
+description: "Lensless imaging reconstructs scenes from raw sensor measurements without a lens, using a known PSF (point spread function) from a mask, diffuser, or coded aperture placed directly on the sensor."
+
+governing_equations:
+  - name: "Imaging forward model"
+    latex: "y = H * x + n"
+    description: "Measurement y is convolution of scene x with PSF H plus noise n"
+    variables:
+      y: "Raw sensor measurement (2D image)"
+      H: "System PSF (point spread function)"
+      x: "Scene to reconstruct"
+      n: "Additive sensor noise"
+  - name: "Wiener deconvolution"
+    latex: "x_hat = F^{-1}[F(y) * F(H)^* / (|F(H)|^2 + 1/SNR)]"
+    description: "Closed-form inverse filtering with noise regularization"
+    variables:
+      F: "Fourier transform"
+      SNR: "Signal-to-noise ratio"
+
+dimensionless_groups:
+  - name: "Modulation Transfer Function"
+    formula: "MTF = |OTF(f)|"
+    description: "Spatial frequency response of the optical system — determines resolution limit"
+  - name: "Condition number"
+    formula: "kappa = sigma_max / sigma_min"
+    description: "Ratio of largest to smallest singular values of H — higher means harder to invert"
+
+transfer_functions:
+  - input: pixel_pitch_um
+    output: spatial_resolution_lp_mm
+    relationship: inverse
+    formula: "f_nyquist = 1 / (2 * pixel_pitch)"
+    description: "Nyquist limit from pixel sampling — smaller pixels enable higher frequencies"
+    coupling_strength: strong
+  - input: snr
+    output: deconvolution_quality
+    relationship: logarithmic
+    formula: "quality ~ log(SNR)"
+    description: "Deconvolution amplifies noise — quality degrades rapidly below SNR threshold"
+    coupling_strength: strong

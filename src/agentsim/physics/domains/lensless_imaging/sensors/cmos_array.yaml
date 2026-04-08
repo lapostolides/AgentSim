@@ -1,0 +1,44 @@
+name: cmos_array
+display_name: "Standard CMOS Image Sensor"
+description: "Conventional CMOS active pixel sensors for lensless imaging. No single-photon sensitivity, but high pixel count and low cost. Dominant sensor for DiffuserCam and coded aperture systems."
+sensor_type: cmos
+
+timing_range:
+  temporal_resolution_ps:
+    min: 1000000
+    max: 100000000
+    typical: 10000000
+    description: "Frame exposure time in ps (ms-scale, not ps-precise like SPADs)"
+
+spatial_range:
+  array_size: [1920, 1200]
+  pixel_pitch_um: 5.86
+  fill_factor: 0.80
+  fov_degrees:
+    min: 30
+    max: 120
+    typical: 60
+    description: "Wide FOV typical for lensless (no lens to restrict)"
+
+transfer_functions:
+  - input: pixel_pitch_um
+    output: spatial_resolution_lp_mm
+    relationship: inverse
+    formula: "f_nyquist = 1 / (2 * pixel_pitch)"
+    description: "Pixel sampling sets Nyquist limit"
+    coupling_strength: strong
+  - input: fill_factor
+    output: light_collection_efficiency
+    relationship: proportional
+    formula: "efficiency ~ fill_factor"
+    description: "Higher fill factor captures more light per pixel"
+    coupling_strength: moderate
+
+tradeoffs: "High pixel count and low cost but no single-photon sensitivity. Rolling shutter can cause artifacts with pulsed illumination. Read noise limits low-light performance."
+
+typical_models: []
+
+use_cases:
+  - "DiffuserCam 3D imaging"
+  - "Coded aperture snapshot spectral imaging"
+  - "Lensless fluorescence microscopy"

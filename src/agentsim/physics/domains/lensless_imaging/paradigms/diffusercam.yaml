@@ -1,0 +1,69 @@
+paradigm: diffusercam
+domain: lensless_imaging
+version: "1.0"
+description: "DiffuserCam: thin phase diffuser placed directly on a standard image sensor. Scene light passes through the diffuser, creating a coded measurement that encodes 3D information. Reconstruction via deconvolution recovers the scene."
+
+keywords:
+  - "diffusercam"
+  - "diffuser cam"
+  - "phase diffuser"
+  - "lensless diffuser"
+  - "computational lensless"
+
+compatible_sensor_types:
+  - cmos
+
+compatible_sensor_classes:
+  - cmos_array
+  - computational_camera
+
+compatible_algorithms:
+  - wiener_deconv
+  - learned_reconstruction
+
+geometry_constraints:
+  sensor_mask_distance:
+    min_mm: 0.1
+    max_mm: 10.0
+    typical_mm: 3.0
+    description: "Distance between diffuser and sensor surface"
+  mask_feature_size:
+    min_um: 1.0
+    max_um: 100.0
+    typical_um: 10.0
+    description: "Characteristic feature size of the diffuser phase pattern"
+  scene_distance:
+    min_mm: 50.0
+    max_mm: 10000.0
+    typical_mm: 500.0
+    description: "Object-to-diffuser distance (far field assumed)"
+
+transfer_functions:
+  - input: sensor_mask_distance_mm
+    output: psf_support_pixels
+    relationship: linear
+    formula: "support ~ distance * NA / pixel_pitch"
+    description: "PSF spreads with mask-sensor distance — larger PSF = more light but lower per-pixel SNR"
+    coupling_strength: strong
+  - input: mask_feature_size_um
+    output: diffraction_limit_um
+    relationship: linear
+    formula: "d_min ~ lambda * z / feature_size"
+    description: "Mask features set diffraction floor — smaller features enable higher resolution"
+    coupling_strength: strong
+  - input: exposure_time_ms
+    output: motion_blur_pixels
+    relationship: linear
+    formula: "blur = v * t / pixel_pitch"
+    description: "Longer exposure increases motion blur for moving scenes"
+    coupling_strength: moderate
+
+published_baselines:
+  antipa_2018:
+    paper: "DiffuserCam: Lensless Single-Exposure 3D Imaging"
+    venue: "Optica 2018"
+    sensor_resolution: "1920x1200"
+    pixel_pitch_um: 5.86
+    sensor_mask_distance_mm: 3.0
+    mask_feature_size_um: 10.0
+    scene_distance_mm: 500.0

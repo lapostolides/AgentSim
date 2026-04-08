@@ -1,0 +1,44 @@
+name: computational_camera
+display_name: "Integrated Computational Camera"
+description: "Sensor with diffractive or coded optical element integrated as a unit. The mask/diffuser and sensor are pre-calibrated — PSF is factory-measured for optimal reconstruction."
+sensor_type: cmos
+
+timing_range:
+  temporal_resolution_ps:
+    min: 1000000
+    max: 50000000
+    typical: 5000000
+    description: "Frame exposure time in ps"
+
+spatial_range:
+  array_size: [2048, 2048]
+  pixel_pitch_um: 3.45
+  fill_factor: 0.90
+  fov_degrees:
+    min: 40
+    max: 90
+    typical: 60
+    description: "Optimized for computational reconstruction"
+
+transfer_functions:
+  - input: pixel_pitch_um
+    output: spatial_resolution_lp_mm
+    relationship: inverse
+    formula: "f_nyquist = 1 / (2 * pixel_pitch)"
+    description: "Pixel sampling sets Nyquist limit — smaller pitch = higher resolution"
+    coupling_strength: strong
+  - input: sensor_mask_distance_mm
+    output: psf_calibration_accuracy
+    relationship: inverse
+    formula: "accuracy ~ 1 / alignment_tolerance"
+    description: "Tighter integration reduces PSF calibration error"
+    coupling_strength: moderate
+
+tradeoffs: "Factory-calibrated PSF gives better reconstruction than ad-hoc diffusers, but design is fixed post-manufacture. Higher cost than bare sensor + diffuser."
+
+typical_models: []
+
+use_cases:
+  - "Miniaturized computational cameras"
+  - "Endoscopic lensless imaging"
+  - "Consumer computational photography"

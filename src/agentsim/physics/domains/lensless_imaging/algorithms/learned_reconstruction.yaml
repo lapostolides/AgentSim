@@ -1,0 +1,47 @@
+name: "Learned Reconstruction"
+algorithm: learned_reconstruction
+reference: "Monakhova et al. 2019"
+description: "Neural network trained end-to-end to reconstruct from lensless measurements. Higher quality than Wiener for complex scenes but requires training data and GPU. Can handle PSF mismatch better."
+requires_confocal: false
+spatial_resolution: "Can exceed Wiener resolution by learning priors on scene structure"
+frequency_constraint: "Training distribution limits generalization to novel scene types"
+
+compatible_paradigms:
+  - diffusercam
+
+compatible_sensor_classes:
+  - cmos_array
+  - computational_camera
+
+parameters:
+  training_epochs:
+    min: 10
+    max: 1000
+    typical: 100
+  network_depth:
+    min: 3
+    max: 50
+    typical: 10
+
+input_requirements:
+  - calibrated_psf: true
+  - training_dataset: true
+
+output_characteristics:
+  - "Higher quality on in-distribution scenes than Wiener"
+  - "Requires GPU for training and inference"
+  - "Generalizes poorly to scene types not in training set"
+
+transfer_functions:
+  - input: training_epochs
+    output: reconstruction_quality
+    relationship: logarithmic
+    formula: "quality ~ log(epochs)"
+    description: "Diminishing returns with more training epochs"
+    coupling_strength: moderate
+  - input: snr
+    output: effective_resolution_lp_mm
+    relationship: sqrt
+    formula: "resolution ~ sqrt(SNR)"
+    description: "Learned priors partially compensate for noise — better than Wiener at low SNR"
+    coupling_strength: strong
