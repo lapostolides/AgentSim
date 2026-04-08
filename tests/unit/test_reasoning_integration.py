@@ -283,3 +283,89 @@ class TestRouteReasoningQuery:
         query = self._make_query("optimize_setup")
         result = _route_reasoning_query(query, MagicMock(), None)
         assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Scene agent prompt integration test
+# ---------------------------------------------------------------------------
+
+
+class TestSceneAgentPromptContainsRecommendation:
+    """Verify scene agent prompt includes optimizer output after domain_context rebuild."""
+
+    def test_scene_agent_prompt_contains_optimizer_recommendation(self) -> None:
+        """After optimizer runs, rebuilt agent registry scene agent must include 'Recommended Setup'."""
+        from agentsim.orchestrator.agent_registry import build_agent_registry
+        from agentsim.physics.context import format_optimizer_recommendation
+
+        # 1. Create a domain_context dict with a base scene string
+        domain_context: dict[str, str] = {
+            "hypothesis": "test hypothesis context",
+            "analyst": "test analyst context",
+            "advisor": "test advisor context",
+            "scene": "## Base Scene Context\nSome physics constraints.",
+        }
+
+        # 2. Create an OptimizerResult with at least one ScoredSetup
+        optimizer_result = OptimizerResult(
+            paradigm="nlos",
+            setups=(
+                ScoredSetup(
+                    sensor_class="spad_array",
+                    algorithm="lct",
+                    score=5.0,
+                    computed_metrics=(
+                        ComputedValue(
+                            parameter="temporal_resolution",
+                            value=50.0,
+                            relationship="linear",
+                            source_tf_formula="t = d/c",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        # 3. Call format_optimizer_recommendation to get opt_text
+        opt_text = format_optimizer_recommendation(optimizer_result)
+        assert opt_text  # Should not be empty
+
+        # 4. Rebuild domain_context immutably
+        updated_context = {
+            **domain_context,
+            "scene": domain_context["scene"] + "\n" + opt_text,
+        }
+
+        # 5. Call build_agent_registry with the updated domain_context
+        agents = build_agent_registry(domain_context=updated_context)
+
+        # 6. Assert the scene agent definition's prompt contains "Recommended Setup"
+        scene_agent = agents["scene"]
+        assert "Recommended Setup" in scene_agent.prompt
+
+        # 7. Assert the scene agent definition's prompt contains the sensor_class name
+        assert "spad_array" in scene_agent.prompt
+        assert "lct" in scene_agent.prompt
+
+    def test_original_domain_context_not_mutated(self) -> None:
+        """Rebuilding domain_context must not mutate the original dict."""
+        from agentsim.physics.context import format_optimizer_recommendation
+
+        original_context: dict[str, str] = {
+            "scene": "base scene text",
+        }
+        original_scene = original_context["scene"]
+
+        result = OptimizerResult(
+            paradigm="nlos",
+            setups=(
+                ScoredSetup(sensor_class="spad", algorithm="lct", score=1.0),
+            ),
+        )
+        opt_text = format_optimizer_recommendation(result)
+
+        # Rebuild immutably
+        _updated = {**original_context, "scene": original_context["scene"] + "\n" + opt_text}
+
+        # Original should be unchanged
+        assert original_context["scene"] == original_scene

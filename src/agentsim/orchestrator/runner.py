@@ -797,6 +797,70 @@ async def run_experiment(
             if _is_abort(decision):
                 break
 
+            # ── Pre-scene physics optimization (D-04, PSR-06) ────────
+            # Runs INSIDE the iteration loop because it needs the hypothesis
+            # (which may change each iteration via redo). Rebuilds agent
+            # registry so scene agent prompt includes optimizer output.
+            if bundle is not None and paradigm is not None:
+                try:
+                    from agentsim.physics.reasoning import optimize_setup as _optimize
+                    from agentsim.physics.context import format_optimizer_recommendation
+                    from agentsim.state.models import PhysicsRecommendation
+                    from agentsim.state.transitions import set_physics_recommendation
+
+                    # Extract numeric params from hypothesis parameter_space
+                    hypothesis_params: dict[str, float] = {}
+                    if state.hypothesis is not None:
+                        for ps in state.hypothesis.parameter_space:
+                            if ps.range_min is not None:
+                                hypothesis_params[ps.name] = (
+                                    ps.range_min + (ps.range_max or ps.range_min)
+                                ) / 2
+                    # Fallback: paradigm geometry_constraints typical values
+                    for gc_name, gc_params in paradigm.geometry_constraints.items():
+                        for pk, pv in gc_params.items():
+                            if isinstance(pv, (int, float)) and "typical" in pk:
+                                param_name = gc_name + "_" + pk.replace("typical_", "")
+                                hypothesis_params.setdefault(param_name, float(pv))
+
+                    if hypothesis_params:
+                        optimizer_result = _optimize(
+                            hypothesis_params, bundle, paradigm,
+                        )
+                        recommendation = PhysicsRecommendation(
+                            optimizer_result=optimizer_result,
+                        )
+                        state = set_physics_recommendation(state, recommendation)
+
+                        # Rebuild domain_context with optimizer recommendation appended
+                        opt_text = format_optimizer_recommendation(optimizer_result)
+                        if opt_text and domain_context is not None:
+                            domain_context = {
+                                **domain_context,
+                                "scene": domain_context["scene"] + "\n" + opt_text,
+                            }
+                            # CRITICAL: Rebuild agent registry so scene agent
+                            # definition includes optimizer output in its prompt
+                            agents = build_agent_registry(
+                                environment, domain_context=domain_context,
+                            )
+
+                        logger.info(
+                            "physics_optimization_complete",
+                            paradigm=paradigm.paradigm,
+                            setups=len(optimizer_result.setups),
+                            top_score=(
+                                optimizer_result.setups[0].score
+                                if optimizer_result.setups
+                                else 0.0
+                            ),
+                        )
+                except Exception:
+                    logger.warning(
+                        "physics_optimization_failed",
+                        exc_info=True,
+                    )
+
             # ── Scene generation (with feedback loop) ─────────────
             user_feedback = ""
             for feedback_round in range(config.max_scene_feedback_rounds):
