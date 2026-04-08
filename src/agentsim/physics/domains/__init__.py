@@ -54,6 +54,7 @@ _BUNDLE_CACHE: dict[str, DomainBundle] = {}
 # Map domain identifiers to flat YAML filenames (legacy layout).
 _DOMAIN_FILE_MAP: dict[str, str] = {
     "nlos_transient_imaging": "nlos",
+    "lensless_imaging": "lensless_imaging",
 }
 
 NLOS_KEYWORDS: frozenset[str] = frozenset({
@@ -71,6 +72,18 @@ NLOS_KEYWORDS: frozenset[str] = frozenset({
     "f-k migration",
     "phasor field",
     "reconstruction",
+})
+
+LENSLESS_KEYWORDS: frozenset[str] = frozenset({
+    "lensless",
+    "diffuser",
+    "diffusercam",
+    "coded aperture",
+    "psf",
+    "mask",
+    "computational camera",
+    "wiener",
+    "deconvolution",
 })
 
 # Minimum keyword score to confidently detect a paradigm.
@@ -311,7 +324,9 @@ def detect_domain(hypothesis_text: str, parameters: dict | None = None) -> str |
     nlos_score = sum(1 for kw in NLOS_KEYWORDS if kw in text_lower)
     if nlos_score >= 2:
         return "nlos_transient_imaging"
-    # Future: ptychography, lensless, coded_aperture detection
+    lensless_score = sum(1 for kw in LENSLESS_KEYWORDS if kw in text_lower)
+    if lensless_score >= 2:
+        return "lensless_imaging"
     return None
 
 

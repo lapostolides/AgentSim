@@ -38,7 +38,7 @@ class TestDetectParadigm:
 
     def test_diffusercam_paradigm(self) -> None:
         result = detect_paradigm(
-            "diffusercam lensless",
+            "diffusercam with phase diffuser setup",
             domain="lensless_imaging",
         )
         assert result == "diffusercam"
