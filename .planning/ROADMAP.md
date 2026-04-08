@@ -1,13 +1,9 @@
-# Roadmap: AgentSim Physics-Aware Enhancement
-
-## Overview
-
-This roadmap transforms AgentSim from "agents that write and run code" into "agents that understand computational science." The work starts with the physics foundation (advisor agent, constants registry, deterministic validation checks), then integrates physics intelligence into the existing pipeline (hypothesis generation, scene validation, result analysis, domain modules, grounding mechanisms). Two parallel tracks follow: smart experimental design (DoE, sensitivity analysis) and reproducibility packaging. Every phase delivers observable, verifiable capability.
+# Roadmap: AgentSim
 
 ## Milestones
 
 - 🚧 **v1.0 Physics-Aware Enhancement** - Phases 1-5 (in progress)
-- 📋 **v2.0 ML-Driven Downstream Reconstruction** - Phases 6-9 (planned)
+- 📋 **v2.0 Computational Imaging Knowledge Graph** - Phases 6-10 (planned)
 
 ## Phases
 
@@ -17,24 +13,31 @@ This roadmap transforms AgentSim from "agents that write and run code" into "age
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-### v1.0 Physics-Aware Enhancement
+<details>
+<summary>v1.0 Physics-Aware Enhancement (Phases 1-5)</summary>
 
-- [ ] **Phase 1: Physics Foundation and Deterministic Checks** - Physics advisor agent, constants registry, consultation logging, and all deterministic validation (AST analysis, units, ranges, CFL, mesh)
-- [ ] **Phase 2: Computational Imaging Domain Intelligence** - NLOS domain knowledge (YAML), three-bounce geometry validation, sensor FOV checks, temporal resolution validation, scene auto-fix loop, physics-informed hypothesis generation, and NLOS benchmark scenes
+- [x] **Phase 1: Physics Foundation and Deterministic Checks** - Physics advisor agent, constants registry, consultation logging, and all deterministic validation (AST analysis, units, ranges, CFL, mesh)
+- [x] **Phase 2: Computational Imaging Domain Intelligence** - NLOS domain knowledge (YAML), three-bounce geometry validation, sensor FOV checks, temporal resolution validation, scene auto-fix loop, physics-informed hypothesis generation, and NLOS benchmark scenes
 - [x] **Phase 02.1: Paradigm-Agnostic Domain Architecture** - Refactor hardcoded relay-wall NLOS into multi-paradigm YAML architecture with sensor profiles, transfer function matrices, scene prompt injection, and declarative validator dispatch (completed 2026-04-07)
 - [x] **Phase 02.2: Physics-Space Reasoning Agents** - Sensor/algorithm advisor agents that reason over transfer function matrices to optimize setups and propose novel experiments in computational imaging (completed 2026-04-08)
 - [ ] **Phase 3: Smart Experimental Design** - Automatic DoE strategy selection, sensitivity analysis via SALib, and LHS parameter sampling
 - [ ] **Phase 4: Reproducibility and Reporting** - Reproducibility package generator and structured experiment metadata capture
-- [ ] **Phase 5: Mitsuba 3 Transient Rendering Integration** - Physically-based NLOS transient rendering via Mitsuba 3 + mitransient
+- [x] **Phase 5: Mitsuba 3 Transient Rendering Integration** - Physically-based NLOS transient rendering via Mitsuba 3 + mitransient
 
-### v2.0 ML-Driven Downstream Reconstruction
+</details>
 
-- [ ] **Phase 6: ML Foundation and Downstream Goals** - Downstream task model, hypothesis integration, reconstruction backend registry, classical baseline (LCT)
-- [ ] **Phase 7: Dataset Generation and Motion Simulation** - Scene agent dataset mode, HDF5 storage, diversity controls, augmentation, motion sequences for tracking
-- [ ] **Phase 8: ML Training Pipeline and Evaluation** - Learned reconstruction backends, agent-generated training code, execution modes, task-specific metrics, cross-method comparison
-- [ ] **Phase 9: Reconstruction Feedback Loop** - Analyst receives reconstruction metrics, recommends targeted data generation, mixed-mode iteration
+### v2.0 Computational Imaging Knowledge Graph
+
+- [ ] **Phase 6: Graph Schema and Data Models** - Pydantic frozen types for sensors, physics properties, algorithms, and Neo4j schema definition with unit-annotated shared physics foundation
+- [ ] **Phase 7: Sensor Taxonomy Population** - All 11 sensor families (SPAD, ToF, event, coded aperture, light field, LiDAR, lensless, RGB, structured light, polarimetric, spectral) with complete physics specs
+- [ ] **Phase 8: CRB and Information-Theoretic Bounds** - Analytical closed-form CRB for 7 sensor families, JAX numerical Fisher information for 4 exotic sensors, sensitivity analysis, and stability guards
+- [ ] **Phase 9: Neo4j Infrastructure and Feasibility Queries** - Docker lifecycle, Python graph client, YAML seed pipeline, CLI commands, graceful degradation, and feasibility query engine with cross-family ranking
+- [ ] **Phase 10: Pipeline Integration** - Feasibility phase in runner, hypothesis agent receives graph context, ExperimentState extended with FeasibilityResult, graceful skip when graph unavailable
 
 ## Phase Details
+
+<details>
+<summary>v1.0 Phase Details (Phases 1-5)</summary>
 
 ### Phase 1: Physics Foundation and Deterministic Checks
 **Goal**: The system has a functioning physics advisor agent, a curated constants registry, consultation logging, and a complete suite of deterministic validation checks that run without LLM calls
@@ -54,99 +57,104 @@ Plans:
 - [x] 01-03-PLAN.md — Physics advisor agent, consultation logging, checker pipeline, and runner integration
 
 ### Phase 2: Computational Imaging Domain Intelligence
-**Goal**: The system deeply understands NLOS transient imaging — it validates three-bounce geometry, checks sensor FOV against relay wall coverage, verifies temporal bin resolution, and blocks physically impossible scene configurations before execution. Domain knowledge is curated from published NLOS codebases (O'Toole, Lindell, Liu, Nam) and stored as extensible YAML. The architecture supports adding new CI subdomains (ptychography, lensless, coded aperture) via the same YAML schema.
+**Goal**: The system deeply understands NLOS transient imaging — it validates three-bounce geometry, checks sensor FOV against relay wall coverage, verifies temporal bin resolution, and blocks physically impossible scene configurations before execution.
 **Depends on**: Phase 1
 **Requirements**: CIDK-01, CIDK-02, CIDK-03, NLOS-01, NLOS-02, NLOS-03, NLOS-04, LINT-01, LINT-02, PGND-01, PGND-02
 **Success Criteria** (what must be TRUE):
-  1. Given an NLOS scene with sensor, relay wall, and hidden objects, the system validates the three-bounce light path is geometrically feasible (sensor sees relay wall, relay wall illuminates hidden scene, return path unoccluded)
-  2. Sensor FOV validation confirms the SPAD's field of view covers the relay wall scan area given position and orientation — flags when hidden objects fall outside the observable volume
-  3. Temporal resolution check verifies time-bin width resolves the geometry (c * dt < minimum feature separation between relay wall and hidden scene)
-  4. NLOS domain knowledge YAML contains governing equations, reconstruction algorithm constraints (LCT frequency bounds, f-k migration spatial resolution, phasor field virtual aperture limits), and published parameter ranges from at least 4 key papers
-  5. Pre-execution validation auto-fix loop catches and corrects invalid NLOS configurations (max 3 retries) — e.g., repositions sensor to see relay wall, adjusts temporal bins for scene depth
-  6. Domain knowledge architecture is extensible — adding a new CI subdomain requires only a YAML file and optional Python check module, no core pipeline changes
-  7. At least 3 NLOS benchmark scenes (confocal, non-confocal, retroreflective) with known transient profiles exist for solver verification
-  8. Hypothesis agent receives NLOS-specific physics context (transient transport equation, relevant dimensionless groups, reconstruction regime constraints) when generating computational imaging hypotheses
+  1. Given an NLOS scene with sensor, relay wall, and hidden objects, the system validates the three-bounce light path is geometrically feasible
+  2. Sensor FOV validation confirms the SPAD's field of view covers the relay wall scan area given position and orientation
+  3. Temporal resolution check verifies time-bin width resolves the geometry
+  4. NLOS domain knowledge YAML contains governing equations, reconstruction algorithm constraints, and published parameter ranges
+  5. Pre-execution validation auto-fix loop catches and corrects invalid NLOS configurations (max 3 retries)
+  6. Domain knowledge architecture is extensible — adding a new CI subdomain requires only a YAML file
+  7. At least 3 NLOS benchmark scenes exist for solver verification
+  8. Hypothesis agent receives NLOS-specific physics context when generating computational imaging hypotheses
 **Plans**: 4 plans
 
 Plans:
 - [x] 02-01-PLAN.md — Domain knowledge Pydantic schema, NLOS YAML with published parameters, and cached loader with auto-detection
-- [x] 02-02-PLAN.md — NLOS geometry checks (three-bounce, sensor FOV, temporal resolution) and checker pipeline integration
-- [x] 02-03-PLAN.md — NLOS benchmark scenes, reconstruction sanity checks, and pre-execution auto-fix loop in runner
+- [x] 02-02-PLAN.md — NLOS geometry checks and checker pipeline integration
+- [x] 02-03-PLAN.md — NLOS benchmark scenes, reconstruction sanity checks, and pre-execution auto-fix loop
 - [x] 02-04-PLAN.md — NLOS physics context injection into hypothesis, analyst, and physics advisor agents
 
 ### Phase 02.1: Paradigm-Agnostic Domain Architecture (INSERTED)
-
-**Goal:** Refactor the hardcoded relay-wall NLOS domain into a paradigm-agnostic architecture. Multiple paradigm YAMLs (relay wall, penumbra/Plato's cave, keyhole, direct ToF) define their own geometry constraints, validation rules, and scene-generation context. Named sensor profiles (SwissSPAD2, LinoSPAD2, streak camera, gated iCCD) with hardware-specific timing parameters. Domain knowledge is injected into the scene agent prompt *before* generation (not just post-hoc validation), so scenes are physics-correct on first attempt. Validators dispatch based on paradigm tags declared in the YAML, not hardcoded Python functions.
+**Goal:** Refactor the hardcoded relay-wall NLOS domain into a paradigm-agnostic architecture.
 **Requirements**: PA-01, PA-02, PA-03, PA-04, PA-05, PA-06
 **Depends on:** Phase 2
 **Success Criteria** (what must be TRUE):
-  1. detect_paradigm(hypothesis) returns the matching paradigm(s) and the system loads the corresponding YAML(s) — not hardcoded to relay-wall NLOS
-  2. Scene agent receives paradigm-specific physics constraints (geometry, sensor parameters, published baselines) in its prompt before generating simulation code
-  3. Post-hoc validators dispatch based on paradigm declarations in the YAML, not hardcoded check functions — adding a new paradigm requires only a YAML file
-  4. Named sensor profiles (at least 3: SwissSPAD2, LinoSPAD2, streak camera) are loadable from YAML with hardware-specific timing parameters (resolution, jitter, dead time, array size)
-  5. Existing relay-wall NLOS checks still pass — no regressions from the refactor
-  6. At least 2 paradigms fully defined (relay wall + one of: penumbra, keyhole, direct ToF) with paradigm-specific validation rules
+  1. detect_paradigm(hypothesis) returns the matching paradigm(s) and loads the corresponding YAML(s)
+  2. Scene agent receives paradigm-specific physics constraints in its prompt before generating simulation code
+  3. Post-hoc validators dispatch based on paradigm declarations in the YAML
+  4. Named sensor profiles (at least 3) are loadable from YAML with hardware-specific timing parameters
+  5. Existing relay-wall NLOS checks still pass — no regressions
+  6. At least 2 paradigms fully defined with paradigm-specific validation rules
 **Plans:** 4/4 plans complete
 
 Plans:
-- [x] 02.1-01-PLAN.md — Paradigm/sensor Pydantic models, YAML data files (relay_wall, penumbra, sensors), refactored nlos.yaml
-- [x] 02.1-02-PLAN.md — Paradigm loader, detector, and paradigm-dispatched validator in checker.py
-- [x] 02.1-03-PLAN.md — Generic context formatters replacing format_nlos_*_context() functions
-- [x] 02.1-04-PLAN.md — Runner/agent registry/scene agent integration wiring and auto-fix loop genericization
+- [x] 02.1-01-PLAN.md — Paradigm/sensor Pydantic models, YAML data files
+- [x] 02.1-02-PLAN.md — Paradigm loader, detector, and paradigm-dispatched validator
+- [x] 02.1-03-PLAN.md — Generic context formatters
+- [x] 02.1-04-PLAN.md — Runner/agent registry/scene agent integration wiring
 
 ### Phase 02.2: Physics-Space Reasoning Agents (INSERTED)
-
-**Goal:** Build sensor and algorithm advisor agents that reason in physics-space — not text-space — over the transfer function matrices from Phase 02.1. Given a research hypothesis, the system maps it to the computational imaging parameter space, evaluates feasible sensor+algorithm combinations, recommends optimal setups with concrete parameter values (optimizer mode), and identifies unexplored regions to propose novel experiments (explorer mode). All sensors/cameras and algorithms are scoped to computational imaging domains (NLOS, ptychography, lensless, coded aperture, etc.).
+**Goal:** Build sensor and algorithm advisor agents that reason in physics-space over transfer function matrices.
 **Requirements**: PSR-01, PSR-02, PSR-03, PSR-04, PSR-05, PSR-06
 **Depends on:** Phase 02.1
 **Success Criteria** (what must be TRUE):
-  1. Given a computational imaging hypothesis, the system identifies compatible sensor+algorithm combinations by querying transfer function matrices from paradigm and sensor YAMLs — not by text matching
-  2. Optimizer mode recommends the top-ranked setup with concrete parameter values and physics rationale (e.g., "SwissSPAD2 + LCT at 32ps bins gives 1.5mm resolution for this relay wall geometry because...")
-  3. Explorer mode identifies under-explored regions in the parameter space by comparing the hypothesis against published baselines and known configurations — proposes at least one novel experiment variation
-  4. Parameter trade-off analysis is quantitative: changing input parameter X produces a computable effect on output Y via the transfer function, not just "X affects Y"
-  5. The reasoning agents consume the same YAML data model as validation and scene generation — no separate knowledge base
-  6. At least 2 computational imaging domains supported (NLOS + one of: ptychography, lensless, coded aperture)
+  1. The system identifies compatible sensor+algorithm combinations by querying transfer function matrices
+  2. Optimizer mode recommends the top-ranked setup with concrete parameter values and physics rationale
+  3. Explorer mode identifies under-explored regions and proposes novel experiment variations
+  4. Parameter trade-off analysis is quantitative via the transfer function
+  5. The reasoning agents consume the same YAML data model as validation and scene generation
+  6. At least 2 computational imaging domains supported
 **Plans:** 4/4 plans complete
 
 Plans:
-- [x] 02.2-01-PLAN.md — Pydantic output models, TF graph builder, and cascading constraint propagation engine
-- [x] 02.2-02-PLAN.md — Optimizer mode (rank sensor+algorithm combos) and Explorer mode (novelty detection)
-- [x] 02.2-03-PLAN.md — Lensless imaging domain skeleton (YAML data, detection, loader integration)
+- [x] 02.2-01-PLAN.md — Pydantic output models, TF graph builder, and constraint propagation engine
+- [x] 02.2-02-PLAN.md — Optimizer mode and Explorer mode
+- [x] 02.2-03-PLAN.md — Lensless imaging domain skeleton
 - [x] 02.2-04-PLAN.md — Physics advisor routing, ExperimentState extension, context formatting, and runner wiring
 
 ### Phase 3: Smart Experimental Design
-**Goal**: Researchers get intelligent experimental designs without needing to be statisticians -- the system selects optimal sampling strategies, generates parameter sweeps, and identifies which parameters actually matter
+**Goal**: Researchers get intelligent experimental designs without needing to be statisticians
 **Depends on**: Phase 1
 **Requirements**: SEXP-01, SEXP-02, SEXP-03
 **Success Criteria** (what must be TRUE):
-  1. Given a parameter space definition, the system automatically selects an appropriate DoE strategy (LHS, Sobol, factorial, or Bayesian) based on dimensionality and estimated cost
-  2. After a parameter sweep completes, sensitivity analysis (Sobol indices or Morris screening) identifies which parameters significantly affect simulation outputs
-  3. LHS parameter sampling generates space-filling experimental designs that the scene agent uses to create simulation variants
+  1. The system automatically selects an appropriate DoE strategy based on dimensionality and estimated cost
+  2. Sensitivity analysis identifies which parameters significantly affect simulation outputs
+  3. LHS parameter sampling generates space-filling experimental designs
 **Plans**: 3 plans
 
 Plans:
-- [x] 03-01-PLAN.md — DoE data models (ParameterSpace, SampledDesign), strategy selector, and LHS/Sobol/factorial samplers
-- [ ] 03-02-PLAN.md — Sensitivity analysis (Sobol indices + Morris screening), SensitivityResult state field and transition
-- [ ] 03-03-PLAN.md — Sweep runner orchestration, scene agent prompt update, and runner pipeline integration
+- [x] 03-01-PLAN.md — DoE data models, strategy selector, and LHS/Sobol/factorial samplers
+- [ ] 03-02-PLAN.md — Sensitivity analysis (Sobol indices + Morris screening)
+- [ ] 03-03-PLAN.md — Sweep runner orchestration and runner pipeline integration
 
 ### Phase 4: Reproducibility and Reporting
-**Goal**: Any completed experiment can be packaged for independent reproduction -- another researcher can take the output and re-run the exact same experiment with the exact same results
+**Goal**: Any completed experiment can be packaged for independent reproduction
 **Depends on**: Phase 1, Phase 2, Phase 3
 **Requirements**: REPR-01, REPR-02
 **Success Criteria** (what must be TRUE):
-  1. After an experiment completes, a reproducibility package is generated containing a Dockerfile, pinned dependency file, run scripts, and a structured report (Markdown or LaTeX)
-  2. Structured metadata captures environment fingerprint, git hash, timestamps, full parameter history, and all physics validation results in a machine-readable format (JSON/YAML)
-  3. The generated Dockerfile can be built and the run script can re-execute the experiment without manual intervention
-**Plans**: TBD
+  1. A reproducibility package is generated containing Dockerfile, pinned dependencies, run scripts, and report
+  2. Structured metadata captures environment fingerprint, git hash, timestamps, full parameter history
+  3. The generated Dockerfile can re-execute the experiment without manual intervention
+**Plans**: 2 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Unit validation helpers and Neo4j schema constants
+- [ ] 06-02-PLAN.md — Frozen Pydantic models (property groups, SensorNode, edges, FeasibilityResult)
 
 Plans:
 - [ ] 04-01: TBD
 
 ### Phase 5: Mitsuba 3 Transient Rendering Integration
-
-**Goal:** Scene agents generate physically-based NLOS transient renders via Mitsuba 3 + mitransient using a layered template system. Raw transient output is auto-validated against formula engine predictions. Numpy fallback preserves existing behavior when Mitsuba is absent.
+**Goal:** Scene agents generate physically-based NLOS transient renders via Mitsuba 3 + mitransient.
 **Requirements**: MIT-01, MIT-02, MIT-03, MIT-04, MIT-05, MIT-06
 **Depends on:** Phase 02.2
+**Success Criteria** (what must be TRUE):
+  1. Scene agents generate Mitsuba 3 XML scene descriptions with correct transient rendering parameters
+  2. Templates produce valid transient data that matches formula engine predictions within tolerance
+  3. Numpy fallback preserves existing behavior when Mitsuba is absent
 **Plans:** 3 plans
 
 Plans:
@@ -154,85 +162,84 @@ Plans:
 - [x] 05-02-PLAN.md — Mitsuba environment detection, mitransient in discovery, scene context formatting
 - [x] 05-03-PLAN.md — Runner pipeline integration, agent registry wiring, scene agent prompt augmentation
 
-### Phase 6: ML Foundation and Downstream Goals
-**Goal**: The system understands downstream reconstruction tasks as first-class concepts -- hypotheses specify what to reconstruct and how, the reconstruction backend registry provides pluggable method selection, and a classical baseline (LCT) runs automatically on any NLOS test scene
-**Depends on**: Phase 5
-**Requirements**: GOAL-01, GOAL-02, GOAL-03, GOAL-04, RECON-01, RECON-02, RECON-03
+</details>
+
+### Phase 6: Graph Schema and Data Models
+**Goal**: All data types for the knowledge graph exist as frozen Pydantic models with SI unit annotations, and the Neo4j schema (node labels, relationship types, property constraints) is fully defined -- with zero infrastructure dependency
+**Depends on**: Phase 5 (builds on existing paradigm-agnostic sensor/physics models)
+**Requirements**: GRAPH-02, PHYS-01, PHYS-02, PHYS-03, PHYS-04, PHYS-05, PHYS-06, QUERY-04
 **Success Criteria** (what must be TRUE):
-  1. Given a natural language hypothesis mentioning localization, detection, tracking, or reconstruction, the hypothesis agent parses the downstream task type and stores a DownstreamGoal on ExperimentState with task type, relevant metrics, and ML method preference
-  2. The downstream goal determines which evaluation metrics are relevant -- localization error for localization, IoU for detection, MOTA for tracking, PSNR/SSIM for reconstruction -- without manual configuration
-  3. Scene agent receives downstream goal context and adjusts ground truth generation accordingly (3D positions for localization, occupancy grids for detection, depth maps for reconstruction)
-  4. Reconstruction backends are registered, selected, and configured via YAML definitions following the same pattern as domain knowledge -- adding a new backend requires a YAML file and a Python module implementing the common interface (configure, train, predict, evaluate)
-  5. LCT classical baseline runs on any NLOS test scene using NumPy FFT and returns a ReconstructionResult frozen model with per-scene metrics
-**Plans**: TBD
+  1. Frozen Pydantic models exist for SensorNode, SensorFamily, Algorithm, PhysicsProperty, Task, and Environment with typed fields matching the Neo4j schema
+  2. Every sensor model has geometric (FOV, resolution, DoF, working distance), temporal (exposure, temporal resolution, readout mode, frame rate), and radiometric (QE, dynamic range, noise floor, spectral sensitivity, dark current) property groups
+  3. SHARES_PHYSICS relationships are defined in the schema connecting sensor families by shared physical principles (e.g., photon statistics, diffraction limits)
+  4. All physics property values carry Pint-compatible unit annotations -- constructing a model with wrong units raises a validation error
+  5. FeasibilityResult frozen model captures ranked configurations, CRB bounds, confidence qualifiers, and constraint satisfaction details
+**Plans**: 2 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
-- [ ] 06-03: TBD
+- [ ] 06-01-PLAN.md — Unit validation helpers and Neo4j schema constants
+- [ ] 06-02-PLAN.md — Frozen Pydantic models (property groups, SensorNode, edges, FeasibilityResult)
 
-### Phase 7: Dataset Generation and Motion Simulation
-**Goal**: The scene agent can produce diverse training datasets (static and dynamic) with paired measurements and ground truth, stored in HDF5 with a manifest tracking every scene -- enabling ML training on realistic, physics-validated data
-**Depends on**: Phase 6
-**Requirements**: DATA-01, DATA-02, DATA-03, DATA-04, DATA-05, DATA-06, MOT-01, MOT-02, MOT-03, MOT-04
+### Phase 7: Sensor Taxonomy Population
+**Goal**: All 11 computational imaging sensor families are defined as structured data with complete physics specs, ready to be loaded into the knowledge graph
+**Depends on**: Phase 6 (uses the Pydantic models and schema)
+**Requirements**: SENS-01, SENS-02, SENS-03, SENS-04, SENS-05, SENS-06, SENS-07, SENS-08, SENS-09, SENS-10, SENS-11
 **Success Criteria** (what must be TRUE):
-  1. Scene agent dataset generation mode produces N configurable diverse scenes as training data with enforced minimum variation across geometry type, material properties, relay wall distance, and noise levels
-  2. Each generated scene includes paired measurement and ground truth data stored in HDF5 format, with a DatasetManifest frozen model tracking all scene IDs, split assignments (train/val/test), generation parameters, and storage paths
-  3. Physics-aware data augmentation pipeline injects Poisson shot noise, temporal jitter, ambient light, and spatial PSF convolution -- parameterized from sensor specifications in the paradigm YAML
-  4. Scene agent generates temporally-ordered frame sequences where hidden objects or sensors move between frames along configurable trajectories (linear, circular, random walk, waypoints), with per-frame 3D position and velocity ground truth for tracking evaluation
-  5. Motion parameters (trajectory type, velocity, frame count, inter-frame interval) are part of scene generation config and automatically required when the downstream goal is a tracking task
-**Plans**: TBD
+  1. YAML/JSON definition files exist for all 11 sensor families: SPAD, ToF (CW + pulsed), event camera, coded aperture, light field, LiDAR (mechanical + solid-state + FMCW), lensless, RGB, structured light, polarimetric, spectral/hyperspectral
+  2. Each sensor family definition includes family-specific specs (e.g., SPAD: timing resolution, dead time, dark count rate, PDE) alongside the shared physics properties from Phase 6
+  3. Sensor definitions load into the Phase 6 Pydantic models without validation errors -- every field matches the schema
+  4. Operational metadata (cost range, power, weight, form factor) is populated for each sensor family
+  5. At least one concrete sensor configuration per family exists (e.g., SwissSPAD2 for SPAD, Prophesee EVK4 for event camera) with real-world parameter values from published datasheets
 
-Plans:
-- [ ] 07-01: TBD
-- [ ] 07-02: TBD
-- [ ] 07-03: TBD
-
-### Phase 8: ML Training Pipeline and Evaluation
-**Goal**: The system trains and evaluates learned reconstruction models on generated datasets, compares them against the classical baseline, and supports both local execution and external training workflows
-**Depends on**: Phase 7
-**Requirements**: RECON-04, RECON-05, RECON-06, EVAL-01, EVAL-02, EVAL-03
+### Phase 8: CRB and Information-Theoretic Bounds
+**Goal**: The system computes Cramer-Rao bounds for any sensor family -- analytically when closed-form solutions exist, numerically via JAX autodiff otherwise -- providing theoretical performance floors that prune infeasible configurations
+**Depends on**: Phase 6 (uses sensor/physics models, independent of Neo4j)
+**Requirements**: CRB-01, CRB-02, CRB-03, CRB-04, CRB-05, CRB-06
 **Success Criteria** (what must be TRUE):
-  1. Encoder-decoder CNN (U-Net architecture) backend trains on generated datasets via agent-written PyTorch training code, producing a model checkpoint and training history tracked in a ReconstructionResult frozen model
-  2. Training runs locally with automatic GPU/CPU detection, or the system exports dataset + training script + config for external training and imports results back as checkpoint + metrics JSON
-  3. When execution mode is not specified in the hypothesis, the pipeline queries the user via intervention gate before proceeding with training
-  4. Task-specific evaluation metrics are computed automatically based on downstream goal type -- the same test scenes are evaluated by both LCT and the learned method, producing a cross-method comparison table with identical metrics
-  5. ReconstructionResult captures per-method metrics, training history, model checkpoint path, and explicit comparison against the classical baseline
-**Plans**: TBD
+  1. Analytical CRB functions return closed-form bounds for 7 sensor families: SPAD depth, CW-ToF range, pulsed-dToF range, FMCW range, polarimetric Stokes, hyperspectral unmixing, structured light triangulation
+  2. Numerical CRB via JAX autodiff computes Fisher information matrices for coded aperture, lensless, event camera, and light field sensors -- returning bounds with explicit confidence qualifiers (numerical vs analytical)
+  3. CRB dispatch selects analytical or numerical computation based on sensor family and estimation task, returning results with bound type, confidence qualifier, model assumptions, and condition number
+  4. Sensitivity analysis shows how CRB changes when sensor parameters are perturbed (e.g., depth precision vs ambient light), producing parameter importance rankings
+  5. Numerical computation includes stability guards: condition number checks, positive-variance assertions, and Tikhonov regularization for near-singular Fisher matrices
 
-Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
-
-### Phase 9: Reconstruction Feedback Loop
-**Goal**: The analyst agent understands reconstruction quality and uses it to drive intelligent iteration decisions -- requesting more training data, architectural changes, or noise model adjustments based on where the model struggles
-**Depends on**: Phase 8
-**Requirements**: FEED-01, FEED-02, FEED-03
+### Phase 9: Neo4j Infrastructure and Feasibility Queries
+**Goal**: Users can start a Neo4j container, seed it with sensor taxonomy data, and query it for feasible sensor configurations for a given task -- receiving ranked results with CRB-backed performance bounds
+**Depends on**: Phase 6 (schema models), Phase 7 (sensor data), Phase 8 (CRB bounds)
+**Requirements**: GRAPH-01, GRAPH-03, GRAPH-04, GRAPH-05, GRAPH-06, QUERY-01, QUERY-02, QUERY-03
 **Success Criteria** (what must be TRUE):
-  1. Analyst agent receives reconstruction quality metrics (per-method PSNR, SSIM, localization error, IoU as appropriate) alongside raw simulation outputs and factors them into stop/continue decisions
-  2. Analyst can recommend specific next actions based on reconstruction quality trends: generate more training data, change noise model, adjust architecture, or focus on scene configurations where the model performs worst
-  3. Iteration loop supports mixed-mode iterations: re-generate data (scene phase only), retrain on existing data (executor phase only), or re-evaluate with different metrics (evaluator phase only) -- based on analyst recommendation rather than always running the full pipeline
-**Plans**: TBD
+  1. `agentsim graph start` launches a Neo4j Docker container, `agentsim graph stop` shuts it down, `agentsim graph status` reports health -- all programmatic with no manual Docker commands needed
+  2. `agentsim graph seed` populates the database from sensor YAML files, including migration of existing NLOS sensor profiles, and the Python graph client returns frozen Pydantic models for all CRUD operations
+  3. Given a task description and environment constraints, the query engine returns a ranked list of feasible sensor configurations with CRB-backed theoretical performance bounds
+  4. Cross-family comparison ranks sensors from different families on the same task (e.g., SPAD vs ToF vs LiDAR for depth at 10m range)
+  5. Constraint conflict detection identifies when task requirements are physically impossible for any known sensor and reports why
 
-Plans:
-- [ ] 09-01: TBD
+### Phase 10: Pipeline Integration
+**Goal**: The existing AgentSim experiment pipeline queries the knowledge graph before hypothesis generation, so hypotheses are constrained to physically viable sensor configurations from the start
+**Depends on**: Phase 9 (graph must be queryable)
+**Requirements**: PIPE-01, PIPE-02, PIPE-03, PIPE-04
+**Success Criteria** (what must be TRUE):
+  1. A feasibility phase runs automatically between environment discovery and hypothesis generation, querying the knowledge graph for viable sensor configurations
+  2. Hypothesis agent receives feasibility context (ranked sensors, CRB bounds, constraint satisfaction) in its prompt and proposes experiments using only feasible configurations
+  3. ExperimentState includes `feasibility_result: FeasibilityResult | None` that persists graph query results through the experiment lifecycle
+  4. When Neo4j is unavailable or the knowledge graph is disabled, the pipeline skips the feasibility phase with a warning and continues with the existing workflow unchanged
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 02.1 -> 02.2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
-Note: Phases 2 and 3 depend only on Phase 1 and could execute in parallel. Phase 02.1 depends on Phase 2, Phase 02.2 depends on Phase 02.1. v2.0 phases (6-9) are sequential and depend on Phase 5.
+v1.0: 1 -> 2 -> 02.1 -> 02.2 -> 3 -> 4 -> 5
+v2.0: 6 -> 7 -> 8 -> 9 -> 10 (Phase 8 can run in parallel with Phase 7)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Physics Foundation and Deterministic Checks | v1.0 | 3/3 | Complete | 2026-04-07 |
-| 2. Computational Imaging Domain Intelligence | v1.0 | 0/4 | Not started | - |
-| 02.1 Paradigm-Agnostic Domain Architecture | v1.0 | 4/4 | Complete    | 2026-04-07 |
-| 02.2 Physics-Space Reasoning Agents | v1.0 | 4/4 | Complete    | 2026-04-08 |
-| 3. Smart Experimental Design | v1.0 | 0/3 | Not started | - |
-| 4. Reproducibility and Reporting | v1.0 | 0/1 | Not started | - |
-| 5. Mitsuba 3 Transient Rendering Integration | v1.0 | 2/3 | In progress | - |
-| 6. ML Foundation and Downstream Goals | v2.0 | 0/3 | Not started | - |
-| 7. Dataset Generation and Motion Simulation | v2.0 | 0/3 | Not started | - |
-| 8. ML Training Pipeline and Evaluation | v2.0 | 0/2 | Not started | - |
-| 9. Reconstruction Feedback Loop | v2.0 | 0/1 | Not started | - |
+| 1. Physics Foundation | v1.0 | 3/3 | Complete | 2026-04-07 |
+| 2. CI Domain Intelligence | v1.0 | 4/4 | Complete | 2026-04-07 |
+| 02.1 Paradigm-Agnostic Architecture | v1.0 | 4/4 | Complete | 2026-04-07 |
+| 02.2 Physics-Space Reasoning | v1.0 | 4/4 | Complete | 2026-04-08 |
+| 3. Smart Experimental Design | v1.0 | 1/3 | Deferred | - |
+| 4. Reproducibility and Reporting | v1.0 | 0/1 | Deferred | - |
+| 5. Mitsuba 3 Transient Rendering | v1.0 | 3/3 | Complete | 2026-04-08 |
+| 6. Graph Schema and Data Models | v2.0 | 0/2 | Planning | - |
+| 7. Sensor Taxonomy Population | v2.0 | 0/0 | Not started | - |
+| 8. CRB and Information-Theoretic Bounds | v2.0 | 0/0 | Not started | - |
+| 9. Neo4j Infrastructure and Feasibility Queries | v2.0 | 0/0 | Not started | - |
+| 10. Pipeline Integration | v2.0 | 0/0 | Not started | - |
