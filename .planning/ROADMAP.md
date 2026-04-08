@@ -4,6 +4,11 @@
 
 This roadmap transforms AgentSim from "agents that write and run code" into "agents that understand computational science." The work starts with the physics foundation (advisor agent, constants registry, deterministic validation checks), then integrates physics intelligence into the existing pipeline (hypothesis generation, scene validation, result analysis, domain modules, grounding mechanisms). Two parallel tracks follow: smart experimental design (DoE, sensitivity analysis) and reproducibility packaging. Every phase delivers observable, verifiable capability.
 
+## Milestones
+
+- 🚧 **v1.0 Physics-Aware Enhancement** - Phases 1-5 (in progress)
+- 📋 **v2.0 ML-Driven Downstream Reconstruction** - Phases 6-9 (planned)
+
 ## Phases
 
 **Phase Numbering:**
@@ -12,12 +17,22 @@ This roadmap transforms AgentSim from "agents that write and run code" into "age
 
 Decimal phases appear between their surrounding integers in numeric order.
 
+### v1.0 Physics-Aware Enhancement
+
 - [ ] **Phase 1: Physics Foundation and Deterministic Checks** - Physics advisor agent, constants registry, consultation logging, and all deterministic validation (AST analysis, units, ranges, CFL, mesh)
 - [ ] **Phase 2: Computational Imaging Domain Intelligence** - NLOS domain knowledge (YAML), three-bounce geometry validation, sensor FOV checks, temporal resolution validation, scene auto-fix loop, physics-informed hypothesis generation, and NLOS benchmark scenes
 - [x] **Phase 02.1: Paradigm-Agnostic Domain Architecture** - Refactor hardcoded relay-wall NLOS into multi-paradigm YAML architecture with sensor profiles, transfer function matrices, scene prompt injection, and declarative validator dispatch (completed 2026-04-07)
 - [x] **Phase 02.2: Physics-Space Reasoning Agents** - Sensor/algorithm advisor agents that reason over transfer function matrices to optimize setups and propose novel experiments in computational imaging (completed 2026-04-08)
 - [ ] **Phase 3: Smart Experimental Design** - Automatic DoE strategy selection, sensitivity analysis via SALib, and LHS parameter sampling
 - [ ] **Phase 4: Reproducibility and Reporting** - Reproducibility package generator and structured experiment metadata capture
+- [ ] **Phase 5: Mitsuba 3 Transient Rendering Integration** - Physically-based NLOS transient rendering via Mitsuba 3 + mitransient
+
+### v2.0 ML-Driven Downstream Reconstruction
+
+- [ ] **Phase 6: ML Foundation and Downstream Goals** - Downstream task model, hypothesis integration, reconstruction backend registry, classical baseline (LCT)
+- [ ] **Phase 7: Dataset Generation and Motion Simulation** - Scene agent dataset mode, HDF5 storage, diversity controls, augmentation, motion sequences for tracking
+- [ ] **Phase 8: ML Training Pipeline and Evaluation** - Learned reconstruction backends, agent-generated training code, execution modes, task-specific metrics, cross-method comparison
+- [ ] **Phase 9: Reconstruction Feedback Loop** - Analyst receives reconstruction metrics, recommends targeted data generation, mixed-mode iteration
 
 ## Phase Details
 
@@ -135,20 +150,87 @@ Plans:
 Plans:
 - [x] 05-01-PLAN.md — Template base class, three scene-type templates, and transient validation module
 - [x] 05-02-PLAN.md — Mitsuba environment detection, mitransient in discovery, scene context formatting
-- [ ] 05-03-PLAN.md — Runner pipeline integration, agent registry wiring, scene agent prompt augmentation
+- [x] 05-03-PLAN.md — Runner pipeline integration, agent registry wiring, scene agent prompt augmentation
+
+### Phase 6: ML Foundation and Downstream Goals
+**Goal**: The system understands downstream reconstruction tasks as first-class concepts -- hypotheses specify what to reconstruct and how, the reconstruction backend registry provides pluggable method selection, and a classical baseline (LCT) runs automatically on any NLOS test scene
+**Depends on**: Phase 5
+**Requirements**: GOAL-01, GOAL-02, GOAL-03, GOAL-04, RECON-01, RECON-02, RECON-03
+**Success Criteria** (what must be TRUE):
+  1. Given a natural language hypothesis mentioning localization, detection, tracking, or reconstruction, the hypothesis agent parses the downstream task type and stores a DownstreamGoal on ExperimentState with task type, relevant metrics, and ML method preference
+  2. The downstream goal determines which evaluation metrics are relevant -- localization error for localization, IoU for detection, MOTA for tracking, PSNR/SSIM for reconstruction -- without manual configuration
+  3. Scene agent receives downstream goal context and adjusts ground truth generation accordingly (3D positions for localization, occupancy grids for detection, depth maps for reconstruction)
+  4. Reconstruction backends are registered, selected, and configured via YAML definitions following the same pattern as domain knowledge -- adding a new backend requires a YAML file and a Python module implementing the common interface (configure, train, predict, evaluate)
+  5. LCT classical baseline runs on any NLOS test scene using NumPy FFT and returns a ReconstructionResult frozen model with per-scene metrics
+**Plans**: TBD
+
+Plans:
+- [ ] 06-01: TBD
+- [ ] 06-02: TBD
+- [ ] 06-03: TBD
+
+### Phase 7: Dataset Generation and Motion Simulation
+**Goal**: The scene agent can produce diverse training datasets (static and dynamic) with paired measurements and ground truth, stored in HDF5 with a manifest tracking every scene -- enabling ML training on realistic, physics-validated data
+**Depends on**: Phase 6
+**Requirements**: DATA-01, DATA-02, DATA-03, DATA-04, DATA-05, DATA-06, MOT-01, MOT-02, MOT-03, MOT-04
+**Success Criteria** (what must be TRUE):
+  1. Scene agent dataset generation mode produces N configurable diverse scenes as training data with enforced minimum variation across geometry type, material properties, relay wall distance, and noise levels
+  2. Each generated scene includes paired measurement and ground truth data stored in HDF5 format, with a DatasetManifest frozen model tracking all scene IDs, split assignments (train/val/test), generation parameters, and storage paths
+  3. Physics-aware data augmentation pipeline injects Poisson shot noise, temporal jitter, ambient light, and spatial PSF convolution -- parameterized from sensor specifications in the paradigm YAML
+  4. Scene agent generates temporally-ordered frame sequences where hidden objects or sensors move between frames along configurable trajectories (linear, circular, random walk, waypoints), with per-frame 3D position and velocity ground truth for tracking evaluation
+  5. Motion parameters (trajectory type, velocity, frame count, inter-frame interval) are part of scene generation config and automatically required when the downstream goal is a tracking task
+**Plans**: TBD
+
+Plans:
+- [ ] 07-01: TBD
+- [ ] 07-02: TBD
+- [ ] 07-03: TBD
+
+### Phase 8: ML Training Pipeline and Evaluation
+**Goal**: The system trains and evaluates learned reconstruction models on generated datasets, compares them against the classical baseline, and supports both local execution and external training workflows
+**Depends on**: Phase 7
+**Requirements**: RECON-04, RECON-05, RECON-06, EVAL-01, EVAL-02, EVAL-03
+**Success Criteria** (what must be TRUE):
+  1. Encoder-decoder CNN (U-Net architecture) backend trains on generated datasets via agent-written PyTorch training code, producing a model checkpoint and training history tracked in a ReconstructionResult frozen model
+  2. Training runs locally with automatic GPU/CPU detection, or the system exports dataset + training script + config for external training and imports results back as checkpoint + metrics JSON
+  3. When execution mode is not specified in the hypothesis, the pipeline queries the user via intervention gate before proceeding with training
+  4. Task-specific evaluation metrics are computed automatically based on downstream goal type -- the same test scenes are evaluated by both LCT and the learned method, producing a cross-method comparison table with identical metrics
+  5. ReconstructionResult captures per-method metrics, training history, model checkpoint path, and explicit comparison against the classical baseline
+**Plans**: TBD
+
+Plans:
+- [ ] 08-01: TBD
+- [ ] 08-02: TBD
+
+### Phase 9: Reconstruction Feedback Loop
+**Goal**: The analyst agent understands reconstruction quality and uses it to drive intelligent iteration decisions -- requesting more training data, architectural changes, or noise model adjustments based on where the model struggles
+**Depends on**: Phase 8
+**Requirements**: FEED-01, FEED-02, FEED-03
+**Success Criteria** (what must be TRUE):
+  1. Analyst agent receives reconstruction quality metrics (per-method PSNR, SSIM, localization error, IoU as appropriate) alongside raw simulation outputs and factors them into stop/continue decisions
+  2. Analyst can recommend specific next actions based on reconstruction quality trends: generate more training data, change noise model, adjust architecture, or focus on scene configurations where the model performs worst
+  3. Iteration loop supports mixed-mode iterations: re-generate data (scene phase only), retrain on existing data (executor phase only), or re-evaluate with different metrics (evaluator phase only) -- based on analyst recommendation rather than always running the full pipeline
+**Plans**: TBD
+
+Plans:
+- [ ] 09-01: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 02.1 -> 02.2 -> 3 -> 4
-Note: Phases 2 and 3 depend only on Phase 1 and could execute in parallel. Phase 02.1 depends on Phase 2, Phase 02.2 depends on Phase 02.1.
+Phases execute in numeric order: 1 -> 2 -> 02.1 -> 02.2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
+Note: Phases 2 and 3 depend only on Phase 1 and could execute in parallel. Phase 02.1 depends on Phase 2, Phase 02.2 depends on Phase 02.1. v2.0 phases (6-9) are sequential and depend on Phase 5.
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Physics Foundation and Deterministic Checks | 3/3 | Complete | 2026-04-07 |
-| 2. Computational Imaging Domain Intelligence | 0/4 | Not started | - |
-| 02.1 Paradigm-Agnostic Domain Architecture | 4/4 | Complete    | 2026-04-07 |
-| 02.2 Physics-Space Reasoning Agents | 4/4 | Complete    | 2026-04-08 |
-| 3. Smart Experimental Design | 0/1 | Not started | - |
-| 4. Reproducibility and Reporting | 0/1 | Not started | - |
-| 5. Mitsuba 3 Transient Rendering Integration | 0/3 | Not started | - |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Physics Foundation and Deterministic Checks | v1.0 | 3/3 | Complete | 2026-04-07 |
+| 2. Computational Imaging Domain Intelligence | v1.0 | 0/4 | Not started | - |
+| 02.1 Paradigm-Agnostic Domain Architecture | v1.0 | 4/4 | Complete    | 2026-04-07 |
+| 02.2 Physics-Space Reasoning Agents | v1.0 | 4/4 | Complete    | 2026-04-08 |
+| 3. Smart Experimental Design | v1.0 | 0/1 | Not started | - |
+| 4. Reproducibility and Reporting | v1.0 | 0/1 | Not started | - |
+| 5. Mitsuba 3 Transient Rendering Integration | v1.0 | 2/3 | In progress | - |
+| 6. ML Foundation and Downstream Goals | v2.0 | 0/3 | Not started | - |
+| 7. Dataset Generation and Motion Simulation | v2.0 | 0/3 | Not started | - |
+| 8. ML Training Pipeline and Evaluation | v2.0 | 0/2 | Not started | - |
+| 9. Reconstruction Feedback Loop | v2.0 | 0/1 | Not started | - |
