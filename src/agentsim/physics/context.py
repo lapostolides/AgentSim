@@ -19,6 +19,7 @@ from agentsim.physics.domains.schema import (
     SensorClass,
     SensorProfile,
 )
+from agentsim.physics.reasoning.models import OptimizerResult
 
 
 def _format_governing_equations(domain: DomainKnowledge) -> list[str]:
@@ -532,6 +533,44 @@ def format_scene_context(
         for baseline_key, baseline_data in paradigm.published_baselines.items():
             paper = baseline_data.get("paper", baseline_key)
             lines.append(f"- {baseline_key}: {paper}")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def format_optimizer_recommendation(result: OptimizerResult) -> str:
+    """Render optimizer recommendation as Markdown for scene agent prompt.
+
+    Args:
+        result: OptimizerResult from physics-space reasoning.
+
+    Returns:
+        Formatted Markdown string, or "" if no setups.
+    """
+    if not result.setups:
+        return ""
+
+    lines: list[str] = []
+    lines.append("### Recommended Setup (Physics-Space Optimization)")
+    lines.append("")
+
+    for i, setup in enumerate(result.setups[:3]):  # Top 3 max
+        rank = i + 1
+        lines.append(f"**Rank {rank}: {setup.sensor_class} + {setup.algorithm}**")
+        lines.append(f"  Score: {setup.score:.1f}")
+        if setup.computed_metrics:
+            lines.append("  Computed metrics:")
+            for metric in setup.computed_metrics:
+                lines.append(
+                    f"    - {metric.parameter}: {metric.value:.4g}"
+                    f" ({metric.relationship}: {metric.source_tf_formula})"
+                )
+        if setup.rationale:
+            lines.append(f"  Rationale: {setup.rationale}")
+        lines.append("")
+
+    if result.rationale:
+        lines.append(f"**Summary:** {result.rationale}")
         lines.append("")
 
     return "\n".join(lines)

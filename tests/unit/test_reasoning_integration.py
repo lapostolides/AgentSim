@@ -222,7 +222,7 @@ class TestRouteReasoningQuery:
             parameters={"distance_m": 1.0, "time_ps": 100.0},
         )
 
-    @patch("agentsim.physics.reasoning.optimizer.optimize_setup")
+    @patch("agentsim.physics.reasoning.optimize_setup")
     def test_optimize_setup_routes_to_optimize(self, mock_opt: MagicMock) -> None:
         from agentsim.physics.consultation import _route_reasoning_query
 
@@ -234,7 +234,7 @@ class TestRouteReasoningQuery:
         mock_opt.assert_called_once()
         assert isinstance(result, OptimizerResult)
 
-    @patch("agentsim.physics.reasoning.optimizer.optimize_setup")
+    @patch("agentsim.physics.reasoning.optimize_setup")
     def test_sensor_query_routes_to_optimize(self, mock_opt: MagicMock) -> None:
         from agentsim.physics.consultation import _route_reasoning_query
 
@@ -246,7 +246,7 @@ class TestRouteReasoningQuery:
         mock_opt.assert_called_once()
         assert isinstance(result, OptimizerResult)
 
-    @patch("agentsim.physics.reasoning.optimizer.optimize_setup")
+    @patch("agentsim.physics.reasoning.optimize_setup")
     def test_algorithm_query_routes_to_optimize(self, mock_opt: MagicMock) -> None:
         from agentsim.physics.consultation import _route_reasoning_query
 
@@ -258,7 +258,7 @@ class TestRouteReasoningQuery:
         mock_opt.assert_called_once()
         assert isinstance(result, OptimizerResult)
 
-    @patch("agentsim.physics.reasoning.explorer.find_novel_regions")
+    @patch("agentsim.physics.reasoning.find_novel_regions")
     def test_explore_novel_routes_to_explorer(self, mock_exp: MagicMock) -> None:
         from agentsim.physics.consultation import _route_reasoning_query
 

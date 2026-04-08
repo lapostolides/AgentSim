@@ -14,6 +14,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from agentsim.physics.models import PhysicsConsultationSummary, PhysicsValidation
+from agentsim.physics.reasoning.models import ExplorerResult, OptimizerResult
 
 
 def _new_id() -> str:
@@ -220,6 +221,17 @@ class AnalysisReport(BaseModel, frozen=True):
     reasoning: str = ""
 
 
+class PhysicsRecommendation(BaseModel, frozen=True):
+    """Physics-space reasoning output -- optimizer and/or explorer results.
+
+    Stored in ExperimentState after pre-scene optimization. Both fields
+    are optional since optimizer and explorer can run independently.
+    """
+
+    optimizer_result: OptimizerResult | None = None
+    explorer_result: ExplorerResult | None = None
+
+
 class ExperimentState(BaseModel, frozen=True):
     """Top-level envelope containing all experiment state.
 
@@ -255,6 +267,9 @@ class ExperimentState(BaseModel, frozen=True):
     # Physics validation
     physics_validations: tuple[PhysicsValidation, ...] = ()
     consultation_summary: PhysicsConsultationSummary | None = None
+
+    # Physics-space reasoning
+    physics_recommendation: PhysicsRecommendation | None = None
 
     # Error tracking
     errors: tuple[str, ...] = ()
