@@ -1146,8 +1146,9 @@ async def _run_citation_audit_phase(
         original_title = audited.get("original_title", "")
         audit_lookup[original_title.lower().strip()] = audited
 
-    verified_entries: list[LiteratureEntry] = []
+    kept_entries: list[LiteratureEntry] = []
     fabricated_count = 0
+    unverified_count = 0
     for entry in state.literature_context.entries:
         audit = audit_lookup.get(entry.title.lower().strip())
         if audit and audit.get("verification_status") == "fabricated":
@@ -1160,6 +1161,14 @@ async def _run_citation_audit_phase(
             continue
 
         if audit:
+            status = audit.get("verification_status", "verified")
+            if status == "unverified":
+                unverified_count += 1
+                logger.info(
+                    "unverified_citation_kept",
+                    title=entry.title,
+                    note=audit.get("verification_note", ""),
+                )
             corrected_entry = LiteratureEntry(
                 title=audit.get("corrected_title", entry.title),
                 authors=tuple(audit.get("corrected_authors", entry.authors)),
@@ -1168,22 +1177,23 @@ async def _run_citation_audit_phase(
                 relevance=entry.relevance,
                 url=audit.get("corrected_url", entry.url) or entry.url,
                 doi=audit.get("corrected_doi", entry.doi) or entry.doi,
-                verification_status="verified",
+                verification_status=status,
                 verification_note=audit.get("verification_note", ""),
             )
-            verified_entries.append(corrected_entry)
+            kept_entries.append(corrected_entry)
         else:
-            verified_entries.append(entry)
+            kept_entries.append(entry)
 
     logger.info(
         "citation_audit_complete",
         total=len(state.literature_context.entries),
-        verified=len(verified_entries),
+        kept=len(kept_entries),
+        unverified=unverified_count,
         fabricated=fabricated_count,
     )
 
     audited_context = LiteratureContext(
-        entries=tuple(verified_entries),
+        entries=tuple(kept_entries),
         summary=state.literature_context.summary,
         open_questions=state.literature_context.open_questions,
         trivial_gaps=state.literature_context.trivial_gaps,
