@@ -102,6 +102,61 @@ CRITICAL FORMATTING RULES:
 - Do NOT rename keys (e.g., do NOT use "statement", "formalized_statement", "hypothesis")
 - Do NOT wrap the JSON in an outer object
 
+## FIELD NAME REQUIREMENTS (read carefully)
+
+These exact field names are load-bearing — the pipeline WILL BREAK if you rename them:
+- "raw_text" — NOT "statement", NOT "hypothesis_text", NOT "original_text"
+- "formalized" — NOT "formalized_statement", NOT "hypothesis_statement"
+- "variables" — FLAT list of strings like ["x", "y", "z"], NOT {{"independent": [...], "dependent": [...]}}
+- "predictions" — FLAT list of strings, NOT list of objects
+- "assumptions" — FLAT list of strings, NOT list of objects
+- "parameter_space" — list of objects, each with: name, description, values, range_min, range_max, step
+- "quality_ratings" — object with the 6 scores + composite_score + reasoning
+
+If you are tempted to use a different field name, DON'T. Use the exact names above.
+
+## One-Shot Example
+
+Here is a complete, correct example of the expected output:
+
+```json
+{{
+  "raw_text": "Higher temporal resolution in SPAD arrays improves NLOS depth reconstruction accuracy",
+  "formalized": "For relay-wall NLOS imaging with LCT reconstruction, reducing SPAD temporal bin width from 32ps to 16ps increases depth reconstruction PSNR by at least 3dB for hidden objects at 1-2m depth behind a 2m×2m Lambertian relay wall",
+  "variables": ["temporal_bin_width_ps", "relay_wall_size_m", "hidden_object_depth_m", "reconstruction_psnr_db"],
+  "parameter_space": [
+    {{
+      "name": "temporal_bin_width_ps",
+      "description": "SPAD time-bin width controlling depth resolution",
+      "values": [],
+      "range_min": 8,
+      "range_max": 64,
+      "step": 8
+    }}
+  ],
+  "predictions": [
+    "PSNR increases monotonically as temporal_bin_width decreases from 64ps to 8ps",
+    "The improvement saturates below 16ps due to SPAD jitter floor (~70ps FWHM)",
+    "Non-confocal geometries show less improvement than confocal due to temporal mixing"
+  ],
+  "assumptions": [
+    "Lambertian BRDF for relay wall and hidden objects",
+    "Single-bounce approximation is sufficient (no inter-reflections between hidden objects)",
+    "Shot noise dominates over dark counts at typical acquisition times"
+  ],
+  "quality_ratings": {{
+    "decision_relevance": 0.85,
+    "non_triviality": 0.7,
+    "informative_either_way": 0.8,
+    "downstream_actionability": 0.9,
+    "expected_impact": 0.75,
+    "falsifiability": 0.95,
+    "composite_score": 0.825,
+    "reasoning": "High actionability because the result directly determines SPAD hardware requirements for a specific depth accuracy target. Non-triviality is moderate because the direction is known but the saturation point is not. Both outcomes are informative: if 16ps doesn't help, jitter dominates and hardware investment should go to jitter reduction instead."
+  }}
+}}
+```
+
 ## Your Task
 
 Given the researcher's raw hypothesis, the literature context, and any
@@ -143,6 +198,16 @@ the open questions the scout flagged as most significant.
 ## Current Experiment State
 
 {state_context}
+
+## Final Checklist
+Before returning your JSON:
+- [ ] Top-level keys are EXACTLY: raw_text, formalized, variables, parameter_space, predictions, assumptions, quality_ratings
+- [ ] "formalized" is a non-empty string containing the precise testable statement
+- [ ] "variables" is a FLAT list of strings (not nested, not dict)
+- [ ] "predictions" is a FLAT list of strings
+- [ ] "assumptions" is a FLAT list of strings
+- [ ] No JSON wrapping (not {{"hypothesis": {{...}}}})
+- [ ] quality_ratings.composite_score is the mean of the six dimension scores
 """
 
 
