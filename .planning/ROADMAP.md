@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 1: Physics Foundation and Deterministic Checks** - Physics advisor agent, constants registry, consultation logging, and all deterministic validation (AST analysis, units, ranges, CFL, mesh)
 - [ ] **Phase 2: Computational Imaging Domain Intelligence** - NLOS domain knowledge (YAML), three-bounce geometry validation, sensor FOV checks, temporal resolution validation, scene auto-fix loop, physics-informed hypothesis generation, and NLOS benchmark scenes
 - [x] **Phase 02.1: Paradigm-Agnostic Domain Architecture** - Refactor hardcoded relay-wall NLOS into multi-paradigm YAML architecture with sensor profiles, transfer function matrices, scene prompt injection, and declarative validator dispatch (completed 2026-04-07)
-- [ ] **Phase 02.2: Physics-Space Reasoning Agents** - Sensor/algorithm advisor agents that reason over transfer function matrices to optimize setups and propose novel experiments in computational imaging
+- [x] **Phase 02.2: Physics-Space Reasoning Agents** - Sensor/algorithm advisor agents that reason over transfer function matrices to optimize setups and propose novel experiments in computational imaging (completed 2026-04-08)
 - [ ] **Phase 3: Smart Experimental Design** - Automatic DoE strategy selection, sensitivity analysis via SALib, and LHS parameter sampling
 - [ ] **Phase 4: Reproducibility and Reporting** - Reproducibility package generator and structured experiment metadata capture
 
@@ -91,13 +91,13 @@ Plans:
   4. Parameter trade-off analysis is quantitative: changing input parameter X produces a computable effect on output Y via the transfer function, not just "X affects Y"
   5. The reasoning agents consume the same YAML data model as validation and scene generation — no separate knowledge base
   6. At least 2 computational imaging domains supported (NLOS + one of: ptychography, lensless, coded aperture)
-**Plans:** 2/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 02.2-01-PLAN.md — Pydantic output models, TF graph builder, and cascading constraint propagation engine
-- [ ] 02.2-02-PLAN.md — Optimizer mode (rank sensor+algorithm combos) and Explorer mode (novelty detection)
+- [x] 02.2-02-PLAN.md — Optimizer mode (rank sensor+algorithm combos) and Explorer mode (novelty detection)
 - [x] 02.2-03-PLAN.md — Lensless imaging domain skeleton (YAML data, detection, loader integration)
-- [ ] 02.2-04-PLAN.md — Physics advisor routing, ExperimentState extension, context formatting, and runner wiring
+- [x] 02.2-04-PLAN.md — Physics advisor routing, ExperimentState extension, context formatting, and runner wiring
 
 ### Phase 3: Smart Experimental Design
 **Goal**: Researchers get intelligent experimental designs without needing to be statisticians -- the system selects optimal sampling strategies, generates parameter sweeps, and identifies which parameters actually matter
@@ -136,6 +136,6 @@ Note: Phases 2 and 3 depend only on Phase 1 and could execute in parallel. Phase
 | 1. Physics Foundation and Deterministic Checks | 3/3 | Complete | 2026-04-07 |
 | 2. Computational Imaging Domain Intelligence | 0/4 | Not started | - |
 | 02.1 Paradigm-Agnostic Domain Architecture | 4/4 | Complete    | 2026-04-07 |
-| 02.2 Physics-Space Reasoning Agents | 2/4 | In Progress|  |
+| 02.2 Physics-Space Reasoning Agents | 4/4 | Complete    | 2026-04-08 |
 | 3. Smart Experimental Design | 0/1 | Not started | - |
 | 4. Reproducibility and Reporting | 0/1 | Not started | - |
