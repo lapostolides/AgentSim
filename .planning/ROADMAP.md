@@ -142,7 +142,7 @@ Plans:
 
 Plans:
 - [x] 06-01-PLAN.md — Unit validation helpers and Neo4j schema constants
-- [ ] 06-02-PLAN.md — Frozen Pydantic models (property groups, SensorNode, edges, FeasibilityResult)
+- [x] 06-02-PLAN.md — Frozen Pydantic models (property groups, SensorNode, edges, FeasibilityResult)
 
 Plans:
 - [ ] 04-01: TBD
@@ -177,7 +177,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Unit validation helpers and Neo4j schema constants
+- [x] 06-01-PLAN.md — Unit validation helpers and Neo4j schema constants
 - [ ] 06-02-PLAN.md — Frozen Pydantic models (property groups, SensorNode, edges, FeasibilityResult)
 
 ### Phase 7: Sensor Taxonomy Population

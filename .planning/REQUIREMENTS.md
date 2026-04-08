@@ -32,11 +32,11 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 
 ### Shared Physics Foundation
 
-- [ ] **PHYS-01**: Each sensor node has geometric/spatial properties: FOV (degrees), spatial resolution (pixels or lp/mm), depth of field (m), working distance range (m), aperture geometry
-- [ ] **PHYS-02**: Each sensor node has temporal properties: exposure/integration time (s), temporal resolution (s), readout mode (global/rolling/event-driven), frame rate (Hz)
-- [ ] **PHYS-03**: Each sensor node has radiometric properties: quantum efficiency (ratio), dynamic range (dB), noise floor (e-/photon equivalent), spectral sensitivity curve, dark current
-- [ ] **PHYS-04**: SHARES_PHYSICS edges connect sensor families that share underlying physical principles (e.g., SPAD and CCD both governed by photon arrival statistics but with different downstream effects)
-- [ ] **PHYS-05**: Each sensor node has operational metadata: cost range (USD), power consumption (W), weight (g), form factor, typical operating environment
+- [x] **PHYS-01**: Each sensor node has geometric/spatial properties: FOV (degrees), spatial resolution (pixels or lp/mm), depth of field (m), working distance range (m), aperture geometry
+- [x] **PHYS-02**: Each sensor node has temporal properties: exposure/integration time (s), temporal resolution (s), readout mode (global/rolling/event-driven), frame rate (Hz)
+- [x] **PHYS-03**: Each sensor node has radiometric properties: quantum efficiency (ratio), dynamic range (dB), noise floor (e-/photon equivalent), spectral sensitivity curve, dark current
+- [x] **PHYS-04**: SHARES_PHYSICS edges connect sensor families that share underlying physical principles (e.g., SPAD and CCD both governed by photon arrival statistics but with different downstream effects)
+- [x] **PHYS-05**: Each sensor node has operational metadata: cost range (USD), power consumption (W), weight (g), form factor, typical operating environment
 - [x] **PHYS-06**: All physics properties use canonical SI units with Pint-compatible unit annotations to prevent unit inconsistency across sensor families
 
 ### CRB / Information-Theoretic Bounds
@@ -53,7 +53,7 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 - [ ] **QUERY-01**: Given a task description and environment constraints, the query engine returns a ranked list of feasible sensor configurations with CRB-backed theoretical performance bounds
 - [ ] **QUERY-02**: Cross-family feasibility comparison ranks sensors from different families on the same task (e.g., SPAD vs ToF vs LiDAR for depth at 10m range)
 - [ ] **QUERY-03**: Constraint conflict detection identifies when task requirements are physically impossible for any known sensor (e.g., 1mm depth at 100m range in daylight)
-- [ ] **QUERY-04**: FeasibilityResult frozen Pydantic model captures ranked configurations, CRB bounds, confidence qualifiers, and constraint satisfaction details
+- [x] **QUERY-04**: FeasibilityResult frozen Pydantic model captures ranked configurations, CRB bounds, confidence qualifiers, and constraint satisfaction details
 
 ### Pipeline Integration
 

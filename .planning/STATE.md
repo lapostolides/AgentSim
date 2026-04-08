@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Physics-Aware Enhancement
-status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-04-08T23:00:48.461Z"
+status: verifying
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-04-08T23:04:53.223Z"
 last_activity: 2026-04-08
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-08)
 
 Phase: 06 (graph-schema-and-data-models) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-08
 
 Progress: [░░░░░░░░░░] 0%
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: Stable
 
 | Phase 06 P01 | 2min | 2 tasks | 5 files |
+| Phase 06 P02 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,7 @@ Recent decisions affecting current work:
 - [v2.0 Roadmap]: Phase 9 combines Neo4j infra + feasibility queries -- graph client and query engine are tightly coupled
 - [v2.0 Roadmap]: Phase 8 (CRB) can run in parallel with Phase 7 (sensors) since CRB is pure math using Phase 6 models
 - [Phase 06]: Compare Pint dimensionality objects instead of strings to avoid ordering inconsistencies across Pint versions
+- [Phase 06]: FAMILY_SCHEMAS uses (int, float) tuple for integer-like fields from JSON
 
 ### Pending Todos
 
@@ -80,6 +82,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-08T23:00:48.457Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-04-08T23:04:53.219Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
