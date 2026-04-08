@@ -7,6 +7,12 @@ plus space-filling samplers that generate design matrices for scene variants.
 
 from __future__ import annotations
 
+from agentsim.experimental_design.doe_selector import select_doe_strategy
+from agentsim.experimental_design.lhs_sampler import (
+    generate_full_factorial_design,
+    generate_lhs_design,
+    generate_sobol_design,
+)
 from agentsim.experimental_design.models import (
     DoEStrategy,
     DoEStrategyType,
@@ -21,4 +27,8 @@ __all__ = [
     "ParameterBound",
     "ParameterSpace",
     "SampledDesign",
+    "generate_full_factorial_design",
+    "generate_lhs_design",
+    "generate_sobol_design",
+    "select_doe_strategy",
 ]
