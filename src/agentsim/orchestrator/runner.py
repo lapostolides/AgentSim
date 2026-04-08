@@ -23,6 +23,10 @@ from claude_agent_sdk.types import (
 
 from agentsim.environment.discovery import discover_environment
 from agentsim.physics.domains import detect_domain
+from agentsim.physics.mitsuba_detection import (
+    has_mitsuba_transient,
+    format_mitsuba_scene_context,
+)
 from agentsim.orchestrator.agent_registry import build_agent_registry
 from agentsim.orchestrator.config import OrchestratorConfig
 from agentsim.orchestrator.gates import (
@@ -706,6 +710,14 @@ async def run_experiment(
     )
     state = set_environment(state, environment)
 
+    # 2a. Detect Mitsuba transient rendering availability (D-12)
+    mitsuba_available = has_mitsuba_transient(environment)
+    mitsuba_context = format_mitsuba_scene_context(mitsuba_available)
+    logger.info(
+        "mitsuba_detection_complete",
+        available=mitsuba_available,
+    )
+
     # 2b. Detect domain and paradigm, load knowledge for agent context
     domain_context: dict[str, str] | None = None
     paradigm = None
@@ -750,7 +762,9 @@ async def run_experiment(
             )
 
     # 3. Build agent registry
-    agents = build_agent_registry(environment, domain_context=domain_context)
+    agents = build_agent_registry(
+        environment, domain_context=domain_context, mitsuba_context=mitsuba_context,
+    )
 
     # Save initial state
     save_state_snapshot(run_dir, state, "initial")
@@ -864,7 +878,9 @@ async def run_experiment(
                             # CRITICAL: Rebuild agent registry so scene agent
                             # definition includes optimizer output in its prompt
                             agents = build_agent_registry(
-                                environment, domain_context=domain_context,
+                                environment,
+                                domain_context=domain_context,
+                                mitsuba_context=mitsuba_context,
                             )
 
                         logger.info(
@@ -910,7 +926,9 @@ async def run_experiment(
                             "scene": domain_context["scene"] + "\n" + ref_text,
                         }
                         agents = build_agent_registry(
-                            environment, domain_context=domain_context,
+                            environment,
+                            domain_context=domain_context,
+                            mitsuba_context=mitsuba_context,
                         )
                         logger.info(
                             "reference_code_context_injected",
