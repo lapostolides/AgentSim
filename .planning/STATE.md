@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Physics-Aware Enhancement
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-04-08T20:49:39.285Z"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-04-08T23:00:48.461Z"
 last_activity: 2026-04-08
 progress:
-  total_phases: 7
-  completed_phases: 5
-  total_plans: 23
-  completed_plans: 19
-  percent: 63
+  total_phases: 5
+  completed_phases: 0
+  total_plans: 2
+  completed_plans: 1
+  percent: 0
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-04-08)
 
-**Core value:** End-to-end automated experiments where the downstream reconstruction goal drives every upstream decision.
-**Current focus:** Phase 03 — smart-experimental-design
+**Core value:** Prune the sensor configuration space using physics and information theory before any simulation runs.
+**Current focus:** Phase 06 — graph-schema-and-data-models
 
 ## Current Position
 
-Phase: 03 (smart-experimental-design) — EXECUTING
-Plan: 2 of 3
+Phase: 06 (graph-schema-and-data-models) — EXECUTING
+Plan: 2 of 2
 Status: Ready to execute
 Last activity: 2026-04-08
 
-Progress: [██████░░░░] 63%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -47,16 +47,14 @@ Progress: [██████░░░░] 63%
 | Phase 01 | 3 | 20min | 7min |
 | Phase 02.1 | 4 | 18min | 4.5min |
 | Phase 02.2 | 4 | 18min | 4.5min |
-| Phase 05 | 2 | 7min | 3.5min |
+| Phase 05 | 3 | 10min | 3.3min |
 
 **Recent Trend:**
 
-- Last 5 plans: 5min, 5min, 5min, 5min, 2min
+- Last 5 plans: 5min, 5min, 5min, 2min, 3min
 - Trend: Stable
 
-*Updated after each plan completion*
-| Phase 05 P03 | 3min | 2 tasks | 4 files |
-| Phase 03 P01 | 3min | 2 tasks | 6 files |
+| Phase 06 P01 | 2min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -65,21 +63,11 @@ Progress: [██████░░░░] 63%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Roadmap v2.0]: 4 phases (6-9) derived from 26 requirements at coarse granularity
-- [Roadmap v2.0]: GOAL + RECON-01/02/03 grouped into Phase 6 (ML Foundation) — classical baseline (LCT) is part of the backend registry, not a separate phase
-- [Roadmap v2.0]: MOT requirements grouped with DATA in Phase 7 — motion is a form of scene generation, datasets need motion support for tracking tasks
-- [Roadmap v2.0]: RECON-04/05/06 + EVAL grouped into Phase 8 — learned backends and evaluation are tightly coupled (can't evaluate without training)
-- [Phase 05]: Scene dicts use nested dict transforms (not mi.ScalarTransform4f) so templates work without mitsuba installed
-- [Phase 05]: Mitsuba context passed as separate parameter (not merged into domain_context) to maintain clean separation of rendering vs physics concerns
-- [Phase 03]: Nested tuples for design_matrix immutability in DoE models
-
-### Roadmap Evolution
-
-- v2.0 milestone added: Phases 6-9 for ML-Driven Downstream Reconstruction
-- Phase 6: ML Foundation and Downstream Goals (7 requirements)
-- Phase 7: Dataset Generation and Motion Simulation (10 requirements)
-- Phase 8: ML Training Pipeline and Evaluation (6 requirements)
-- Phase 9: Reconstruction Feedback Loop (3 requirements)
+- [v2.0 Roadmap]: 5 phases (6-10) derived from 37 requirements at coarse granularity
+- [v2.0 Roadmap]: Phase 6 = pure Pydantic models + schema (zero infra), Phase 7 = sensor data files, Phase 8 = CRB math (independent of Neo4j)
+- [v2.0 Roadmap]: Phase 9 combines Neo4j infra + feasibility queries -- graph client and query engine are tightly coupled
+- [v2.0 Roadmap]: Phase 8 (CRB) can run in parallel with Phase 7 (sensors) since CRB is pure math using Phase 6 models
+- [Phase 06]: Compare Pint dimensionality objects instead of strings to avoid ordering inconsistencies across Pint versions
 
 ### Pending Todos
 
@@ -87,11 +75,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 5 (Mitsuba integration) must complete before v2.0 work begins — ML training needs transient data
-- PyTorch dependency introduces significant new runtime requirement — needs careful environment detection
+- JAX dependency for numerical CRB (Phase 8) -- needs environment detection similar to Mitsuba
+- Neo4j Docker dependency (Phase 9) -- must degrade gracefully per GRAPH-06
 
 ## Session Continuity
 
-Last session: 2026-04-08T20:49:39.282Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-04-08T23:00:48.457Z
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None

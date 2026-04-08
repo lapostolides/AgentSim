@@ -1,172 +1,122 @@
-# Requirements: AgentSim Physics-Aware Enhancement
+# Requirements: AgentSim v2.0 — Computational Imaging Knowledge Graph
 
-**Defined:** 2026-04-06
-**Core Value:** Simulations must be physically correct and scientifically credible -- not just numerically successful.
+**Defined:** 2026-04-08
+**Core Value:** Prune the sensor configuration space using physics and information theory before any simulation runs. A user states a task and receives ranked feasible sensor configurations with theoretical guarantees.
 
-## v1 Requirements
+## v2.0 Requirements
 
-### Physics Foundation
+Requirements for the computational imaging knowledge graph milestone. Each maps to roadmap phases.
 
-- [x] **PHYS-01**: Physics advisor agent exists as a dedicated, consultable agent that other agents can query during their phases
-- [x] **PHYS-02**: Curated physical constants registry provides deterministic lookups for common physical constants (SI units, material properties, dimensionless group thresholds)
-- [x] **PHYS-03**: Every physics advisor consultation is logged with full context (query, response, domain detected, confidence) for reproducibility
+### Graph Infrastructure
 
-### Deterministic Validation
+- [ ] **GRAPH-01**: Neo4j graph database runs as a local Docker container with programmatic lifecycle management (start, stop, status, health check)
+- [x] **GRAPH-02**: Graph schema defines node types (Sensor, SensorFamily, Algorithm, PhysicsProperty, Task, Environment) and relationship types (HAS_PROPERTY, COMPATIBLE_WITH, ENABLES, REQUIRES, SHARES_PHYSICS) with typed properties
+- [ ] **GRAPH-03**: Graph client provides a Python API for CRUD operations on sensors, algorithms, and relationships, returning frozen Pydantic models
+- [ ] **GRAPH-04**: Seed pipeline populates the graph from structured YAML/JSON sensor definition files, including migration of existing NLOS sensor profiles
+- [ ] **GRAPH-05**: CLI commands (`agentsim graph start|stop|seed|status`) manage the Neo4j container and data lifecycle
+- [ ] **GRAPH-06**: Pipeline degrades gracefully when Neo4j is unavailable — existing experiment workflow continues unchanged with a warning
 
-- [x] **DVAL-01**: AST-based code analysis extracts physical parameters, geometry definitions, solver configuration, and boundary conditions from generated Python simulation code
-- [x] **DVAL-02**: Symbolic equation tracing via SymPy traces dimensional units through computations in generated code and flags dimensionally inconsistent expressions
-- [x] **DVAL-03**: Dimensional analysis via Pint validates unit consistency on all physical parameters extracted from generated code
-- [x] **DVAL-04**: Parameter range plausibility checker cross-references extracted parameters against constants registry and flags values outside physically meaningful ranges
-- [x] **DVAL-05**: CFL / numerical stability checker computes Courant number from actual mesh spacing, timestep, and velocity, and flags violations for explicit solvers
-- [x] **DVAL-06**: Mesh quality validation via trimesh/open3d computes aspect ratio, skewness, and watertightness for meshes referenced in generated code, and flags scale inconsistencies
+### Sensor Taxonomy
 
-### Computational Imaging Domain Knowledge
+- [ ] **SENS-01**: Graph contains SPAD sensor family with physics specs (timing resolution, dead time, dark count rate, PDE, pixel count, FOV, gate width)
+- [ ] **SENS-02**: Graph contains ToF sensor families — both continuous-wave (modulation frequency, dealiasing range, integration time) and pulsed (pulse width, repetition rate, range resolution)
+- [ ] **SENS-03**: Graph contains event camera family with specs (temporal resolution, contrast threshold, dynamic range, bandwidth, pixel count)
+- [ ] **SENS-04**: Graph contains coded aperture camera family with specs (mask pattern, mask transmittance, PSF characterization, condition number)
+- [ ] **SENS-05**: Graph contains light field camera family with specs (angular resolution, spatial resolution, baseline, disparity range, microlens pitch)
+- [ ] **SENS-06**: Graph contains LiDAR families — mechanical (scan rate, angular resolution, range), solid-state (flash FOV, point density), and FMCW (chirp bandwidth, coherence length)
+- [ ] **SENS-07**: Graph contains lensless camera family with specs (mask type, diffraction pattern, reconstruction condition number, working distance)
+- [ ] **SENS-08**: Graph contains RGB camera family with specs (pixel pitch, well depth, read noise, quantum efficiency, dynamic range, frame rate, FOV)
+- [ ] **SENS-09**: Graph contains structured light family with specs (pattern type, projector resolution, baseline, triangulation angle, ambient light rejection)
+- [ ] **SENS-10**: Graph contains polarimetric camera family with specs (Stokes parameters measured, extinction ratio, micropolarizer pitch, DoLP accuracy)
+- [ ] **SENS-11**: Graph contains spectral/hyperspectral camera family with specs (spectral range, spectral resolution, spatial resolution, number of bands)
 
-- [x] **CIDK-01**: NLOS domain knowledge YAML with governing equations (transient transport, RTE), geometry constraints (three-bounce path validity, relay wall visibility), SPAD sensor parameters, and reconstruction algorithm requirements (LCT, f-k migration, phasor fields)
-- [x] **CIDK-02**: Extensible domain knowledge architecture — YAML schema and loader that activates domain-specific checks when computational imaging / NLOS is detected from hypothesis context
-- [x] **CIDK-03**: Published codebase parameter index — curated reference of parameter constraints, valid ranges, and geometry requirements extracted from key NLOS papers (O'Toole 2018, Lindell 2019, Liu 2019, Nam 2021)
+### Shared Physics Foundation
 
-### NLOS Scene Validation
+- [ ] **PHYS-01**: Each sensor node has geometric/spatial properties: FOV (degrees), spatial resolution (pixels or lp/mm), depth of field (m), working distance range (m), aperture geometry
+- [ ] **PHYS-02**: Each sensor node has temporal properties: exposure/integration time (s), temporal resolution (s), readout mode (global/rolling/event-driven), frame rate (Hz)
+- [ ] **PHYS-03**: Each sensor node has radiometric properties: quantum efficiency (ratio), dynamic range (dB), noise floor (e-/photon equivalent), spectral sensitivity curve, dark current
+- [ ] **PHYS-04**: SHARES_PHYSICS edges connect sensor families that share underlying physical principles (e.g., SPAD and CCD both governed by photon arrival statistics but with different downstream effects)
+- [ ] **PHYS-05**: Each sensor node has operational metadata: cost range (USD), power consumption (W), weight (g), form factor, typical operating environment
+- [x] **PHYS-06**: All physics properties use canonical SI units with Pint-compatible unit annotations to prevent unit inconsistency across sensor families
 
-- [ ] **NLOS-01**: Three-bounce geometry validator confirms sensor can see relay wall, relay wall can illuminate hidden scene, and return path is unoccluded — flags invalid configurations before execution
-- [ ] **NLOS-02**: Sensor FOV checker validates that the SPAD sensor's field of view covers the relay wall scan area given sensor position, look-at direction, and relay wall dimensions
-- [ ] **NLOS-03**: Temporal resolution validator checks that time-bin width is sufficient to resolve the hidden scene geometry given relay wall-to-object distances and speed of light
-- [ ] **NLOS-04**: Pre-execution scene validation with auto-fix loop — deterministic NLOS geometry checks run first, then physics advisor interprets failures; scene agent rewrites with physics constraints as feedback (max 3 retries)
+### CRB / Information-Theoretic Bounds
 
-### LLM Physics Integration
+- [ ] **CRB-01**: Analytical CRB module computes closed-form Cramér-Rao bounds for sensor families with known formulations (SPAD depth, CW-ToF range, pulsed dToF range, FMCW range, polarimetric Stokes, hyperspectral unmixing, structured light triangulation)
+- [ ] **CRB-02**: Numerical CRB module uses JAX autodiff to compute Fisher information matrices for sensor families without analytical forms (coded aperture, lensless, event camera, light field)
+- [ ] **CRB-03**: CRB dispatch function selects analytical or numerical computation based on sensor family and estimation task, with explicit confidence qualifiers (analytical/numerical/empirical/unknown)
+- [ ] **CRB-04**: CRB results include bound type, confidence qualifier, model assumptions, and condition number to prevent misinterpretation of theoretical bounds as achievable performance
+- [ ] **CRB-05**: Sensitivity analysis module quantifies how CRB changes with perturbations to sensor parameters (e.g., how depth precision degrades as ambient light increases), enabling parameter importance ranking
+- [ ] **CRB-06**: Numerical CRB computation includes explicit stability guards: condition number checks, positive-variance assertions, Tikhonov regularization for near-singular Fisher matrices
 
-- [ ] **LINT-01**: Physics-informed hypothesis generation: physics advisor provides governing equations, dimensionless groups, and domain-specific parameter spaces (NLOS transient imaging context) to the hypothesis agent
-- [ ] **LINT-02**: Physics-aware result analysis: analyst agent consults physics advisor to check transient imaging results against expected behavior (inverse-square falloff, temporal peak locations, reconstruction resolution limits)
+### Feasibility Query Engine
 
-### Physics Grounding
+- [ ] **QUERY-01**: Given a task description and environment constraints, the query engine returns a ranked list of feasible sensor configurations with CRB-backed theoretical performance bounds
+- [ ] **QUERY-02**: Cross-family feasibility comparison ranks sensors from different families on the same task (e.g., SPAD vs ToF vs LiDAR for depth at 10m range)
+- [ ] **QUERY-03**: Constraint conflict detection identifies when task requirements are physically impossible for any known sensor (e.g., 1mm depth at 100m range in daylight)
+- [ ] **QUERY-04**: FeasibilityResult frozen Pydantic model captures ranked configurations, CRB bounds, confidence qualifiers, and constraint satisfaction details
 
-- [ ] **PGND-01**: NLOS benchmark scenes — at least 3 known-configuration test cases (confocal, non-confocal, retroreflective) with expected transient profiles that verify simulation setup before running new experiments
-- [ ] **PGND-02**: Reconstruction sanity checks — post-execution validation that reconstructed hidden geometry is physically plausible (bounded by relay wall visibility cone, respects speed-of-light timing)
+### Pipeline Integration
 
-### Paradigm-Agnostic Domain Architecture
+- [ ] **PIPE-01**: Orchestrator runner includes a feasibility phase between environment discovery and hypothesis generation that queries the knowledge graph
+- [ ] **PIPE-02**: Hypothesis agent receives feasibility context in its prompt, constraining proposals to physically viable sensor configurations
+- [ ] **PIPE-03**: ExperimentState includes an optional `feasibility_result: FeasibilityResult | None` field tracking the graph query results for the current experiment
+- [ ] **PIPE-04**: Pipeline skips the feasibility phase gracefully when knowledge graph is disabled or Neo4j is unavailable
 
-- [x] **PA-01**: detect_paradigm(hypothesis) returns matching paradigm(s) from YAML files — not hardcoded to relay-wall NLOS
-- [x] **PA-02**: Scene agent receives paradigm-specific physics constraints (geometry, sensor parameters, published baselines) in its prompt before generating simulation code
-- [x] **PA-03**: Post-hoc validators dispatch based on paradigm declarations in YAML, not hardcoded check functions — adding a new paradigm requires only a YAML file
-- [x] **PA-04**: Named sensor profiles (at least 3: SwissSPAD2, LinoSPAD2, streak camera) loadable from YAML with hardware-specific timing parameters (resolution, jitter, dead time, array size)
-- [x] **PA-05**: Existing relay-wall NLOS checks still pass — no regressions from the refactor
-- [x] **PA-06**: At least 2 paradigms fully defined (relay wall + one other) with paradigm-specific validation rules
+## Future Requirements (deferred)
 
-### Physics-Space Reasoning
-
-- [x] **PSR-01**: Transfer function propagation engine computes all derived quantities from input parameters via a cascading constraint chain — deterministic Python, no LLM calls
-- [x] **PSR-02**: Optimizer mode ranks sensor+algorithm combinations for a given hypothesis with concrete computed metrics (resolution, SNR, depth) and natural language rationale
-- [x] **PSR-03**: Explorer mode identifies under-explored parameter regions by comparing hypothesis parameters against published baselines and proposes 1-3 novel experiment configurations
-- [x] **PSR-04**: Physics advisor routes new query types (optimize_setup, explore_novel, sensor_query, algorithm_query) to deterministic computation first, then LLM for interpretation
-- [x] **PSR-05**: Lensless imaging domain defined as second CI domain (domain.yaml, 1-2 paradigms, 2 sensor classes, 1-2 algorithms with transfer functions) proving multi-domain architecture
-- [x] **PSR-06**: Pre-scene optimization automatically runs after paradigm detection — optimizer result stored in ExperimentState and injected into scene agent prompt
-
-### Smart Experimental Design
-
-- [ ] **SEXP-01**: Automatic DoE strategy selection analyzes parameter space dimensionality and simulation cost to choose optimal sampling strategy (LHS, Sobol, factorial, Bayesian)
-- [ ] **SEXP-02**: Sensitivity analysis via SALib computes Sobol indices or Morris screening to identify which parameters significantly affect outputs
-- [ ] **SEXP-03**: LHS parameter sampling via SciPy QMC generates space-filling experimental designs for parameter sweeps
-
-### Reproducibility
-
-- [ ] **REPR-01**: Reproducibility package generator produces Dockerfile, pinned dependency file, run scripts, and structured report for any completed experiment
-- [ ] **REPR-02**: Structured experiment metadata captures environment fingerprint, git hash, timestamps, full parameter history, and physics validation results in machine-readable format
-
-### Mitsuba 3 Transient Rendering Integration
-
-- [x] **MIT-01**: Template hierarchy with frozen Pydantic base class (NLOSSceneTemplate) and per-scene-type templates (confocal point, non-confocal mesh, retroreflective) that produce Mitsuba scene dicts via build() method
-- [x] **MIT-02**: Both confocal and non-confocal scanning modes supported as template parameters, plus mesh loading (.obj/.ply) for hidden geometry alongside primitives
-- [x] **MIT-03**: Low spp default (256) for fast iteration with SPP_TIERS dict, and llvm_ad_rgb variant as default
-- [x] **MIT-04**: Raw transient .npy output with auto-validation comparing rendered peak timing against formula engine prediction via OPL-to-time conversion
-- [ ] **MIT-05**: Numpy fallback with warning when mitsuba/mitransient absent, environment-based auto-detection via discovered packages (no CLI flags)
-- [ ] **MIT-06**: Scene agent receives Mitsuba template instructions (or numpy fallback guidance) via runner pipeline integration — agent registry passes mitsuba_context to scene agent prompt
-
-## v2 Requirements
-
-### Domain Extensibility
-
-- **DEXT-01**: Domain knowledge file format (YAML) allows researchers to define new physics domains with parameter ranges, governing equations, regime maps, and scaling laws
-- **DEXT-02**: Community contribution system with quality vetting for researcher-contributed domain knowledge files
-- **DEXT-03**: Domain auto-detection uses multi-label classification to activate relevant domain modules from hypothesis and literature context
-
-### Advanced Physics
-
-- **APHYS-01**: V&V-aligned validation reports follow ASME V&V conceptual framework with verification evidence, validation evidence, and uncertainty quantification
-- **APHYS-02**: Grid/mesh convergence studies via Richardson extrapolation and Grid Convergence Index (GCI) run automatically when single-resolution results are detected
-- **APHYS-03**: Bayesian optimization via BoTorch for expensive simulations with few allowed evaluations
-
-### Additional CI Domains
-
-- **ADOM-01**: Ptychography domain module (overlap constraints, probe sampling, phase retrieval convergence)
-- **ADOM-02**: Lensless imaging domain module (PSF calibration, Wiener deconvolution bounds, sensor-mask distance)
-- **ADOM-03**: Coded aperture domain module (mask transmission, multiplexing gain, deconvolution SNR)
+- [ ] Natural language constraint parsing from free-text hypothesis (NLP -> structured Cypher)
+- [ ] Empirical validation feedback loop: simulation results update sensor performance data in the graph
+- [ ] Multi-sensor fusion configurations (combining sensors for complementary coverage)
+- [ ] Misspecified CRB (MCRB) for robustness analysis when forward model is approximate
+- [ ] Graph-based experimental design: use graph structure to suggest novel sensor combinations
+- [ ] Web UI for browsing sensor taxonomy and feasibility results
 
 ## Out of Scope
 
-| Feature | Reason |
-|---------|--------|
-| Full PDE solver / physics engine | AgentSim provides knowledge, not computation -- uses existing solvers |
-| PINN training | Specific ML technique, not general validation tool |
-| Automated paper writing | Support paper writing with reports, don't write papers |
-| Multi-physics coupling orchestration | Premature complexity for v1 |
-| Experimental data ingestion from databases | Accept user-provided reference data only |
-| Web UI / dashboard | CLI-first research tool |
-| Cloud/HPC execution | Local execution only |
-| Runtime competitor comparison | Design-time awareness, not runtime logging |
+- Cloud-hosted graph database — local Neo4j only for v2.0
+- Real-time streaming sensor data — offline analysis only
+- Automated sensor procurement / vendor integration
+- Custom hardware design optimization
+- Production-grade NLP query interface (using structured Python API for v2.0)
 
 ## Traceability
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| PHYS-01 | Phase 1 | Complete |
-| PHYS-02 | Phase 1 | Complete |
-| PHYS-03 | Phase 1 | Complete |
-| DVAL-01 | Phase 1 | Complete |
-| DVAL-02 | Phase 1 | Complete |
-| DVAL-03 | Phase 1 | Complete |
-| DVAL-04 | Phase 1 | Complete |
-| DVAL-05 | Phase 1 | Complete |
-| DVAL-06 | Phase 1 | Complete |
-| CIDK-01 | Phase 2 | Complete |
-| CIDK-02 | Phase 2 | Complete |
-| CIDK-03 | Phase 2 | Complete |
-| NLOS-01 | Phase 2 | Pending |
-| NLOS-02 | Phase 2 | Pending |
-| NLOS-03 | Phase 2 | Pending |
-| NLOS-04 | Phase 2 | Pending |
-| LINT-01 | Phase 2 | Pending |
-| LINT-02 | Phase 2 | Pending |
-| PGND-01 | Phase 2 | Pending |
-| PGND-02 | Phase 2 | Pending |
-| PA-01 | Phase 02.1 | Complete |
-| PA-02 | Phase 02.1 | Complete |
-| PA-03 | Phase 02.1 | Complete |
-| PA-04 | Phase 02.1 | Complete |
-| PA-05 | Phase 02.1 | Complete |
-| PA-06 | Phase 02.1 | Complete |
-| PSR-01 | Phase 02.2 | Complete |
-| PSR-02 | Phase 02.2 | Complete |
-| PSR-03 | Phase 02.2 | Complete |
-| PSR-04 | Phase 02.2 | Complete |
-| PSR-05 | Phase 02.2 | Complete |
-| PSR-06 | Phase 02.2 | Complete |
-| SEXP-01 | Phase 3 | Pending |
-| SEXP-02 | Phase 3 | Pending |
-| SEXP-03 | Phase 3 | Pending |
-| REPR-01 | Phase 4 | Pending |
-| REPR-02 | Phase 4 | Pending |
-| MIT-01 | Phase 5 | Complete |
-| MIT-02 | Phase 5 | Complete |
-| MIT-03 | Phase 5 | Complete |
-| MIT-04 | Phase 5 | Complete |
-| MIT-05 | Phase 5 | Pending |
-| MIT-06 | Phase 5 | Pending |
-
-**Coverage:**
-- v1 requirements: 42 total
-- Mapped to phases: 42
-- Unmapped: 0
-
----
-*Requirements defined: 2026-04-06*
-*Last updated: 2026-04-08 after Phase 05 planning -- added MIT-01 through MIT-06*
+| Requirement | Phase | Plan | Status |
+|-------------|-------|------|--------|
+| GRAPH-01 | Phase 9 | — | Pending |
+| GRAPH-02 | Phase 6 | — | Pending |
+| GRAPH-03 | Phase 9 | — | Pending |
+| GRAPH-04 | Phase 9 | — | Pending |
+| GRAPH-05 | Phase 9 | — | Pending |
+| GRAPH-06 | Phase 9 | — | Pending |
+| SENS-01 | Phase 7 | — | Pending |
+| SENS-02 | Phase 7 | — | Pending |
+| SENS-03 | Phase 7 | — | Pending |
+| SENS-04 | Phase 7 | — | Pending |
+| SENS-05 | Phase 7 | — | Pending |
+| SENS-06 | Phase 7 | — | Pending |
+| SENS-07 | Phase 7 | — | Pending |
+| SENS-08 | Phase 7 | — | Pending |
+| SENS-09 | Phase 7 | — | Pending |
+| SENS-10 | Phase 7 | — | Pending |
+| SENS-11 | Phase 7 | — | Pending |
+| PHYS-01 | Phase 6 | — | Pending |
+| PHYS-02 | Phase 6 | — | Pending |
+| PHYS-03 | Phase 6 | — | Pending |
+| PHYS-04 | Phase 6 | — | Pending |
+| PHYS-05 | Phase 6 | — | Pending |
+| PHYS-06 | Phase 6 | — | Pending |
+| CRB-01 | Phase 8 | — | Pending |
+| CRB-02 | Phase 8 | — | Pending |
+| CRB-03 | Phase 8 | — | Pending |
+| CRB-04 | Phase 8 | — | Pending |
+| CRB-05 | Phase 8 | — | Pending |
+| CRB-06 | Phase 8 | — | Pending |
+| QUERY-01 | Phase 9 | — | Pending |
+| QUERY-02 | Phase 9 | — | Pending |
+| QUERY-03 | Phase 9 | — | Pending |
+| QUERY-04 | Phase 6 | — | Pending |
+| PIPE-01 | Phase 10 | — | Pending |
+| PIPE-02 | Phase 10 | — | Pending |
+| PIPE-03 | Phase 10 | — | Pending |
+| PIPE-04 | Phase 10 | — | Pending |
