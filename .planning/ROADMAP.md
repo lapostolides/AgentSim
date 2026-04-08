@@ -135,10 +135,11 @@ Plans:
   1. After an experiment completes, a reproducibility package is generated containing a Dockerfile, pinned dependency file, run scripts, and a structured report (Markdown or LaTeX)
   2. Structured metadata captures environment fingerprint, git hash, timestamps, full parameter history, and all physics validation results in a machine-readable format (JSON/YAML)
   3. The generated Dockerfile can be built and the run script can re-execute the experiment without manual intervention
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: TBD
+- [ ] 04-01-PLAN.md — Frozen Pydantic models (ReproducibilityPackage, EnvironmentFingerprint), deterministic environment capture, and package assembler
+- [ ] 04-02-PLAN.md — Jinja2 templates (Dockerfile, requirements.txt, run.sh, report.md), package writer, and runner integration
 
 ### Phase 5: Mitsuba 3 Transient Rendering Integration
 
@@ -228,7 +229,7 @@ Note: Phases 2 and 3 depend only on Phase 1 and could execute in parallel. Phase
 | 02.1 Paradigm-Agnostic Domain Architecture | v1.0 | 4/4 | Complete    | 2026-04-07 |
 | 02.2 Physics-Space Reasoning Agents | v1.0 | 4/4 | Complete    | 2026-04-08 |
 | 3. Smart Experimental Design | v1.0 | 0/1 | Not started | - |
-| 4. Reproducibility and Reporting | v1.0 | 0/1 | Not started | - |
+| 4. Reproducibility and Reporting | v1.0 | 0/2 | Not started | - |
 | 5. Mitsuba 3 Transient Rendering Integration | v1.0 | 2/3 | In progress | - |
 | 6. ML Foundation and Downstream Goals | v2.0 | 0/3 | Not started | - |
 | 7. Dataset Generation and Motion Simulation | v2.0 | 0/3 | Not started | - |
