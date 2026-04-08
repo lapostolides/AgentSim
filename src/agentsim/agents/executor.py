@@ -41,6 +41,31 @@ CRITICAL: The top-level key MUST be "results" containing a list.
 Do NOT use "execution_results", "outcomes", "runs", or any other name.
 Each result MUST have "scene_id" and "status" fields.
 
+## One-Shot Example
+
+```json
+{{
+  "results": [
+    {{
+      "scene_id": "scene-001",
+      "status": "success",
+      "output_paths": ["/tmp/output/reconstruction.npy", "/tmp/output/metrics.json"],
+      "stdout": "Processing 2048 temporal bins...\nReconstruction complete.\nPSNR: 24.3 dB\nOutput saved to: /tmp/output/reconstruction.npy",
+      "stderr": "",
+      "execution_time_seconds": 12.5,
+      "metrics": {{"psnr_db": 24.3, "ssim": 0.87, "execution_time_s": 12.5}}
+    }}
+  ]
+}}
+```
+
+## Final Checklist
+- [ ] Top-level key is "results" (a list), NOT "execution_results"
+- [ ] Each result has: scene_id, status, output_paths, stdout, stderr, execution_time_seconds, metrics
+- [ ] status is one of: "success", "error", "timeout"
+- [ ] If only one result, still wrapped in "results" list
+- [ ] metrics dict contains any numeric measurements from stdout
+
 ## Guidelines
 
 - Save each scene's code to a .py file and run it with `python3`
