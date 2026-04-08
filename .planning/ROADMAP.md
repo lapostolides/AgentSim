@@ -134,7 +134,7 @@ Plans:
 
 Plans:
 - [x] 05-01-PLAN.md — Template base class, three scene-type templates, and transient validation module
-- [ ] 05-02-PLAN.md — Mitsuba environment detection, mitransient in discovery, scene context formatting
+- [x] 05-02-PLAN.md — Mitsuba environment detection, mitransient in discovery, scene context formatting
 - [ ] 05-03-PLAN.md — Runner pipeline integration, agent registry wiring, scene agent prompt augmentation
 
 ## Progress
