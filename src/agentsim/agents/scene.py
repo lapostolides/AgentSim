@@ -104,6 +104,10 @@ Here is a minimal but complete scene output:
 Use ONLY packages that are listed above. If a critical package is missing,
 note it in the code comments and raise a clear error.
 
+## Rendering Engine Context
+
+{mitsuba_context}
+
 ## Physics Constraints
 
 {physics_context}
@@ -117,12 +121,14 @@ note it in the code comments and raise a clear error.
 def create_scene_agent(
     environment_str: str,
     physics_context: str = "",
+    mitsuba_context: str = "",
 ) -> AgentDefinition:
     """Create the Scene Agent definition.
 
     Args:
         environment_str: Formatted string describing available packages.
         physics_context: Optional physics constraints context to inject.
+        mitsuba_context: Optional Mitsuba rendering context to inject.
     """
     return AgentDefinition(
         description=(
@@ -134,6 +140,7 @@ def create_scene_agent(
         prompt=SCENE_PROMPT.format(
             environment=environment_str,
             physics_context=physics_context,
+            mitsuba_context=mitsuba_context,
             state_context="{state_context}",
         ),
         tools=["Read"],
