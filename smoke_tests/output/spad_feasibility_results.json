@@ -8,10 +8,12 @@
       "sufficient_for_2m": true
     },
     "fov": {
-      "coverage_w_m": 0.2515968,
-      "coverage_h_m": 0.2515968,
+      "fov_degrees": 40.0,
+      "coverage_m": 1.091910702798607,
       "wall_size_m": 1.0,
-      "covers_wall": false
+      "covers_wall": true,
+      "is_linear": false,
+      "note": ""
     },
     "signal": {
       "baseline_photons": 3039189464899140.0,
@@ -22,7 +24,7 @@
       "snr_ratio": 0.06249999999973779
     },
     "integration_time_for_snr10": 8.423298480032473e-12,
-    "feasible": false
+    "feasible": true
   },
   "LinoSPAD2": {
     "depth": {
@@ -33,10 +35,12 @@
       "sufficient_for_2m": true
     },
     "fov": {
-      "coverage_w_m": 0.40243199999999996,
-      "coverage_h_m": 0.0007859999999999999,
+      "fov_degrees": 30.0,
+      "coverage_m": 0.8038475772933681,
       "wall_size_m": 1.0,
-      "covers_wall": false
+      "covers_wall": false,
+      "is_linear": true,
+      "note": "linear array \u2014 needs galvo scanning for 2D coverage"
     },
     "signal": {
       "baseline_photons": 2605019541342120.0,
@@ -58,10 +62,12 @@
       "sufficient_for_2m": false
     },
     "fov": {
-      "coverage_w_m": 0.4416,
-      "coverage_h_m": 0.3312,
+      "fov_degrees": 30.0,
+      "coverage_m": 0.8038475772933681,
       "wall_size_m": 1.0,
-      "covers_wall": false
+      "covers_wall": false,
+      "is_linear": false,
+      "note": ""
     },
     "signal": {
       "baseline_photons": 1302509770671060.0,

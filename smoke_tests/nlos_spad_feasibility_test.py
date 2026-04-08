@@ -44,6 +44,7 @@ SENSORS = {
         "fill_factor": 0.105,
         "quantum_efficiency": 0.35,
         "dark_count_rate_hz": 100.0,
+        "fov_degrees": 40.0,  # max with wide-angle optics (YAML: 5-40, typical 20)
         "type": "2D array",
     },
     "LinoSPAD2": {
@@ -55,6 +56,7 @@ SENSORS = {
         "fill_factor": 0.38,
         "quantum_efficiency": 0.30,
         "dark_count_rate_hz": 200.0,
+        "fov_degrees": 30.0,  # linear array with scanning optics
         "type": "linear array (needs scanning)",
     },
     "Hamamatsu_C5680": {
@@ -66,6 +68,7 @@ SENSORS = {
         "fill_factor": 1.0,
         "quantum_efficiency": 0.15,
         "dark_count_rate_hz": 0.0,
+        "fov_degrees": 30.0,  # with collection optics
         "type": "streak camera",
     },
 }
@@ -152,29 +155,31 @@ def compute_fov_coverage(
     sensor_to_wall_m: float,
     wall_size_m: float,
 ) -> dict:
-    """Check if sensor FOV covers the relay wall."""
-    # FOV from array size and pixel pitch
+    """Check if sensor FOV covers the relay wall.
+
+    Uses the optics-level FOV (degrees), not raw chip projection.
+    Real NLOS systems use collection lenses giving 5-40° FOV.
+    Coverage at wall distance = 2 * d * tan(FOV/2).
+    """
+    fov_deg = sensor.get("fov_degrees", 20.0)  # default to typical 20°
+    fov_rad = math.radians(fov_deg)
+
+    # Coverage diameter at wall distance
+    coverage = 2.0 * sensor_to_wall_m * math.tan(fov_rad / 2.0)
+
+    # For linear arrays, coverage is 1D — needs galvo scanning for 2D
     array_w, array_h = sensor["array_size"]
-    pitch_m = sensor["pixel_pitch_um"] * 1e-6
-    sensor_width_m = array_w * pitch_m
-    sensor_height_m = array_h * pitch_m
+    is_linear = array_h == 1
 
-    # Assuming a lens with ~1:1 magnification at the wall distance
-    # (rough estimate — real systems use specific optics)
-    # Coverage at wall = sensor_size * (wall_distance / focal_length)
-    # For f ~ 50mm lens: coverage = sensor_size * (1.5 / 0.05) = 30x
-    focal_length_m = 0.05  # 50mm typical
-    magnification = sensor_to_wall_m / focal_length_m
-    coverage_w = sensor_width_m * magnification
-    coverage_h = sensor_height_m * magnification
-
-    covers_wall = coverage_w >= wall_size_m and coverage_h >= wall_size_m
+    covers_wall = coverage >= wall_size_m
 
     return {
-        "coverage_w_m": float(coverage_w),
-        "coverage_h_m": float(coverage_h),
+        "fov_degrees": fov_deg,
+        "coverage_m": float(coverage),
         "wall_size_m": wall_size_m,
         "covers_wall": covers_wall,
+        "is_linear": is_linear,
+        "note": "linear array — needs galvo scanning for 2D coverage" if is_linear else "",
     }
 
 
@@ -262,9 +267,11 @@ def main() -> None:
 
         # 2. FOV coverage
         fov_info = compute_fov_coverage(sensor, SENSOR_TO_WALL_M, RELAY_WALL_SIZE_M)
-        print(f"\n  FOV Coverage:")
-        print(f"    Coverage: {fov_info['coverage_w_m']:.2f}m x {fov_info['coverage_h_m']:.2f}m")
-        print(f"    {'✓ COVERS wall' if fov_info['covers_wall'] else '✗ DOES NOT cover wall'}")
+        print(f"\n  FOV Coverage (optics-level, {fov_info['fov_degrees']:.0f}° FOV):")
+        print(f"    Coverage at {SENSOR_TO_WALL_M}m: {fov_info['coverage_m']:.2f}m diameter")
+        print(f"    {'✓ COVERS' if fov_info['covers_wall'] else '✗ DOES NOT cover'} {RELAY_WALL_SIZE_M}m wall")
+        if fov_info.get("note"):
+            print(f"    ⚠ {fov_info['note']}")
 
         # 3. Signal feasibility
         signal_info = compute_signal_ratio_vs_baseline(sensor)
@@ -303,15 +310,16 @@ def main() -> None:
     # Summary table
     print(f"\n\n{'=' * 70}")
     print("SUMMARY")
-    print(f"{'Sensor':<20} {'Depth':>8} {'FOV':>8} {'SNR':>8} {'Time':>8} {'Verdict':>10}")
-    print("-" * 70)
+    print(f"{'Sensor':<20} {'Depth':>8} {'FOV':>10} {'SNR':>12} {'Time':>8} {'Verdict':>10}")
+    print("-" * 74)
     for name, r in all_results.items():
         d = "✓" if r["depth"]["sufficient_for_2m"] else "✗"
-        f = "✓" if r["fov"]["covers_wall"] else "✗"
+        fov_m = r["fov"]["coverage_m"]
+        f = f"✓ {fov_m:.1f}m" if r["fov"]["covers_wall"] else f"✗ {fov_m:.1f}m"
         s = f"{r['signal']['test_snr']:.1f}"
         t = f"{r['integration_time_for_snr10']:.0f}s" if r["integration_time_for_snr10"] < 1000 else ">1000s"
         v = "✓ YES" if r["feasible"] else "✗ NO"
-        print(f"  {name:<18} {d:>8} {f:>8} {s:>8} {t:>8} {v:>10}")
+        print(f"  {name:<18} {d:>8} {f:>10} {s:>12} {t:>8} {v:>10}")
 
     # Explorer insight
     print(f"\n\nEXPLORER INSIGHT")
