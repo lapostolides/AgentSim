@@ -10,16 +10,21 @@ analyst.py, and physics_advisor.py with paradigm-agnostic equivalents.
 
 from __future__ import annotations
 
+import structlog
+
 from agentsim.physics.domains.schema import (
     AlgorithmKnowledge,
     DomainBundle,
     DomainKnowledge,
+    ParameterRange,
     ParadigmKnowledge,
     SensorCatalog,
     SensorClass,
     SensorProfile,
 )
 from agentsim.physics.reasoning.models import OptimizerResult
+
+logger = structlog.get_logger()
 
 
 def _format_governing_equations(domain: DomainKnowledge) -> list[str]:
@@ -572,5 +577,201 @@ def format_optimizer_recommendation(result: OptimizerResult) -> str:
     if result.rationale:
         lines.append(f"**Summary:** {result.rationale}")
         lines.append("")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Reference code context for scene generation
+# ---------------------------------------------------------------------------
+
+
+def _format_parameter_ranges(
+    parameters: dict[str, ParameterRange | dict],
+) -> list[str]:
+    """Render algorithm parameter ranges as implementation guidance lines.
+
+    Args:
+        parameters: Parameter name to ParameterRange (or raw dict) mapping.
+
+    Returns:
+        List of formatted lines.
+    """
+    lines: list[str] = []
+    for param_name, param_val in parameters.items():
+        if isinstance(param_val, ParameterRange):
+            typical_str = f", typical={param_val.typical}" if param_val.typical is not None else ""
+            lines.append(
+                f"  - `{param_name}`: min={param_val.min}, max={param_val.max}{typical_str}"
+            )
+            if param_val.description:
+                lines.append(f"    {param_val.description}")
+        elif isinstance(param_val, dict):
+            parts = [f"{k}={v}" for k, v in param_val.items()]
+            lines.append(f"  - `{param_name}`: {', '.join(parts)}")
+    return lines
+
+
+def _format_timing_range(sensor: SensorClass) -> list[str]:
+    """Render sensor timing range as implementation guidance lines.
+
+    Args:
+        sensor: SensorClass with timing_range.
+
+    Returns:
+        List of formatted lines.
+    """
+    lines: list[str] = []
+    timing = sensor.timing_range
+    if timing is None:
+        return lines
+    if timing.temporal_resolution_ps:
+        tr = timing.temporal_resolution_ps
+        lines.append(
+            f"  - Temporal resolution: {tr.min}-{tr.max} ps (typical {tr.typical} ps)"
+        )
+    if timing.jitter_fwhm_ps:
+        jt = timing.jitter_fwhm_ps
+        lines.append(f"  - Jitter FWHM: {jt.min}-{jt.max} ps (typical {jt.typical} ps)")
+    if timing.dead_time_ns:
+        dt = timing.dead_time_ns
+        lines.append(f"  - Dead time: {dt.min}-{dt.max} ns (typical {dt.typical} ns)")
+    if timing.gate_width_ns:
+        gw = timing.gate_width_ns
+        lines.append(f"  - Gate width: {gw.min}-{gw.max} ns (typical {gw.typical} ns)")
+    return lines
+
+
+def _format_spatial_range(sensor: SensorClass) -> list[str]:
+    """Render sensor spatial range as implementation guidance lines.
+
+    Args:
+        sensor: SensorClass with spatial_range.
+
+    Returns:
+        List of formatted lines.
+    """
+    lines: list[str] = []
+    spatial = sensor.spatial_range
+    if spatial is None:
+        return lines
+    lines.append(
+        f"  - Array: {spatial.array_size[0]}x{spatial.array_size[1]}, "
+        f"pitch={spatial.pixel_pitch_um} um, fill_factor={spatial.fill_factor}"
+    )
+    if spatial.fov_degrees:
+        fov = spatial.fov_degrees
+        lines.append(f"  - FoV: {fov.min}-{fov.max} deg (typical {fov.typical} deg)")
+    return lines
+
+
+def format_reference_code_context(
+    sensor_class: SensorClass | None,
+    algorithm: AlgorithmKnowledge | None,
+    paradigm: ParadigmKnowledge | None = None,
+) -> str:
+    """Render a Reference Implementation Guide for scene code generation.
+
+    Extracts parameter ranges, input requirements, output characteristics,
+    and sensor constraints to ground the scene agent's generated code in
+    known implementations and published parameter values.
+
+    Args:
+        sensor_class: Sensor class description (None produces empty string).
+        algorithm: Algorithm knowledge (None produces empty string).
+        paradigm: Optional paradigm for additional context.
+
+    Returns:
+        Formatted Markdown string, or "" if both inputs are None.
+    """
+    if sensor_class is None and algorithm is None:
+        return ""
+
+    lines: list[str] = []
+    lines.append("### Reference Implementation Guide")
+    lines.append("")
+
+    if algorithm is not None:
+        algo_display = algorithm.name or algorithm.algorithm
+        lines.append(f"**Algorithm: {algo_display}**")
+        if algorithm.reference:
+            lines.append(f"Reference: {algorithm.reference}")
+        if algorithm.description:
+            lines.append(f"Description: {algorithm.description}")
+        lines.append("")
+
+        # Parameter ranges
+        if algorithm.parameters:
+            lines.append("Parameter ranges (use typical values as defaults):")
+            lines.extend(_format_parameter_ranges(algorithm.parameters))
+            lines.append("")
+
+        # Input requirements
+        if algorithm.input_requirements:
+            lines.append("Input requirements:")
+            for req in algorithm.input_requirements:
+                for req_key, req_val in req.items():
+                    lines.append(f"  - {req_key}: {req_val}")
+            lines.append("")
+
+        # Output characteristics
+        if algorithm.output_characteristics:
+            lines.append("Output characteristics:")
+            for characteristic in algorithm.output_characteristics:
+                lines.append(f"  - {characteristic}")
+            lines.append("")
+
+        # Frequency / resolution constraints
+        constraint_parts: list[str] = []
+        if algorithm.requires_confocal:
+            constraint_parts.append("Requires confocal scanning")
+        if algorithm.frequency_constraint:
+            constraint_parts.append(algorithm.frequency_constraint)
+        if algorithm.spatial_resolution:
+            constraint_parts.append(algorithm.spatial_resolution)
+        if constraint_parts:
+            lines.append("Constraints: " + "; ".join(constraint_parts))
+            lines.append("")
+
+    if sensor_class is not None:
+        sensor_display = sensor_class.display_name or sensor_class.name
+        lines.append(f"**Sensor: {sensor_display}**")
+        if sensor_class.description:
+            lines.append(f"Description: {sensor_class.description}")
+        lines.append("")
+
+        # Timing range
+        timing_lines = _format_timing_range(sensor_class)
+        if timing_lines:
+            lines.append("Timing parameters:")
+            lines.extend(timing_lines)
+            lines.append("")
+
+        # Spatial range
+        spatial_lines = _format_spatial_range(sensor_class)
+        if spatial_lines:
+            lines.append("Spatial parameters:")
+            lines.extend(spatial_lines)
+            lines.append("")
+
+        # Tradeoffs
+        if sensor_class.tradeoffs:
+            lines.append(f"Tradeoffs: {sensor_class.tradeoffs}")
+            lines.append("")
+
+    # Paradigm compatibility note
+    if paradigm is not None and algorithm is not None and sensor_class is not None:
+        lines.append(
+            f"Use these parameters when implementing {algorithm.name or algorithm.algorithm} "
+            f"with {sensor_class.display_name or sensor_class.name} "
+            f"under the {paradigm.paradigm} paradigm."
+        )
+        lines.append("")
+
+    logger.debug(
+        "reference_code_context_formatted",
+        algorithm=algorithm.algorithm if algorithm else None,
+        sensor=sensor_class.name if sensor_class else None,
+    )
 
     return "\n".join(lines)

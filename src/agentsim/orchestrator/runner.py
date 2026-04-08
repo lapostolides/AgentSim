@@ -861,6 +861,46 @@ async def run_experiment(
                         exc_info=True,
                     )
 
+            # ── Reference code context for scene agent ────────────
+            # Looks up detailed parameter ranges and requirements for the
+            # top-ranked sensor+algorithm pairing so the scene agent can
+            # ground generated code in known implementations.
+            if (
+                bundle is not None
+                and paradigm is not None
+                and state.physics_recommendation is not None
+                and state.physics_recommendation.optimizer_result is not None
+                and state.physics_recommendation.optimizer_result.setups
+            ):
+                try:
+                    from agentsim.physics.context import format_reference_code_context
+
+                    top_setup = state.physics_recommendation.optimizer_result.setups[0]
+                    ref_sensor = bundle.sensor_classes.get(top_setup.sensor_class)
+                    ref_algo = bundle.algorithms.get(top_setup.algorithm)
+
+                    ref_text = format_reference_code_context(
+                        ref_sensor, ref_algo, paradigm,
+                    )
+                    if ref_text and domain_context is not None:
+                        domain_context = {
+                            **domain_context,
+                            "scene": domain_context["scene"] + "\n" + ref_text,
+                        }
+                        agents = build_agent_registry(
+                            environment, domain_context=domain_context,
+                        )
+                        logger.info(
+                            "reference_code_context_injected",
+                            sensor=top_setup.sensor_class,
+                            algorithm=top_setup.algorithm,
+                        )
+                except Exception:
+                    logger.warning(
+                        "reference_code_context_failed",
+                        exc_info=True,
+                    )
+
             # ── Scene generation (with feedback loop) ─────────────
             user_feedback = ""
             for feedback_round in range(config.max_scene_feedback_rounds):
