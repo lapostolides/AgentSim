@@ -91,12 +91,12 @@ Plans:
   4. Parameter trade-off analysis is quantitative: changing input parameter X produces a computable effect on output Y via the transfer function, not just "X affects Y"
   5. The reasoning agents consume the same YAML data model as validation and scene generation — no separate knowledge base
   6. At least 2 computational imaging domains supported (NLOS + one of: ptychography, lensless, coded aperture)
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 
 Plans:
 - [x] 02.2-01-PLAN.md — Pydantic output models, TF graph builder, and cascading constraint propagation engine
 - [ ] 02.2-02-PLAN.md — Optimizer mode (rank sensor+algorithm combos) and Explorer mode (novelty detection)
-- [ ] 02.2-03-PLAN.md — Lensless imaging domain skeleton (YAML data, detection, loader integration)
+- [x] 02.2-03-PLAN.md — Lensless imaging domain skeleton (YAML data, detection, loader integration)
 - [ ] 02.2-04-PLAN.md — Physics advisor routing, ExperimentState extension, context formatting, and runner wiring
 
 ### Phase 3: Smart Experimental Design
@@ -136,6 +136,6 @@ Note: Phases 2 and 3 depend only on Phase 1 and could execute in parallel. Phase
 | 1. Physics Foundation and Deterministic Checks | 3/3 | Complete | 2026-04-07 |
 | 2. Computational Imaging Domain Intelligence | 0/4 | Not started | - |
 | 02.1 Paradigm-Agnostic Domain Architecture | 4/4 | Complete    | 2026-04-07 |
-| 02.2 Physics-Space Reasoning Agents | 1/4 | In Progress|  |
+| 02.2 Physics-Space Reasoning Agents | 2/4 | In Progress|  |
 | 3. Smart Experimental Design | 0/1 | Not started | - |
 | 4. Reproducibility and Reporting | 0/1 | Not started | - |

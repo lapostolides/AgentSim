@@ -58,7 +58,7 @@
 - [ ] **PSR-02**: Optimizer mode ranks sensor+algorithm combinations for a given hypothesis with concrete computed metrics (resolution, SNR, depth) and natural language rationale
 - [ ] **PSR-03**: Explorer mode identifies under-explored parameter regions by comparing hypothesis parameters against published baselines and proposes 1-3 novel experiment configurations
 - [ ] **PSR-04**: Physics advisor routes new query types (optimize_setup, explore_novel, sensor_query, algorithm_query) to deterministic computation first, then LLM for interpretation
-- [ ] **PSR-05**: Lensless imaging domain defined as second CI domain (domain.yaml, 1-2 paradigms, 2 sensor classes, 1-2 algorithms with transfer functions) proving multi-domain architecture
+- [x] **PSR-05**: Lensless imaging domain defined as second CI domain (domain.yaml, 1-2 paradigms, 2 sensor classes, 1-2 algorithms with transfer functions) proving multi-domain architecture
 - [ ] **PSR-06**: Pre-scene optimization automatically runs after paradigm detection — optimizer result stored in ExperimentState and injected into scene agent prompt
 
 ### Smart Experimental Design
@@ -139,7 +139,7 @@
 | PSR-02 | Phase 02.2 | Pending |
 | PSR-03 | Phase 02.2 | Pending |
 | PSR-04 | Phase 02.2 | Pending |
-| PSR-05 | Phase 02.2 | Pending |
+| PSR-05 | Phase 02.2 | Complete |
 | PSR-06 | Phase 02.2 | Pending |
 | SEXP-01 | Phase 3 | Pending |
 | SEXP-02 | Phase 3 | Pending |
