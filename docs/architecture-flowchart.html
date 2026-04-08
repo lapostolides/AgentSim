@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentSim Architecture Flowchart</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-surface: #1a1d27;
+    --bg-elevated: #242836;
+    --text: #e2e4e9;
+    --text-dim: #8b8fa3;
+    --border: #2e3348;
+    --blue: #4a9eff;
+    --blue-bg: #1a2a44;
+    --blue-border: #2a4a6e;
+    --green: #34d399;
+    --green-bg: #1a2e2a;
+    --green-border: #2a4e4a;
+    --orange: #f59e0b;
+    --orange-bg: #2e2a1a;
+    --orange-border: #4e4a2a;
+    --gray: #6b7280;
+    --gray-bg: #1e2028;
+    --gray-border: #3a3e4e;
+    --purple: #a78bfa;
+    --purple-bg: #1e1a2e;
+    --purple-border: #3a2a5e;
+    --red: #f87171;
+    --red-bg: #2e1a1a;
+    --accent: #60a5fa;
+  }
+
+  .theme-light {
+    --bg: #f5f6fa;
+    --bg-surface: #ffffff;
+    --bg-elevated: #f0f1f5;
+    --text: #1a1d27;
+    --text-dim: #6b7280;
+    --border: #d1d5db;
+    --blue-bg: #dbeafe;
+    --blue-border: #93c5fd;
+    --green-bg: #d1fae5;
+    --green-border: #6ee7b7;
+    --orange-bg: #fef3c7;
+    --orange-border: #fcd34d;
+    --gray-bg: #f3f4f6;
+    --gray-border: #d1d5db;
+    --purple-bg: #ede9fe;
+    --purple-border: #c4b5fd;
+    --red-bg: #fee2e2;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  .main-area {
+    flex: 1;
+    overflow: auto;
+    padding: 24px;
+    transition: margin-right 0.3s;
+  }
+
+  .main-area.panel-open { margin-right: 420px; }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .subtitle { color: var(--text-dim); font-size: 14px; margin-bottom: 20px; }
+
+  .toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .toolbar button {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.15s;
+  }
+
+  .toolbar button:hover { background: var(--blue-bg); border-color: var(--blue-border); }
+  .toolbar button.active { background: var(--blue-bg); border-color: var(--blue); color: var(--blue); }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  .sections-container {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .section {
+    min-width: 340px;
+    max-width: 600px;
+    flex: 1;
+  }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--accent);
+    letter-spacing: 0.3px;
+  }
+
+  .flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .node {
+    background: var(--bg-surface);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    width: 100%;
+    max-width: 480px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .node:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  .node.selected {
+    box-shadow: 0 0 0 2px var(--blue);
+  }
+
+  .node-agent { background: var(--blue-bg); border-color: var(--blue-border); }
+  .node-physics { background: var(--green-bg); border-color: var(--green-border); }
+  .node-gate { background: var(--orange-bg); border-color: var(--orange-border); }
+  .node-state { background: var(--gray-bg); border-color: var(--gray-border); }
+  .node-reasoning { background: var(--purple-bg); border-color: var(--purple-border); }
+
+  .node-label {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .node-tag {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .tag-agent { background: var(--blue); color: #fff; }
+  .tag-physics { background: var(--green); color: #000; }
+  .tag-gate { background: var(--orange); color: #000; }
+  .tag-state { background: var(--gray); color: #fff; }
+  .tag-reasoning { background: var(--purple); color: #fff; }
+
+  .node-desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+
+  .arrow {
+    width: 2px;
+    height: 16px;
+    background: var(--border);
+    position: relative;
+  }
+
+  .arrow::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid var(--border);
+  }
+
+  .arrow-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 0 4px;
+  }
+
+  .loop-container {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 16px 12px;
+    width: 100%;
+    max-width: 500px;
+    position: relative;
+  }
+
+  .loop-label {
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    background: var(--bg);
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+  }
+
+  .sub-flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .branch {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    align-items: flex-start;
+  }
+
+  .branch > .sub-flow { flex: 1; }
+
+  .design-notes {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+
+  .note-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .note-title {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--accent);
+  }
+
+  .note-text {
+    font-size: 11px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+
+  /* Side panel */
+  .side-panel {
+    position: fixed;
+    right: -440px;
+    top: 0;
+    width: 420px;
+    height: 100vh;
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    transition: right 0.3s;
+    z-index: 100;
+    padding: 20px;
+  }
+
+  .side-panel.open { right: 0; }
+
+  .panel-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .panel-close:hover { color: var(--text); }
+
+  .panel-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .panel-category {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+
+  .panel-section {
+    margin-bottom: 16px;
+  }
+
+  .panel-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .panel-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  .panel-code {
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px;
+    background: var(--bg-elevated);
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: var(--accent);
+    word-break: break-all;
+  }
+
+  .panel-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .panel-list li {
+    font-size: 12px;
+    padding: 3px 0;
+    color: var(--text);
+    position: relative;
+    padding-left: 14px;
+  }
+
+  .panel-list li::before {
+    content: '\2022';
+    position: absolute;
+    left: 0;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 900px) {
+    .sections-container { flex-direction: column; }
+    .section { max-width: 100%; }
+    .main-area.panel-open { margin-right: 0; }
+    .side-panel { width: 100%; right: -100%; }
+  }
+</style>
+</head>
+<body>
+<div class="main-area" id="mainArea">
+  <h1>AgentSim Architecture</h1>
+  <p class="subtitle">Physics-Aware Multi-Agent Hypothesis-Driven Simulation System</p>
+
+  <div class="toolbar">
+    <button id="themeToggle" onclick="toggleTheme()">Light Theme</button>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--blue)"></div> Agent</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Physics Check</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--purple)"></div> Physics Reasoning</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> Gate</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--gray)"></div> State / IO</div>
+    </div>
+  </div>
+
+  <div class="sections-container">
+    <!-- MAIN PIPELINE -->
+    <div class="section" style="max-width:520px">
+      <div class="section-title">Main Pipeline</div>
+      <div class="flow" id="mainFlow">
+
+        <div class="node node-state" data-id="cli_input" onclick="showDetail('cli_input')">
+          <div class="node-label"><span class="node-tag tag-state">IO</span> CLI Input</div>
+          <div class="node-desc">hypothesis text + optional file paths</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node node-state" data-id="env_discovery" onclick="showDetail('env_discovery')">
+          <div class="node-label"><span class="node-tag tag-state">State</span> Environment Discovery</div>
+          <div class="node-desc">Detect available Python packages (numpy, mitsuba, trimesh, ...)</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node node-reasoning" data-id="domain_detect" onclick="showDetail('domain_detect')">
+          <div class="node-label"><span class="node-tag tag-reasoning">Physics</span> Domain Detection</div>
+          <div class="node-desc">Keyword matching: NLOS? Lensless? Load YAML bundle</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node node-state" data-id="agent_registry" onclick="showDetail('agent_registry')">
+          <div class="node-label"><span class="node-tag tag-state">State</span> Build Agent Registry</div>
+          <div class="node-desc">Inject domain_context into agent prompts</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node node-agent" data-id="lit_scout" onclick="showDetail('lit_scout')">
+          <div class="node-label"><span class="node-tag tag-agent">Agent</span> Literature Scout</div>
+          <div class="node-desc">Survey academic literature for the research question</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node node-agent" data-id="citation_auditor" onclick="showDetail('citation_auditor')">
+          <div class="node-label"><span class="node-tag tag-agent">Agent</span> Citation Auditor</div>
+          <div class="node-desc">Verify citations, detect fabricated references</div>
+        </div>
+        <div class="arrow"></div>
+
+        <!-- ITERATION LOOP -->
+        <div class="loop-container">
+          <span class="loop-label">ITERATION LOOP (max_iterations, retry up to 2x on error)</span>
+          <div class="flow">
+
+            <div class="node node-gate" data-id="gate_pre_hyp" onclick="showDetail('gate_pre_hyp')">
+              <div class="node-label"><span class="node-tag tag-gate">Gate</span> PRE_HYPOTHESIS</div>
+              <div class="node-desc">Review literature context before formalization</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-agent" data-id="hypothesis_agent" onclick="showDetail('hypothesis_agent')">
+              <div class="node-label"><span class="node-tag tag-agent">Agent</span> Hypothesis Agent</div>
+              <div class="node-desc">Formalize, sharpen, and score hypothesis (6 quality dimensions)</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-gate" data-id="gate_post_hyp" onclick="showDetail('gate_post_hyp')">
+              <div class="node-label"><span class="node-tag tag-gate">Gate</span> POST_HYPOTHESIS</div>
+              <div class="node-desc">Review / redo hypothesis with guidance</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-reasoning" data-id="physics_opt" onclick="showDetail('physics_opt')">
+              <div class="node-label"><span class="node-tag tag-reasoning">Reasoning</span> Physics Optimization</div>
+              <div class="node-desc">Extract params, propagate constraints (BFS), rank setups, rebuild registry</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-reasoning" data-id="ref_code" onclick="showDetail('ref_code')">
+              <div class="node-label"><span class="node-tag tag-reasoning">Reasoning</span> Reference Code Context</div>
+              <div class="node-desc">Inject sensor + algorithm parameter ranges into scene prompt</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-agent" data-id="scene_agent" onclick="showDetail('scene_agent')">
+              <div class="node-label"><span class="node-tag tag-agent">Agent</span> Scene Agent</div>
+              <div class="node-desc">Generate executable Python simulation code</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-state" data-id="preview" onclick="showDetail('preview')">
+              <div class="node-label"><span class="node-tag tag-state">State</span> Preview Render</div>
+              <div class="node-desc">Render scene visualization for review</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-gate" data-id="gate_pre_exec" onclick="showDetail('gate_pre_exec')">
+              <div class="node-label"><span class="node-tag tag-gate">Gate</span> PRE_EXECUTION</div>
+              <div class="node-desc">Review generated code and parameters</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-gate" data-id="gate_scene_vis" onclick="showDetail('gate_scene_vis')">
+              <div class="node-label"><span class="node-tag tag-gate">Gate</span> SCENE_VISUALIZATION</div>
+              <div class="node-desc">Review rendered preview; feedback loop for re-generation</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-physics" data-id="physics_val" onclick="showDetail('physics_val')">
+              <div class="node-label"><span class="node-tag tag-physics">Physics</span> Deterministic Validation</div>
+              <div class="node-desc">6-step fail-fast pipeline: units, ranges, AST, SymPy, CFL, mesh</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-gate" data-id="gate_post_phys" onclick="showDetail('gate_post_phys')">
+              <div class="node-label"><span class="node-tag tag-gate">Gate</span> POST_PHYSICS_VALIDATION</div>
+              <div class="node-desc">Review physics validation results</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-physics" data-id="paradigm_fix" onclick="showDetail('paradigm_fix')">
+              <div class="node-label"><span class="node-tag tag-physics">Physics</span> Paradigm Auto-Fix</div>
+              <div class="node-desc">Validate via paradigm rules; consult advisor + re-gen on failure (3 retries)</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-agent" data-id="executor_agent" onclick="showDetail('executor_agent')">
+              <div class="node-label"><span class="node-tag tag-agent">Agent</span> Executor Agent</div>
+              <div class="node-desc">Run simulation scripts, capture outputs</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-gate" data-id="gate_post_exec" onclick="showDetail('gate_post_exec')">
+              <div class="node-label"><span class="node-tag tag-gate">Gate</span> POST_EXECUTION</div>
+              <div class="node-desc">Review execution results before evaluation</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-agent" data-id="evaluator_agent" onclick="showDetail('evaluator_agent')">
+              <div class="node-label"><span class="node-tag tag-agent">Agent</span> Evaluator Agent</div>
+              <div class="node-desc">Compute metrics, compare to ground truth</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-agent" data-id="analyst_agent" onclick="showDetail('analyst_agent')">
+              <div class="node-label"><span class="node-tag tag-agent">Agent</span> Analyst Agent</div>
+              <div class="node-desc">Interpret results, decide should_stop or propose next iteration</div>
+            </div>
+            <div class="arrow"></div>
+
+            <div class="node node-agent" data-id="lit_validator" onclick="showDetail('lit_validator')">
+              <div class="node-label"><span class="node-tag tag-agent">Agent</span> Literature Validator</div>
+              <div class="node-desc">Cross-check results against literature for consistency</div>
+            </div>
+            <div class="arrow-label">if should_stop or max_iterations: break</div>
+
+          </div>
+        </div>
+
+        <div class="arrow"></div>
+        <div class="node node-state" data-id="final_state" onclick="showDetail('final_state')">
+          <div class="node-label"><span class="node-tag tag-state">IO</span> Final State</div>
+          <div class="node-desc">Serialized JSON to output dir + CLI summary</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PHYSICS SUBSYSTEM -->
+    <div class="section" style="max-width:480px">
+      <div class="section-title">Physics Subsystem</div>
+      <div class="flow">
+
+        <div class="node node-reasoning" data-id="yaml_bundle" onclick="showDetail('yaml_bundle')">
+          <div class="node-label"><span class="node-tag tag-reasoning">Data</span> YAML Domain Bundle</div>
+          <div class="node-desc">domain.yaml + paradigms/ + sensors/ + algorithms/</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="node node-reasoning" data-id="tf_graph" onclick="showDetail('tf_graph')">
+          <div class="node-label"><span class="node-tag tag-reasoning">Graph</span> Transfer Function Graph</div>
+          <div class="node-desc">Input/output parameter edges with formulas and relationships</div>
+        </div>
+        <div class="arrow"></div>
+
+        <div class="loop-container">
+          <span class="loop-label">PROPAGATION ENGINE</span>
+          <div class="flow">
+            <div class="node node-reasoning" data-id="propagation" onclick="showDetail('propagation')">
+              <div class="node-label"><span class="node-tag tag-reasoning">BFS</span> propagate_constraints()</div>
+              <div class="node-desc">BFS through TF graph with visited-edge tracking</div>
+            </div>
+            <div class="arrow"></div>
+            <div class="node node-reasoning" data-id="evaluate_tf" onclick="showDetail('evaluate_tf')">
+              <div class="node-label"><span class="node-tag tag-reasoning">Eval</span> evaluate_tf()</div>
+              <div class="node-desc">Try SymPy formula first, fall back to relationship table</div>
+            </div>
+            <div class="arrow"></div>
+            <div class="node node-reasoning" data-id="formula_eval" onclick="showDetail('formula_eval')">
+              <div class="node-label"><span class="node-tag tag-reasoning">Safe</span> safe_eval_formula()</div>
+              <div class="node-desc">SymPy sympify with constants registry, unit prefix detection, no eval()</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arrow"></div>
+        <div class="node node-reasoning" data-id="optimizer" onclick="showDetail('optimizer')">
+          <div class="node-label"><span class="node-tag tag-reasoning">Opt</span> optimize_setup()</div>
+          <div class="node-desc">Cartesian product: sensors x algorithms. Score by propagated metrics</div>
+        </div>
+
+        <div class="arrow"></div>
+        <div class="node node-reasoning" data-id="explorer" onclick="showDetail('explorer')">
+          <div class="node-label"><span class="node-tag tag-reasoning">Explore</span> find_novel_regions()</div>
+          <div class="node-desc">Compare hypothesis params vs published baselines, find novelty</div>
+        </div>
+
+        <div class="arrow" style="height:24px"></div>
+
+        <div class="section-title" style="margin-top:8px">Deterministic Validation Pipeline</div>
+        <div class="flow">
+          <div class="node node-physics" data-id="check_units" onclick="showDetail('check_units')">
+            <div class="node-label"><span class="node-tag tag-physics">1</span> Unit Consistency <span style="color:var(--text-dim);font-size:10px;margin-left:auto">&lt;1ms</span></div>
+            <div class="node-desc">Pint dimensional analysis on parameter pairs</div>
+          </div>
+          <div class="arrow"></div>
+          <div class="node node-physics" data-id="check_ranges" onclick="showDetail('check_ranges')">
+            <div class="node-label"><span class="node-tag tag-physics">2</span> Parameter Ranges <span style="color:var(--text-dim);font-size:10px;margin-left:auto">&lt;10ms</span></div>
+            <div class="node-desc">Domain-specific plausibility bounds</div>
+          </div>
+          <div class="arrow"></div>
+          <div class="node node-physics" data-id="check_ast" onclick="showDetail('check_ast')">
+            <div class="node-label"><span class="node-tag tag-physics">3</span> AST Extraction <span style="color:var(--text-dim);font-size:10px;margin-left:auto">&lt;100ms</span></div>
+            <div class="node-desc">Parse Python AST to extract physics parameters</div>
+          </div>
+          <div class="arrow"></div>
+          <div class="node node-physics" data-id="check_sympy" onclick="showDetail('check_sympy')">
+            <div class="node-label"><span class="node-tag tag-physics">4</span> Equation Tracing <span style="color:var(--text-dim);font-size:10px;margin-left:auto">&lt;1s</span></div>
+            <div class="node-desc">SymPy dimensional tracing from AST parameters</div>
+          </div>
+          <div class="arrow"></div>
+          <div class="node node-physics" data-id="check_cfl" onclick="showDetail('check_cfl')">
+            <div class="node-label"><span class="node-tag tag-physics">5</span> CFL Stability <span style="color:var(--text-dim);font-size:10px;margin-left:auto">&lt;100ms</span></div>
+            <div class="node-desc">Numerical stability (Courant-Friedrichs-Lewy)</div>
+          </div>
+          <div class="arrow"></div>
+          <div class="node node-physics" data-id="check_mesh" onclick="showDetail('check_mesh')">
+            <div class="node-label"><span class="node-tag tag-physics">6</span> Mesh Quality <span style="color:var(--text-dim);font-size:10px;margin-left:auto">&lt;5s</span></div>
+            <div class="node-desc">trimesh-based mesh integrity checks</div>
+          </div>
+          <div class="arrow"></div>
+          <div class="node node-physics" data-id="check_paradigm" onclick="showDetail('check_paradigm')">
+            <div class="node-label"><span class="node-tag tag-physics">7</span> Paradigm Checks <span style="color:var(--text-dim);font-size:10px;margin-left:auto">varies</span></div>
+            <div class="node-desc">YAML-declared rules: python_check + range_check dispatch</div>
+          </div>
+          <div class="arrow-label">Fail-fast: stops at first ERROR, collects WARNINGs</div>
+        </div>
+      </div>
+
+      <!-- DESIGN NOTES -->
+      <div class="section-title" style="margin-top: 32px;">Design Annotations</div>
+      <div class="design-notes">
+        <div class="note-card">
+          <div class="note-title">Immutable State</div>
+          <div class="note-text">All transitions return new ExperimentState. Pydantic frozen=True on every model. No mutation anywhere.</div>
+        </div>
+        <div class="note-card">
+          <div class="note-title">No eval()</div>
+          <div class="note-text">Formula strings parsed via sympy.sympify with restricted namespace. Constants from registry, unit prefix auto-detection.</div>
+        </div>
+        <div class="note-card">
+          <div class="note-title">BFS not DFS</div>
+          <div class="note-text">Handles cyclic TF graphs cleanly with visited-edge tracking. Max 100 iterations guard.</div>
+        </div>
+        <div class="note-card">
+          <div class="note-title">Domain-Agnostic</div>
+          <div class="note-text">New domains added via YAML directory only. No Python changes needed. Keyword detection auto-loads bundles.</div>
+        </div>
+        <div class="note-card">
+          <div class="note-title">Budget-Free Physics</div>
+          <div class="note-text">Propagation and optimization are pure Python. Zero LLM tokens consumed. LLM fallback only for unknown parameters.</div>
+        </div>
+        <div class="note-card">
+          <div class="note-title">Lazy Imports</div>
+          <div class="note-text">Physics reasoning imported inside runner loop to avoid circular deps. Bundle loaded once, cached globally.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="side-panel" id="sidePanel">
+  <button class="panel-close" onclick="closePanel()">&times;</button>
+  <div id="panelContent"></div>
+</div>
+
+<script>
+const DETAILS = {
+  cli_input: {
+    title: "CLI Input",
+    category: "IO / Entry Point",
+    file: "src/agentsim/main.py",
+    functions: ["cli()", "run()", "interactive()"],
+    description: "Click commands accept a natural language hypothesis string, optional file paths (STL, YAML, images), output directory, iteration count, budget, and gate configuration. Two modes: single-run and interactive REPL.",
+    details: [
+      "OrchestratorConfig is frozen Pydantic model",
+      "Gates default to ALL (6 checkpoints)",
+      "Auth validates ANTHROPIC_API_KEY or OAuth credentials",
+      "asyncio.run() bridges sync CLI to async pipeline",
+    ]
+  },
+  env_discovery: {
+    title: "Environment Discovery",
+    category: "State Initialization",
+    file: "src/agentsim/environment/discovery.py",
+    functions: ["discover_environment()", "format_environment_for_prompt()"],
+    description: "Probes for optional simulation packages using importlib.util. Builds EnvironmentInfo with available packages and versions. Formatted into prompt text so agents know what to import.",
+    details: [
+      "Detects: numpy, scipy, matplotlib, trimesh, mitsuba, pybullet, carla, bpy, etc.",
+      "Supports extra_packages from config for custom probing",
+      "State transition: set_environment(state, environment) -> new ExperimentState",
+    ]
+  },
+  domain_detect: {
+    title: "Domain Detection",
+    category: "Physics Knowledge",
+    file: "src/agentsim/physics/domains/__init__.py",
+    functions: ["detect_domain()", "detect_paradigm()", "load_domain_bundle()"],
+    description: "Keyword matching on hypothesis text detects physics domain (NLOS, lensless) and experimental paradigm (relay_wall, penumbra). Loads the entire YAML bundle: domain knowledge, paradigms, sensor classes, algorithms.",
+    details: [
+      "NLOS keywords: nlos, transient, relay wall, spad, three-bounce, lct, ...",
+      "Lensless keywords: lensless, diffuser, coded aperture, psf, ...",
+      "Threshold: 2+ keyword matches for confident detection",
+      "Bundle cached globally after first load",
+      "Context formatters: hypothesis, analyst, advisor, scene (each gets tailored physics)",
+    ]
+  },
+  agent_registry: {
+    title: "Agent Registry",
+    category: "Configuration",
+    file: "src/agentsim/orchestrator/agent_registry.py",
+    functions: ["build_agent_registry()", "get_agent_names()"],
+    description: "Constructs AgentDefinition objects for all 9 agents. Each agent's prompt is parameterized with environment info and optional domain-specific physics context. Registry is rebuilt when physics optimizer produces new recommendations.",
+    details: [
+      "9 agents: literature_scout, citation_auditor, hypothesis, scene, physics_advisor, executor, evaluator, analyst, literature_validator",
+      "physics_context injected per role: hypothesis, scene, advisor, analyst",
+      "Rebuilt mid-loop after optimizer + reference code context injection",
+    ]
+  },
+  lit_scout: {
+    title: "Literature Scout Agent",
+    category: "Agent Phase",
+    file: "src/agentsim/agents/literature_scout.py",
+    functions: ["create_literature_scout_agent()", "_run_literature_scout_phase()"],
+    description: "Surveys academic literature for the research hypothesis. Returns structured entries with title, authors, year, key findings, and relevance. Deep-search handles wildly different JSON shapes from the LLM.",
+    details: [
+      "Output: LiteratureContext with entries, summary, open_questions",
+      "Handles: thematic_clusters, nested papers, variant key names",
+      "State transition: set_literature_context()",
+      "Runs once before the iteration loop",
+    ]
+  },
+  citation_auditor: {
+    title: "Citation Auditor Agent",
+    category: "Agent Phase",
+    file: "src/agentsim/agents/citation_auditor.py",
+    functions: ["create_citation_auditor_agent()", "_run_citation_audit_phase()"],
+    description: "Verifies literature entries for fabrication. Cross-checks titles, DOIs, and author lists. Marks entries as verified, unverified, or fabricated.",
+    details: [
+      "Runs after literature scout, before iteration loop",
+      "Updates verification_status on each LiteratureEntry",
+      "Helps prevent hallucinated citations from corrupting downstream work",
+    ]
+  },
+  gate_pre_hyp: {
+    title: "PRE_HYPOTHESIS Gate",
+    category: "Intervention Gate",
+    file: "src/agentsim/orchestrator/gates.py",
+    functions: ["_run_gate()", "InterventionHandler.handle_gate()"],
+    description: "Pauses pipeline before hypothesis formalization. User can review literature context and refine their research question. Only fires on first iteration (skipped on retries).",
+    details: [
+      "Actions: APPROVE, EDIT (modify state), REDO, ABORT",
+      "GateContext includes state, phase info, message",
+      "GateDecision returns action + optional updated_state",
+      "Skippable via --gates none for autonomous mode",
+    ]
+  },
+  hypothesis_agent: {
+    title: "Hypothesis Agent",
+    category: "Agent Phase",
+    file: "src/agentsim/agents/hypothesis.py",
+    functions: ["create_hypothesis_agent()", "_run_hypothesis_phase()"],
+    description: "Does not blindly formalize -- actively refines toward the strongest testable hypothesis. Scores on 6 quality dimensions: decision-relevance, non-triviality, informative either way, downstream actionability, expected impact, falsifiability.",
+    details: [
+      "Output: Hypothesis with raw_text, formalized, variables, parameter_space, predictions, assumptions, quality_ratings",
+      "Receives physics_context for grounding in domain equations",
+      "QualityRatings: composite_score guides toward high-value hypotheses",
+      "State transition: add_hypothesis()",
+      "Redo loop: user can redirect via POST_HYPOTHESIS gate",
+    ]
+  },
+  gate_post_hyp: {
+    title: "POST_HYPOTHESIS Gate",
+    category: "Intervention Gate",
+    file: "src/agentsim/orchestrator/runner.py",
+    functions: ["_run_gate()"],
+    description: "Review formalized hypothesis, quality ratings, and parameter space. REDO action feeds user guidance back into hypothesis agent for re-generation.",
+    details: [
+      "REDO triggers while-loop continuation with user_guidance text",
+      "EDIT allows direct state modification via updated_state",
+      "ABORT terminates the experiment",
+    ]
+  },
+  physics_opt: {
+    title: "Physics Optimization (Pre-Scene)",
+    category: "Physics Reasoning",
+    file: "src/agentsim/physics/reasoning/optimizer.py",
+    functions: ["optimize_setup()", "_compute_setup_score()"],
+    description: "Runs INSIDE the iteration loop after hypothesis (which may change via redo). Extracts numeric params from hypothesis parameter_space, propagates constraints through merged TF chains (paradigm + sensor + algorithm), scores each sensor x algorithm combination.",
+    details: [
+      "Cartesian product: compatible sensors x compatible algorithms",
+      "Merges transfer functions from paradigm, sensor class, and algorithm",
+      "Score: finite outputs + strong coupling bonus + hypothesis overlap bonus",
+      "Top result injected into scene agent prompt as recommendation",
+      "Rebuilds agent registry so scene agent sees optimizer output",
+      "Pure Python: zero LLM tokens",
+    ]
+  },
+  ref_code: {
+    title: "Reference Code Context",
+    category: "Physics Reasoning",
+    file: "src/agentsim/physics/context.py",
+    functions: ["format_reference_code_context()", "format_optimizer_recommendation()"],
+    description: "Looks up detailed parameter ranges and requirements for the top-ranked sensor + algorithm pairing. Injects implementation-level guidance into the scene agent prompt so generated code uses known-good parameter values.",
+    details: [
+      "Sensor: timing ranges (resolution, jitter, dead time, gate width), spatial params, tradeoffs",
+      "Algorithm: parameter ranges with min/max/typical, input requirements, output characteristics",
+      "Injected into domain_context['scene'] before registry rebuild",
+      "Skipped gracefully if no optimizer result available",
+    ]
+  },
+  scene_agent: {
+    title: "Scene Agent",
+    category: "Agent Phase",
+    file: "src/agentsim/agents/scene.py",
+    functions: ["create_scene_agent()", "_run_scene_phase()"],
+    description: "Generates executable Python simulation code. Receives full physics context: governing equations, sensor parameters, published baselines, optimizer recommendations, and reference code guidance. Feedback loop allows re-generation.",
+    details: [
+      "Output: SceneSpec with code, parameters, file_refs",
+      "Code must be complete, runnable Python scripts",
+      "Receives physics_context with constraints, sensor catalog, baselines",
+      "max_scene_feedback_rounds (default 5) limits the feedback loop",
+      "State transition: add_scenes()",
+    ]
+  },
+  preview: {
+    title: "Preview Render",
+    category: "State",
+    file: "src/agentsim/orchestrator/runner.py",
+    functions: ["_run_preview_phase()"],
+    description: "Renders scene visualizations for human review before execution. Preview paths stored in ScenePreview objects.",
+    details: [
+      "Runs after scene generation, before gates",
+      "Preview images shown at SCENE_VISUALIZATION gate",
+      "State transition: add_scene_preview()",
+    ]
+  },
+  gate_pre_exec: {
+    title: "PRE_EXECUTION Gate",
+    category: "Intervention Gate",
+    file: "src/agentsim/orchestrator/runner.py",
+    functions: ["_run_gate()"],
+    description: "Review generated simulation code and parameters before running. REDO triggers scene re-generation with user feedback.",
+    details: [
+      "Part of the scene feedback loop (up to max_scene_feedback_rounds)",
+      "REDO feeds user_feedback back to scene agent",
+    ]
+  },
+  gate_scene_vis: {
+    title: "SCENE_VISUALIZATION Gate",
+    category: "Intervention Gate",
+    file: "src/agentsim/orchestrator/runner.py",
+    functions: ["_run_gate()"],
+    description: "Review rendered scene preview. FEEDBACK action triggers another round of scene generation with text guidance.",
+    details: [
+      "Receives preview_paths in GateContext",
+      "FEEDBACK action (unique to this gate) continues the feedback loop",
+      "After max_scene_feedback_rounds, forces approval",
+    ]
+  },
+  physics_val: {
+    title: "Deterministic Validation Pipeline",
+    category: "Physics Validation",
+    file: "src/agentsim/physics/checker.py",
+    functions: ["run_deterministic_checks()", "_run_physics_validation_phase()"],
+    description: "Composes 6 deterministic checks in cost order. Fail-fast: stops at first ERROR. WARNINGs accumulated. LLM advisor fallback for unknown parameters only.",
+    details: [
+      "Step 1: Pint unit consistency (<1ms)",
+      "Step 2: Parameter range plausibility (<10ms)",
+      "Step 3: AST parameter extraction (<100ms)",
+      "Step 4: SymPy equation tracing (<1s)",
+      "Step 5: CFL numerical stability (<100ms)",
+      "Step 6: Mesh quality (<5s)",
+      "Step 7: Paradigm-dispatched checks (YAML rules)",
+      "LLM fallback: consults physics_advisor for parameters not in registry",
+      "State transition: add_physics_validation()",
+    ]
+  },
+  gate_post_phys: {
+    title: "POST_PHYSICS_VALIDATION Gate",
+    category: "Intervention Gate",
+    file: "src/agentsim/orchestrator/runner.py",
+    functions: ["_run_gate()"],
+    description: "Review physics validation results (errors, warnings) before proceeding to execution.",
+    details: [
+      "Fires after deterministic checks complete",
+      "User can abort if critical physics violations found",
+    ]
+  },
+  paradigm_fix: {
+    title: "Paradigm Auto-Fix Loop",
+    category: "Physics Validation",
+    file: "src/agentsim/orchestrator/runner.py",
+    functions: ["_run_paradigm_autofix_loop()", "run_paradigm_checks()"],
+    description: "Runs paradigm-specific validation rules (python_check, range_check). On failure, consults physics advisor for fix guidance, then re-runs scene phase with fix feedback. Up to 3 retries per scene.",
+    details: [
+      "Dispatches two rule types from YAML: python_check (importlib), range_check (bounds)",
+      "On failure: PhysicsQuery -> consult_physics_advisor -> scene re-gen",
+      "fix_feedback includes error messages + advisor recommendations",
+      "Exhaustion after max_retries logs error but continues pipeline",
+    ]
+  },
+  executor_agent: {
+    title: "Executor Agent",
+    category: "Agent Phase",
+    file: "src/agentsim/agents/executor.py",
+    functions: ["create_executor_agent()", "_run_executor_phase()"],
+    description: "Saves scene code to .py files, runs with python3, captures stdout/stderr, output paths, and timing. Continues on individual scene failures.",
+    details: [
+      "Output: ExecutionResult with status, output_paths, stdout, stderr, duration",
+      "Has Bash tool access for running scripts",
+      "State transition: add_execution_result()",
+    ]
+  },
+  gate_post_exec: {
+    title: "POST_EXECUTION Gate",
+    category: "Intervention Gate",
+    file: "src/agentsim/orchestrator/runner.py",
+    functions: ["_run_gate()"],
+    description: "Review execution results (success/error/timeout per scene) before evaluation phase.",
+    details: [
+      "User can abort if all scenes failed",
+      "EDIT allows manual state correction",
+    ]
+  },
+  evaluator_agent: {
+    title: "Evaluator Agent",
+    category: "Agent Phase",
+    file: "src/agentsim/agents/evaluator.py",
+    functions: ["create_evaluator_agent()", "_run_evaluator_phase()"],
+    description: "Computes metrics on simulation outputs. Compares results to ground truth when available. Produces per-scene EvaluationResult with metrics dict and summary.",
+    details: [
+      "Output: EvaluationResult with metrics, ground_truth_comparison, artifacts",
+      "State transition: add_evaluation()",
+    ]
+  },
+  analyst_agent: {
+    title: "Analyst Agent",
+    category: "Agent Phase",
+    file: "src/agentsim/agents/analyst.py",
+    functions: ["create_analyst_agent()", "_run_analyst_phase()"],
+    description: "Interprets full experiment history. Decides whether evidence supports/contradicts hypothesis. Sets should_stop=true to end loop, or proposes next_experiments for another iteration. Uses Opus model for deepest reasoning.",
+    details: [
+      "Output: AnalysisReport with findings, confidence, supports_hypothesis, should_stop, next_experiments",
+      "Decision: stop if confidence >= 0.9 or max_iterations or diminishing returns",
+      "Receives analysis_context with physics expectations and failure modes",
+      "State transition: add_analysis() -- increments iteration counter",
+      "status -> COMPLETED if should_stop, else ANALYZED",
+    ]
+  },
+  lit_validator: {
+    title: "Literature Validator Agent",
+    category: "Agent Phase",
+    file: "src/agentsim/agents/literature_validator.py",
+    functions: ["create_literature_validator_agent()", "_run_literature_validator_phase()"],
+    description: "Cross-checks experiment results against literature. Identifies novel findings, consistency concerns, and suggested citations. Adjusts confidence based on literature alignment.",
+    details: [
+      "Output: LiteratureValidation with consistency_assessment, novel_findings, concerns, confidence_adjustment",
+      "Runs at end of each iteration, after analyst",
+      "State transition: set_literature_validation()",
+    ]
+  },
+  final_state: {
+    title: "Final State Output",
+    category: "IO",
+    file: "src/agentsim/main.py",
+    functions: ["serialize_state()", "_print_summary()"],
+    description: "Serializes final ExperimentState to JSON in output directory. CLI prints human-readable summary with hypothesis, scene count, execution stats, confidence, and findings.",
+    details: [
+      "Saved to output_dir/final_state.json",
+      "JSON output available via --json-output flag",
+      "Summary shows: ID, status, iterations, hypothesis, scenes, success rate, confidence",
+    ]
+  },
+  yaml_bundle: {
+    title: "YAML Domain Bundle",
+    category: "Physics Data",
+    file: "src/agentsim/physics/domains/__init__.py",
+    functions: ["load_domain_bundle()", "_load_bundle_from_directory()"],
+    description: "Directory-per-domain layout. Each domain has domain.yaml (governing equations), paradigms/ (geometry constraints, transfer functions, baselines), sensors/ (classes + profiles), and algorithms/ (parameters, requirements).",
+    details: [
+      "DomainBundle: domain + paradigms + sensor_classes + sensor_profiles + algorithms",
+      "DomainKnowledge: governing_equations, dimensionless_groups, reconstruction_algorithms",
+      "ParadigmKnowledge: geometry_constraints, transfer_functions, published_baselines, validation_rules",
+      "SensorClass: timing_range, spatial_range, transfer_functions, tradeoffs",
+      "AlgorithmKnowledge: parameters, input_requirements, transfer_functions, compatible_paradigms",
+    ]
+  },
+  tf_graph: {
+    title: "Transfer Function Graph",
+    category: "Physics Reasoning",
+    file: "src/agentsim/physics/reasoning/propagation.py",
+    functions: ["build_tf_graph()"],
+    description: "Adjacency list keyed by input parameter name. Each edge is a TransferFunction with input, output, formula, relationship, and coupling_strength. Deduplicates by (input, output) pair.",
+    details: [
+      "TransferFunction fields: input, output, formula, relationship, description, coupling_strength",
+      "Merged from: paradigm TFs + sensor class TFs + algorithm TFs",
+      "Graph may be cyclic -- handled by BFS visited-edge tracking",
+    ]
+  },
+  propagation: {
+    title: "Constraint Propagation (BFS)",
+    category: "Physics Reasoning",
+    file: "src/agentsim/physics/reasoning/propagation.py",
+    functions: ["propagate_constraints()"],
+    description: "Seeds BFS queue with hypothesis parameter values. For each parameter, evaluates all outgoing TFs and enqueues outputs. Visited-edge set prevents infinite loops. Returns all computed values with provenance.",
+    details: [
+      "Input: dict[str, float] hypothesis params + tuple[TransferFunction] TFs",
+      "Output: PropagationResult with computed: tuple[ComputedValue, ...]",
+      "ComputedValue tracks: parameter, value, source_input, source_tf_formula, relationship",
+      "Max 100 iterations guard against pathological graphs",
+      "Immutable: neither inputs nor TFs are mutated",
+    ]
+  },
+  evaluate_tf: {
+    title: "Transfer Function Evaluator",
+    category: "Physics Reasoning",
+    file: "src/agentsim/physics/reasoning/propagation.py",
+    functions: ["evaluate_tf()"],
+    description: "Two-tier evaluation: tries formula-based evaluation first (physically accurate via SymPy), falls back to relationship dispatch table (linear, inverse, sqrt, quadratic, logarithmic, etc.).",
+    details: [
+      "Relationship dispatch: linear, proportional, inverse, sqrt, inverse_sqrt, quadratic, logarithmic",
+      "Formula path: delegates to safe_eval_formula()",
+      "Unknown relationships log warning and pass through input value",
+    ]
+  },
+  formula_eval: {
+    title: "Safe Formula Evaluation",
+    category: "Physics Reasoning",
+    file: "src/agentsim/physics/reasoning/formula.py",
+    functions: ["safe_eval_formula()", "_preprocess_formula()", "_detect_unit_scale()"],
+    description: "Parses YAML formula strings (e.g. 'c * dt / 2') using sympy.sympify with a restricted local namespace containing physical constants. Detects unit prefixes on parameter names (_ps, _um, _mm) for automatic SI conversion.",
+    details: [
+      "NO eval() -- uses sympy.sympify with constants table only",
+      "Constants from UNIVERSAL and COMPUTATIONAL_IMAGING registries",
+      "Unit prefixes: _ps (1e-12), _ns (1e-9), _um (1e-6), _mm (1e-3), _degrees (pi/180), ...",
+      "Rejects: proportionality markers, descriptive text, multi-variable formulas",
+      "Returns None for unparseable -> caller falls back to relationship table",
+      "Strips 'lhs =' prefixes, '^' -> '**', trailing parenthetical annotations",
+    ]
+  },
+  optimizer: {
+    title: "Setup Optimizer",
+    category: "Physics Reasoning",
+    file: "src/agentsim/physics/reasoning/optimizer.py",
+    functions: ["optimize_setup()", "_compute_setup_score()"],
+    description: "Enumerates all compatible (sensor_class, algorithm) pairs. For each, merges TFs and propagates constraints. Scores by: finite outputs + strong coupling + hypothesis parameter overlap. Returns sorted descending.",
+    details: [
+      "Input: hypothesis_params, DomainBundle, ParadigmKnowledge",
+      "Merged TFs: paradigm.transfer_functions + sensor.transfer_functions + algorithm.transfer_functions",
+      "Score heuristic: +1 per finite output, +1 per strong coupling, +2 per hypothesis param overlap",
+      "Output: OptimizerResult with tuple[ScoredSetup] sorted by score",
+      "Pure Python, deterministic, no LLM calls",
+    ]
+  },
+  explorer: {
+    title: "Novelty Explorer",
+    category: "Physics Reasoning",
+    file: "src/agentsim/physics/reasoning/explorer.py",
+    functions: ["find_novel_regions()", "_build_covered_ranges()", "_find_novel_params()"],
+    description: "Compares hypothesis parameters against min/max ranges from published baselines in paradigm YAML. Flags out-of-range parameters and parameters with no baseline data. Proposes experiments for novel regions.",
+    details: [
+      "Two novelty types: 'out_of_range' (beyond published min/max) and 'no_baseline' (never tested)",
+      "Builds covered ranges from all numeric values across all baselines",
+      "Proposes 0 or 1 experiments combining all novel parameters",
+      "Output: ExplorerResult with novel_parameters, proposed_experiments",
+    ]
+  },
+  check_units: {
+    title: "Step 1: Unit Consistency",
+    category: "Deterministic Check",
+    file: "src/agentsim/physics/checks/units.py",
+    functions: ["check_unit_consistency()"],
+    description: "Uses Pint to verify dimensional consistency of parameter pairs. Each parameter has (magnitude, unit_string). Catches incompatible unit assignments.",
+    details: ["Fail-fast: ERROR halts pipeline", "Timing: <1ms"]
+  },
+  check_ranges: {
+    title: "Step 2: Parameter Ranges",
+    category: "Deterministic Check",
+    file: "src/agentsim/physics/checks/ranges.py",
+    functions: ["check_parameter_ranges()"],
+    description: "Domain-specific plausibility bounds. Checks if parameter values fall within physically reasonable ranges for the detected domain.",
+    details: ["Domain-aware: universal + domain-specific ranges", "Timing: <10ms"]
+  },
+  check_ast: {
+    title: "Step 3: AST Extraction",
+    category: "Deterministic Check",
+    file: "src/agentsim/physics/checks/ast_extract.py",
+    functions: ["extract_physics_from_ast()"],
+    description: "Parses Python source via AST to extract physics parameters, assignments, and function calls used in the simulation code.",
+    details: ["Returns ASTResult with params dict and issues", "Timing: <100ms"]
+  },
+  check_sympy: {
+    title: "Step 4: Equation Tracing",
+    category: "Deterministic Check",
+    file: "src/agentsim/physics/checks/equations.py",
+    functions: ["trace_dimensions_from_ast()"],
+    description: "Uses SymPy to trace dimensional consistency through equations found in AST. Verifies that physics equations in generated code are dimensionally correct.",
+    details: ["Input: ASTResult from Step 3", "Timing: <1s"]
+  },
+  check_cfl: {
+    title: "Step 5: CFL Stability",
+    category: "Deterministic Check",
+    file: "src/agentsim/physics/checks/stability.py",
+    functions: ["check_cfl_stability()"],
+    description: "Checks Courant-Friedrichs-Lewy condition for numerical stability of time-stepping simulations.",
+    details: ["Uses params from AST extraction", "Timing: <100ms"]
+  },
+  check_mesh: {
+    title: "Step 6: Mesh Quality",
+    category: "Deterministic Check",
+    file: "src/agentsim/physics/checks/mesh_quality.py",
+    functions: ["check_mesh_quality()"],
+    description: "Uses trimesh to check mesh integrity: watertightness, degenerate faces, manifold edges. Only runs if mesh file paths are provided.",
+    details: ["Supports: STL, OBJ, PLY, OFF", "Timing: <5s per mesh"]
+  },
+  check_paradigm: {
+    title: "Step 7: Paradigm Checks",
+    category: "Deterministic Check",
+    file: "src/agentsim/physics/checker.py",
+    functions: ["run_paradigm_checks()", "_dispatch_python_check()", "_dispatch_range_check()"],
+    description: "YAML-declared validation rules dispatched by type. python_check: imports module + function via importlib. range_check: compares parameter against declared min/max bounds. Falls back to legacy NLOS hardcoded checks if no paradigm.",
+    details: [
+      "python_check: importlib.import_module + inspect.signature for param matching",
+      "range_check: simple min/max comparison from YAML",
+      "Unknown modules produce WARNING, not crash",
+    ]
+  },
+};
+
+let currentTheme = 'dark';
+
+function toggleTheme() {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.body.classList.toggle('theme-light', currentTheme === 'light');
+  document.getElementById('themeToggle').textContent =
+    currentTheme === 'dark' ? 'Light Theme' : 'Dark Theme';
+}
+
+function showDetail(id) {
+  const d = DETAILS[id];
+  if (!d) return;
+
+  // Highlight selected node
+  document.querySelectorAll('.node.selected').forEach(n => n.classList.remove('selected'));
+  const node = document.querySelector(`[data-id="${id}"]`);
+  if (node) node.classList.add('selected');
+
+  const panel = document.getElementById('sidePanel');
+  const content = document.getElementById('panelContent');
+
+  let html = `<div class="panel-title">${d.title}</div>`;
+  html += `<div class="panel-category">${d.category}</div>`;
+
+  if (d.file) {
+    html += `<div class="panel-section">
+      <div class="panel-section-title">Source File</div>
+      <div class="panel-code">${d.file}</div>
+    </div>`;
+  }
+
+  if (d.functions && d.functions.length) {
+    html += `<div class="panel-section">
+      <div class="panel-section-title">Key Functions</div>
+      <ul class="panel-list">${d.functions.map(f => `<li><code>${f}</code></li>`).join('')}</ul>
+    </div>`;
+  }
+
+  if (d.description) {
+    html += `<div class="panel-section">
+      <div class="panel-section-title">Description</div>
+      <div class="panel-text">${d.description}</div>
+    </div>`;
+  }
+
+  if (d.details && d.details.length) {
+    html += `<div class="panel-section">
+      <div class="panel-section-title">Details</div>
+      <ul class="panel-list">${d.details.map(t => `<li>${t}</li>`).join('')}</ul>
+    </div>`;
+  }
+
+  content.innerHTML = html;
+  panel.classList.add('open');
+  document.getElementById('mainArea').classList.add('panel-open');
+}
+
+function closePanel() {
+  document.getElementById('sidePanel').classList.remove('open');
+  document.getElementById('mainArea').classList.remove('panel-open');
+  document.querySelectorAll('.node.selected').forEach(n => n.classList.remove('selected'));
+}
+
+// Close panel on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePanel();
+});
+</script>
+</body>
+</html>
