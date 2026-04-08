@@ -135,6 +135,9 @@ def run(
     if json_output:
         click.echo(serialize_state(state))
     else:
+        # Show run directory location
+        from agentsim.orchestrator.run_output import _timestamp_slug  # noqa: F811
+        click.echo(f"\n  Run output: {output}/")
         _print_summary(state)
 
 

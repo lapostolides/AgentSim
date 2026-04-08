@@ -50,6 +50,15 @@ from agentsim.state.models import (
 from agentsim.state.serialization import serialize_state, state_to_prompt_context
 from agentsim.physics import run_deterministic_checks
 from agentsim.physics.models import PhysicsValidation, Severity
+from agentsim.orchestrator.run_output import (
+    append_log_event,
+    create_run_directory,
+    finalize_run,
+    save_execution_result,
+    save_run_metadata,
+    save_scene_script,
+    save_state_snapshot,
+)
 from agentsim.state.transitions import (
     add_analysis,
     add_evaluation,
@@ -686,6 +695,11 @@ async def run_experiment(
     state = start_experiment(hypothesis_text, file_paths, file_descriptions)
     logger.info("experiment_started", id=state.id, hypothesis=hypothesis_text[:100])
 
+    # 1b. Create per-run output directory
+    run_dir = create_run_directory(config.output_dir, state.id)
+    save_run_metadata(run_dir, state.id, hypothesis_text, config.model_dump(mode="json"))
+    logger.info("run_directory_created", run_dir=str(run_dir))
+
     # 2. Discover environment
     environment = discover_environment(
         extra_packages=config.extra_packages or None,
@@ -738,6 +752,9 @@ async def run_experiment(
     # 3. Build agent registry
     agents = build_agent_registry(environment, domain_context=domain_context)
 
+    # Save initial state
+    save_state_snapshot(run_dir, state, "initial")
+
     # 4. Literature scout
     state = await _run_literature_scout_phase(state, config, agents)
     if on_phase_complete:
@@ -754,6 +771,11 @@ async def run_experiment(
     pre_hyp_gate_done = False
     for iteration in range(config.max_iterations):
         logger.info("iteration_start", iteration=iteration, status=state.status.value)
+        append_log_event(run_dir, {
+            "event": "iteration_start",
+            "iteration": iteration,
+            "status": state.status.value,
+        })
 
         try:
             # ── GATE 1: Pre-hypothesis (skip on retry) ───────────
@@ -910,6 +932,11 @@ async def run_experiment(
                 if on_phase_complete:
                     on_phase_complete("scene", state)
 
+                # Save generated scripts to run directory
+                for scene in state.scenes:
+                    if scene.code:
+                        save_scene_script(run_dir, scene.id, scene.code)
+
                 # Preview render
                 state = await _run_preview_phase(state, config)
                 if on_phase_complete:
@@ -983,6 +1010,14 @@ async def run_experiment(
             if on_phase_complete:
                 on_phase_complete("executor", state)
 
+            # Save execution results to run directory
+            for er in state.execution_results:
+                save_execution_result(
+                    run_dir, er.scene_id,
+                    stdout=er.stdout, stderr=er.stderr,
+                    metrics=dict(er.metrics) if er.metrics else None,
+                )
+
             # ── GATE 5: Post-execution ────────────────────────────
             decision, state = await _run_gate(
                 intervention_handler, config,
@@ -1009,6 +1044,9 @@ async def run_experiment(
             if on_phase_complete:
                 on_phase_complete("literature_validator", state)
 
+            # Save per-iteration state snapshot
+            save_state_snapshot(run_dir, state, f"iter_{iteration + 1:03d}")
+
             if state.status == ExperimentStatus.COMPLETED:
                 logger.info("experiment_completed", iteration=iteration)
                 break
@@ -1026,9 +1064,10 @@ async def run_experiment(
             logger.info("retrying_iteration", retry=retry_count)
             continue
 
-    # Save final state
-    if config.save_intermediate_state:
-        _save_state(state, config.output_dir / "final_state.json")
+    # Save final state to run directory
+    save_state_snapshot(run_dir, state, "final")
+    finalize_run(run_dir)
+    logger.info("run_complete", run_dir=str(run_dir))
 
     return state
 
