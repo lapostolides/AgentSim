@@ -74,10 +74,10 @@
 
 ### Mitsuba 3 Transient Rendering Integration
 
-- [ ] **MIT-01**: Template hierarchy with frozen Pydantic base class (NLOSSceneTemplate) and per-scene-type templates (confocal point, non-confocal mesh, retroreflective) that produce Mitsuba scene dicts via build() method
-- [ ] **MIT-02**: Both confocal and non-confocal scanning modes supported as template parameters, plus mesh loading (.obj/.ply) for hidden geometry alongside primitives
-- [ ] **MIT-03**: Low spp default (256) for fast iteration with SPP_TIERS dict, and llvm_ad_rgb variant as default
-- [ ] **MIT-04**: Raw transient .npy output with auto-validation comparing rendered peak timing against formula engine prediction via OPL-to-time conversion
+- [x] **MIT-01**: Template hierarchy with frozen Pydantic base class (NLOSSceneTemplate) and per-scene-type templates (confocal point, non-confocal mesh, retroreflective) that produce Mitsuba scene dicts via build() method
+- [x] **MIT-02**: Both confocal and non-confocal scanning modes supported as template parameters, plus mesh loading (.obj/.ply) for hidden geometry alongside primitives
+- [x] **MIT-03**: Low spp default (256) for fast iteration with SPP_TIERS dict, and llvm_ad_rgb variant as default
+- [x] **MIT-04**: Raw transient .npy output with auto-validation comparing rendered peak timing against formula engine prediction via OPL-to-time conversion
 - [ ] **MIT-05**: Numpy fallback with warning when mitsuba/mitransient absent, environment-based auto-detection via discovered packages (no CLI flags)
 - [ ] **MIT-06**: Scene agent receives Mitsuba template instructions (or numpy fallback guidance) via runner pipeline integration — agent registry passes mitsuba_context to scene agent prompt
 
@@ -155,10 +155,10 @@
 | SEXP-03 | Phase 3 | Pending |
 | REPR-01 | Phase 4 | Pending |
 | REPR-02 | Phase 4 | Pending |
-| MIT-01 | Phase 5 | Pending |
-| MIT-02 | Phase 5 | Pending |
-| MIT-03 | Phase 5 | Pending |
-| MIT-04 | Phase 5 | Pending |
+| MIT-01 | Phase 5 | Complete |
+| MIT-02 | Phase 5 | Complete |
+| MIT-03 | Phase 5 | Complete |
+| MIT-04 | Phase 5 | Complete |
 | MIT-05 | Phase 5 | Pending |
 | MIT-06 | Phase 5 | Pending |
 
