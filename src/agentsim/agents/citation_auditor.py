@@ -45,7 +45,19 @@ For each citation, follow this sequence:
    Google Scholar), mark as verified.
 3. **Author + keyword search**: If the exact title fails, search for
    the first author's last name plus key terms from the title.
-4. **Verdict**: If none of the above produce a match, mark as fabricated.
+4. **Verdict**: Apply the verdict rules below.
+
+## Verdict Rules
+- If DOI resolves correctly → "verified"
+- If exact title found on reputable source → "verified"
+- If author + partial title matches a real paper → "verified" (note the correct title)
+- If no exact match but author exists in the field and topic is plausible → "unverified"
+- If author doesn't exist, or title + author combo is clearly impossible → "fabricated"
+
+IMPORTANT: "unverified" is NOT a failure. Many real papers are hard to find
+via web search (paywalled, recent preprints, workshop papers). Only mark
+"fabricated" when you have POSITIVE evidence of fabrication, not just
+absence of evidence.
 
 ## OUTPUT FORMAT — STRICT
 
@@ -57,7 +69,7 @@ Use EXACTLY these top-level keys:
   "audited_entries": [
     {{
       "original_title": "<title as provided by literature scout>",
-      "verification_status": "verified" | "fabricated",
+      "verification_status": "verified" | "unverified" | "fabricated",
       "verification_note": "<what you found>",
       "corrected_title": "<actual title if different, else same>",
       "corrected_authors": ["<corrected author list if needed>"],
@@ -66,12 +78,13 @@ Use EXACTLY these top-level keys:
       "corrected_url": "<working URL to the paper>"
     }}
   ],
-  "summary": "<X of Y citations verified, Z fabricated>",
-  "fabricated_count": <integer count>
+  "summary": "<X of Y citations verified, W unverified, Z fabricated>",
+  "fabricated_count": <integer count>,
+  "unverified_count": <integer count>
 }}
 ```
 
-CRITICAL: Top-level keys MUST be exactly: audited_entries, summary, fabricated_count.
+CRITICAL: Top-level keys MUST be exactly: audited_entries, summary, fabricated_count, unverified_count.
 Do NOT rename "audited_entries" to "results", "citations", "audit_results", etc.
 Do NOT wrap in an outer object like {{"citation_audit": ...}}.
 
@@ -88,6 +101,58 @@ Do NOT wrap in an outer object like {{"citation_audit": ...}}.
   the scout claimed should be marked "verified" with a verification_note
   explaining the discrepancy. The paper is real even if the findings
   were misrepresented.
+
+### Example Output (for reference)
+
+```json
+{{
+  "audited_entries": [
+    {{
+      "original_title": "Confocal non-line-of-sight imaging based on the light-cone transform",
+      "verification_status": "verified",
+      "verification_note": "Found on Nature (doi resolves correctly). Title, authors, year all match.",
+      "corrected_title": "Confocal non-line-of-sight imaging based on the light-cone transform",
+      "corrected_authors": ["Matthew O'Toole", "David B. Lindell", "Gordon Wetzstein"],
+      "corrected_year": 2018,
+      "corrected_doi": "10.1038/s41586-018-0868-6",
+      "corrected_url": "https://www.nature.com/articles/s41586-018-0868-6"
+    }},
+    {{
+      "original_title": "Transient rendering with phasor fields for NLOS reconstruction",
+      "verification_status": "unverified",
+      "verification_note": "Author (Liu) publishes in computational imaging but exact title not found. Topic is plausible for this research group. Keeping with warning.",
+      "corrected_title": "Transient rendering with phasor fields for NLOS reconstruction",
+      "corrected_authors": ["Xiaochun Liu"],
+      "corrected_year": 2020,
+      "corrected_doi": "",
+      "corrected_url": ""
+    }},
+    {{
+      "original_title": "Deep learning for single-photon NLOS recovery at picosecond resolution",
+      "verification_status": "fabricated",
+      "verification_note": "No paper with this title exists. Author 'J. Smith' has no publications in NLOS imaging. Title appears to combine elements from multiple real papers.",
+      "corrected_title": "",
+      "corrected_authors": [],
+      "corrected_year": 0,
+      "corrected_doi": "",
+      "corrected_url": ""
+    }}
+  ],
+  "summary": "1 of 3 citations verified, 1 unverified, 1 fabricated",
+  "fabricated_count": 1,
+  "unverified_count": 1
+}}
+```
+
+## Final Checklist
+Before returning your JSON:
+- [ ] Top-level keys are EXACTLY: audited_entries, summary, fabricated_count, unverified_count
+- [ ] Each entry has: original_title, verification_status, verification_note, corrected_title, corrected_authors, corrected_year, corrected_doi, corrected_url
+- [ ] verification_status is one of: "verified", "unverified", "fabricated"
+- [ ] You used WebSearch for every paper you're checking
+- [ ] "unverified" used when author exists but exact paper not found (not "fabricated")
+- [ ] "fabricated" used ONLY with positive evidence of fabrication
+- [ ] No JSON wrapping (not {{"citation_audit": {{...}}}} or {{"result": {{...}}}})
 
 ## Current Experiment State
 
