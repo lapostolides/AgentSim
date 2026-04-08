@@ -21,6 +21,7 @@ logger = structlog.get_logger()
 # Keys are package display names, values are the importable module name.
 KNOWN_SIMULATION_PACKAGES: dict[str, str] = {
     "mitsuba": "mitsuba",
+    "mitransient": "mitransient",
     "blender": "bpy",
     "carla": "carla",
     "pybullet": "pybullet",
