@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Physics-Aware Enhancement
-status: verifying
-stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-04-08T19:45:04.160Z"
+status: executing
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-04-08T20:49:39.285Z"
 last_activity: 2026-04-08
 progress:
-  total_phases: 5
+  total_phases: 7
   completed_phases: 5
-  total_plans: 18
-  completed_plans: 18
+  total_plans: 23
+  completed_plans: 19
   percent: 63
 ---
 
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-08)
 
 **Core value:** End-to-end automated experiments where the downstream reconstruction goal drives every upstream decision.
-**Current focus:** Phase 05 — mitsuba-3-transient-rendering-integration (v1.0 completion)
+**Current focus:** Phase 03 — smart-experimental-design
 
 ## Current Position
 
-Phase: 05
-Plan: Not started
-Status: Phase complete — ready for verification
+Phase: 03 (smart-experimental-design) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
 Last activity: 2026-04-08
 
 Progress: [██████░░░░] 63%
@@ -56,6 +56,7 @@ Progress: [██████░░░░] 63%
 
 *Updated after each plan completion*
 | Phase 05 P03 | 3min | 2 tasks | 4 files |
+| Phase 03 P01 | 3min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,7 @@ Recent decisions affecting current work:
 - [Roadmap v2.0]: RECON-04/05/06 + EVAL grouped into Phase 8 — learned backends and evaluation are tightly coupled (can't evaluate without training)
 - [Phase 05]: Scene dicts use nested dict transforms (not mi.ScalarTransform4f) so templates work without mitsuba installed
 - [Phase 05]: Mitsuba context passed as separate parameter (not merged into domain_context) to maintain clean separation of rendering vs physics concerns
+- [Phase 03]: Nested tuples for design_matrix immutability in DoE models
 
 ### Roadmap Evolution
 
@@ -90,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-08T19:36:34.881Z
-Stopped at: Completed 05-03-PLAN.md
+Last session: 2026-04-08T20:49:39.282Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
