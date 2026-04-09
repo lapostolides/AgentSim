@@ -220,6 +220,8 @@ class AnalysisReport(BaseModel, frozen=True):
     next_experiments: list[str] = Field(default_factory=list)
     should_stop: bool = False
     reasoning: str = ""
+    # Knowledge graph re-query (Phase 10 - D-09)
+    constraint_modifications: dict[str, float | str] | None = None
 
 
 class PhysicsRecommendation(BaseModel, frozen=True):
