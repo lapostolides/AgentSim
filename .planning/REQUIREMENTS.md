@@ -18,7 +18,7 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 
 ### Sensor Taxonomy
 
-- [ ] **SENS-01**: Graph contains SPAD sensor family with physics specs (timing resolution, dead time, dark count rate, PDE, pixel count, FOV, gate width)
+- [x] **SENS-01**: Graph contains SPAD sensor family with physics specs (timing resolution, dead time, dark count rate, PDE, pixel count, FOV, gate width)
 - [ ] **SENS-02**: Graph contains ToF sensor families — both continuous-wave (modulation frequency, dealiasing range, integration time) and pulsed (pulse width, repetition rate, range resolution)
 - [ ] **SENS-03**: Graph contains event camera family with specs (temporal resolution, contrast threshold, dynamic range, bandwidth, pixel count)
 - [ ] **SENS-04**: Graph contains coded aperture camera family with specs (mask pattern, mask transmittance, PSF characterization, condition number)
