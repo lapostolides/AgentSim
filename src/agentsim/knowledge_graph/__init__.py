@@ -40,3 +40,18 @@ from agentsim.knowledge_graph.units import (
     CANONICAL_UNITS,
     validate_unit,
 )
+from agentsim.knowledge_graph.crb import (
+    ANALYTICAL_FAMILIES,
+    CONDITION_THRESHOLD,
+    CRBBound,
+    CRBResult,
+    NUMERICAL_FAMILIES,
+    SUPPORTED_FAMILIES,
+    SensitivityEntry,
+    SensitivityResult,
+    compute_analytical_crb,
+    compute_crb,
+    compute_numerical_crb,
+    compute_sensitivity,
+    jax_available,
+)
