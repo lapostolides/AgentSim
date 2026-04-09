@@ -13,6 +13,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from agentsim.knowledge_graph.models import FeasibilityResult
 from agentsim.physics.models import PhysicsConsultationSummary, PhysicsValidation
 from agentsim.physics.reasoning.models import ExplorerResult, OptimizerResult
 
@@ -270,6 +271,9 @@ class ExperimentState(BaseModel, frozen=True):
 
     # Physics-space reasoning
     physics_recommendation: PhysicsRecommendation | None = None
+
+    # Knowledge graph feasibility (Phase 10)
+    feasibility_result: FeasibilityResult | None = None
 
     # Error tracking
     errors: tuple[str, ...] = ()

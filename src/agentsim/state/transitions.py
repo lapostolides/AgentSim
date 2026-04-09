@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from agentsim.knowledge_graph.models import FeasibilityResult
 from agentsim.physics.models import PhysicsConsultationSummary, PhysicsValidation
 from agentsim.state.models import (
     AnalysisReport,
@@ -242,6 +243,14 @@ def set_physics_recommendation(
     return state.model_copy(
         update={"physics_recommendation": recommendation},
     )
+
+
+def set_feasibility_result(
+    state: ExperimentState,
+    result: FeasibilityResult,
+) -> ExperimentState:
+    """Record feasibility query result (supplementary -- does not change status)."""
+    return state.model_copy(update={"feasibility_result": result})
 
 
 def add_error(

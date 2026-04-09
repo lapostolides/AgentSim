@@ -32,8 +32,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: Sensor Taxonomy Population** - All 11 sensor families (SPAD, ToF, event, coded aperture, light field, LiDAR, lensless, RGB, structured light, polarimetric, spectral) with complete physics specs
 - [ ] **Phase 8: CRB and Information-Theoretic Bounds** - Analytical closed-form CRB for 7 sensor families, JAX numerical Fisher information for 4 exotic sensors, sensitivity analysis, and stability guards
 - [ ] **Phase 9: Neo4j Infrastructure and Feasibility Queries** - Docker lifecycle, Python graph client, YAML seed pipeline, CLI commands, graceful degradation, and feasibility query engine with cross-family ranking
-- [ ] **Phase 10: Pipeline Integration** - Feasibility phase in runner, hypothesis agent receives graph context, ExperimentState extended with FeasibilityResult, graceful skip when graph unavailable
-- [ ] **Phase 11: Computational Imaging Domain Taxonomy** - Define CI subdomains (NLOS, LOS depth, detection, tracking, reconstruction, spectral, polarimetric) as Task/Environment nodes in the knowledge graph
+- [ ] **Phase 10: Pipeline Integration** - Deep KG integration across all agents: graph-aware hypothesis generation, CRB-guided experimental design, feasibility-gated iteration, CRB-vs-actual evaluation, sensitivity-driven scene diversity, cross-experiment reasoning, SHARES_PHYSICS transfer suggestions, ExperimentState extended with FeasibilityResult, graceful skip when graph unavailable
+- [ ] **Phase 11: Sensor Configuration Space** - Configurable parameter ranges per sensor, CRB optimization over operating points, experiment scoping (wide/medium/narrow zoom levels)
+- [ ] **Phase 12: Computational Imaging Domain Taxonomy** - Define CI subdomains (NLOS, LOS depth, detection, tracking, reconstruction, spectral, polarimetric) as Task/Environment nodes in the knowledge graph
 
 ## Phase Details
 
@@ -234,14 +235,25 @@ Plans:
 - [x] 09-03-PLAN.md — Feasibility query engine with constraint checking, cross-family ranking, and conflict detection
 
 ### Phase 10: Pipeline Integration
-**Goal**: The existing AgentSim experiment pipeline queries the knowledge graph before hypothesis generation, so hypotheses are constrained to physically viable sensor configurations from the start
-**Depends on**: Phase 9 (graph must be queryable)
-**Requirements**: PIPE-01, PIPE-02, PIPE-03, PIPE-04
+**Goal**: Every agent in the experiment pipeline deeply leverages the knowledge graph — hypotheses are graph-aware, experiments are CRB-guided, evaluations compare against theoretical floors, scenes probe sensitivity-identified parameters, and the iteration loop uses feasibility re-queries to adapt strategy
+**Depends on**: Phase 9 (graph must be queryable), Phase 8 (CRB bounds)
+**Requirements**: PIPE-01, PIPE-02, PIPE-03, PIPE-04, PIPE-05, PIPE-06, PIPE-07, PIPE-08
 **Success Criteria** (what must be TRUE):
   1. A feasibility phase runs automatically between environment discovery and hypothesis generation, querying the knowledge graph for viable sensor configurations
-  2. Hypothesis agent receives feasibility context (ranked sensors, CRB bounds, constraint satisfaction) in its prompt and proposes experiments using only feasible configurations
+  2. Hypothesis agent receives feasibility context (ranked sensors, CRB bounds, constraint satisfaction) and can propose novel experiments by identifying gaps in the sensor-task landscape
   3. ExperimentState includes `feasibility_result: FeasibilityResult | None` that persists graph query results through the experiment lifecycle
   4. When Neo4j is unavailable or the knowledge graph is disabled, the pipeline skips the feasibility phase with a warning and continues with the existing workflow unchanged
+  5. Evaluator agent compares experimental results against CRB floor and reports efficiency ratio (actual/CRB) — framing whether the bottleneck is the algorithm or the physics
+  6. Scene agent uses sensitivity analysis (Morris mu_star) to generate diverse scenes that probe the most important parameters, not uniform sweeps
+  7. Analyst agent performs feasibility-gated iteration: when results identify a bottleneck parameter, re-queries the KG with tighter constraints and recommends sensor/config changes
+  8. Cross-experiment reasoning: after multiple runs, analyst identifies patterns across experiments and suggests SHARES_PHYSICS-based algorithm transfer when applicable
+**Plans**: 4 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — ExperimentState extension and graph context formatters
+- [ ] 10-02-PLAN.md — Feasibility phase in runner with graceful degradation
+- [ ] 10-03-PLAN.md — Agent prompt enrichment (hypothesis, scene, evaluator)
+- [ ] 10-04-PLAN.md — Analyst KG integration and re-query loop
 
 ## Progress
 
@@ -262,14 +274,24 @@ v2.0: 6 -> 7 -> 8 -> 9 -> 10 (Phase 8 can run in parallel with Phase 7)
 | 7. Sensor Taxonomy Population | v2.0 | 0/4 | Planning | - |
 | 8. CRB and Information-Theoretic Bounds | v2.0 | 1/3 | In Progress|  |
 | 9. Neo4j Infrastructure and Feasibility Queries | v2.0 | 2/3 | In Progress|  |
-| 10. Pipeline Integration | v2.0 | 0/0 | Not started | - |
+| 10. Pipeline Integration | v2.0 | 0/4 | Planning | - |
 
-### Phase 11: Computational Imaging Domain Taxonomy
+### Phase 11: Sensor Configuration Space
 
-**Goal:** Define subdomains within computational imaging (NLOS, LOS depth, detection, tracking, reconstruction, spectral, polarimetric) as structured Task/Environment nodes in the knowledge graph. Research-heavy: map which sensor families serve which tasks and what algorithmic approaches exist per subdomain. Feeds into feasibility query engine as the "task" side of sensor-task matching.
+**Goal:** Each sensor has configurable parameter ranges (not just defaults), the CRB optimizer finds the best operating point for a given task, and the feasibility engine uses configuration flexibility as a ranking signal. Wide-mode queries propagate configurability — a sensor that CAN reach the target via parameter tuning ranks higher than one stuck at a fixed point. Experiment scoping (wide/medium/narrow) determines how deeply the system explores the configuration space.
 **Requirements**: TBD
 **Depends on:** Phase 10
-**Plans:** 2/3 plans executed
+**Plans:** 0 plans
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 11 to break down)
+
+### Phase 12: Computational Imaging Domain Taxonomy
+
+**Goal:** Define subdomains within computational imaging (NLOS, LOS depth, detection, tracking, reconstruction, spectral, polarimetric) as structured Task/Environment nodes in the knowledge graph. Research-heavy: map which sensor families serve which tasks and what algorithmic approaches exist per subdomain. Feeds into feasibility query engine as the "task" side of sensor-task matching.
+**Requirements**: TBD
+**Depends on:** Phase 11
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 12 to break down)
