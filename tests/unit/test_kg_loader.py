@@ -87,10 +87,11 @@ class TestLoadSensors:
             assert node.family == SensorFamily.SPAD
         assert len(result) >= 3
 
-    def test_nonexistent_family_filter_returns_empty(self) -> None:
-        # LIDAR_FMCW has no YAML yet -- should return empty tuple
+    def test_family_filter_returns_only_matching(self) -> None:
         result = load_sensors(families=(SensorFamily.LIDAR_FMCW,))
-        assert result == ()
+        assert len(result) >= 2
+        for node in result:
+            assert node.family == SensorFamily.LIDAR_FMCW
 
     def test_spad_names_contain_expected(self) -> None:
         sensors = load_sensors(families=(SensorFamily.SPAD,))
@@ -151,9 +152,10 @@ class TestLoadFamilyRanges:
         result = load_family_ranges(families=(SensorFamily.SPAD,))
         assert SensorFamily.SPAD in result
 
-    def test_filter_nonexistent_returns_empty(self) -> None:
+    def test_filter_returns_only_matching(self) -> None:
         result = load_family_ranges(families=(SensorFamily.LIDAR_FMCW,))
-        assert result == {}
+        assert SensorFamily.LIDAR_FMCW in result
+        assert len(result) == 1
 
     def test_parameter_range_values(self) -> None:
         result = load_family_ranges()
