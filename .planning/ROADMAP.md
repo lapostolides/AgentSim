@@ -196,7 +196,7 @@ Plans:
 - [x] 07-01-PLAN.md — Ranges model, loader function, and SPAD family YAML (foundation)
 - [x] 07-02-PLAN.md — Sensor YAMLs batch 1: CW ToF, Pulsed dToF, Event Camera, Coded Aperture, Light Field, Lensless, RGB
 - [x] 07-03-PLAN.md — Sensor YAMLs batch 2: LiDAR (3 variants), Structured Light, Polarimetric, Spectral
-- [ ] 07-04-PLAN.md — NLOS sensor YAML migration and domain loader update
+- [x] 07-04-PLAN.md — NLOS sensor YAML migration and domain loader update
 
 ### Phase 8: CRB and Information-Theoretic Bounds
 **Goal**: The system computes Cramer-Rao bounds for any sensor family -- analytically when closed-form solutions exist, numerically via JAX autodiff otherwise -- providing theoretical performance floors that prune infeasible configurations
