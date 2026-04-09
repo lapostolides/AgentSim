@@ -40,14 +40,22 @@ class CRBResult(BaseModel, frozen=True):
 
 
 class SensitivityEntry(BaseModel, frozen=True):
-    """One entry in a parameter sensitivity ranking (CRB-05, D-09).
+    """One entry in a parameter sensitivity ranking (CRB-05, D-08, D-09).
 
-    ``sensitivity`` is the normalised absolute sensitivity (unitless),
-    enabling comparison across parameters with different scales.
+    Morris method fields:
+    - ``mu_star``: mean absolute elementary effect (importance measure)
+    - ``sigma``: standard deviation of elementary effects (interaction indicator)
+    - ``classification``: negligible / linear / nonlinear based on sigma/mu_star
+
+    Legacy fields (``sensitivity``, ``perturbed_crb``) retained for backward
+    compatibility but are optional.
     """
 
     parameter_name: str
     nominal_value: float
-    perturbed_crb: float
-    sensitivity: float  # |d(CRB)/d(param)| / (delta * nominal), unitless
-    rank: int
+    mu_star: float = 0.0  # mean |EE| across trajectories (importance)
+    sigma: float = 0.0  # std(EE) across trajectories (interaction indicator)
+    classification: str = ""  # negligible, linear, nonlinear
+    perturbed_crb: float = 0.0
+    sensitivity: float = 0.0  # kept for backward compat
+    rank: int = 0
