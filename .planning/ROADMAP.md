@@ -231,7 +231,7 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md — Neo4j Docker lifecycle, Python graph client, and graceful degradation layer
 - [x] 09-02-PLAN.md — YAML seed pipeline and CLI graph commands (start, stop, status, seed, query)
-- [ ] 09-03-PLAN.md — Feasibility query engine with constraint checking, cross-family ranking, and conflict detection
+- [x] 09-03-PLAN.md — Feasibility query engine with constraint checking, cross-family ranking, and conflict detection
 
 ### Phase 10: Pipeline Integration
 **Goal**: The existing AgentSim experiment pipeline queries the knowledge graph before hypothesis generation, so hypotheses are constrained to physically viable sensor configurations from the start

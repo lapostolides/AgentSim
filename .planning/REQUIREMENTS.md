@@ -50,9 +50,9 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 
 ### Feasibility Query Engine
 
-- [ ] **QUERY-01**: Given a task description and environment constraints, the query engine returns a ranked list of feasible sensor configurations with CRB-backed theoretical performance bounds
-- [ ] **QUERY-02**: Cross-family feasibility comparison ranks sensors from different families on the same task (e.g., SPAD vs ToF vs LiDAR for depth at 10m range)
-- [ ] **QUERY-03**: Constraint conflict detection identifies when task requirements are physically impossible for any known sensor (e.g., 1mm depth at 100m range in daylight)
+- [x] **QUERY-01**: Given a task description and environment constraints, the query engine returns a ranked list of feasible sensor configurations with CRB-backed theoretical performance bounds
+- [x] **QUERY-02**: Cross-family feasibility comparison ranks sensors from different families on the same task (e.g., SPAD vs ToF vs LiDAR for depth at 10m range)
+- [x] **QUERY-03**: Constraint conflict detection identifies when task requirements are physically impossible for any known sensor (e.g., 1mm depth at 100m range in daylight)
 - [x] **QUERY-04**: FeasibilityResult frozen Pydantic model captures ranked configurations, CRB bounds, confidence qualifiers, and constraint satisfaction details
 
 ### Pipeline Integration
