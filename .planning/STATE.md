@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Physics-Aware Enhancement
 status: executing
-stopped_at: Completed 11-02-PLAN.md
-last_updated: "2026-04-09T23:47:09.590Z"
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-04-09T23:48:46.490Z"
 last_activity: 2026-04-09
 progress:
   total_phases: 8
   completed_phases: 5
   total_plans: 20
-  completed_plans: 17
+  completed_plans: 18
   percent: 0
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-08)
 ## Current Position
 
 Phase: 11 (sensor-configuration-space) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-04-09
 
@@ -72,6 +72,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 10-pipeline-integration P02 | 170s | 1 tasks | 2 files |
 | Phase 10-pipeline-integration P04 | 201s | 1 tasks | 2 files |
 | Phase 11-sensor-configuration-space P02 | 404s | 1 tasks | 2 files |
+| Phase 11-sensor-configuration-space P01 | 442s | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,8 @@ Recent decisions affecting current work:
 - [Phase 10-pipeline-integration]: Lazy imports inside _run_feasibility_phase for KG deps to avoid crashes when not installed
 - [Phase 10-pipeline-integration]: All graph_context imports lazy inside phase functions to avoid import errors when knowledge_graph not installed
 - [Phase 11-sensor-configuration-space]: SwissSPAD2 lowercases to swissspad2 (triple-s) -- added both variants to sensor name patterns
+- [Phase 11-sensor-configuration-space]: Immutable GP pattern: fit() returns new MinimalGP instance, never mutates
+- [Phase 11-sensor-configuration-space]: Pareto infeasibility filter: exclude points with negated margin > 0 before dominance check
 
 ### Pending Todos
 
@@ -120,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-09T23:47:09.585Z
-Stopped at: Completed 11-02-PLAN.md
+Last session: 2026-04-09T23:48:46.485Z
+Stopped at: Completed 11-01-PLAN.md
 Resume file: None
