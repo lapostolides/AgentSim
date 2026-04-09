@@ -839,6 +839,8 @@ async def run_experiment(
     max_retries = 2
     retry_count = 0
     pre_hyp_gate_done = False
+    max_requery = 2  # Cap re-queries to prevent infinite loops (Research Pitfall 4)
+    requery_count = 0
     for iteration in range(config.max_iterations):
         logger.info("iteration_start", iteration=iteration, status=state.status.value)
         append_log_event(run_dir, {
@@ -1112,6 +1114,26 @@ async def run_experiment(
             state = await _run_analyst_phase(state, config, agents)
             if on_phase_complete:
                 on_phase_complete("analyst", state)
+
+            # ── Analyst re-query detection (D-02, D-09) ──────────
+            latest_analysis = state.analyses[-1] if state.analyses else None
+            if (
+                latest_analysis is not None
+                and latest_analysis.constraint_modifications is not None
+                and requery_count < max_requery
+            ):
+                requery_count += 1
+                logger.info(
+                    "analyst_requery_triggered",
+                    constraints=latest_analysis.constraint_modifications,
+                    requery_count=requery_count,
+                )
+                state = await _run_feasibility_phase(
+                    state, config,
+                    constraint_overrides=latest_analysis.constraint_modifications,
+                )
+                if on_phase_complete:
+                    on_phase_complete("feasibility_requery", state)
 
             # ── Literature validation ─────────────────────────────
             state = await _run_literature_validator_phase(state, config, agents)
@@ -1607,8 +1629,16 @@ async def _run_analyst_phase(
     agents: dict,
 ) -> ExperimentState:
     context = state_to_prompt_context(state)
+
+    # Inject full KG context for analyst (PIPE-07, PIPE-08)
+    kg_analyst_context = ""
+    if state.feasibility_result is not None:
+        from agentsim.state.graph_context import format_analyst_graph_context
+        kg_analyst_context = format_analyst_graph_context(state)
+
     prompt = (
         f"Analyze the experimental results and decide next steps.\n\n"
+        f"{kg_analyst_context}"
         f"{context}"
     )
 
@@ -1617,7 +1647,8 @@ async def _run_analyst_phase(
     data = _extract_json_from_text(response_text)
     if data:
         data = _unwrap_json(data, {"hypothesis_id", "findings", "confidence",
-                                    "supports_hypothesis", "should_stop"})
+                                    "supports_hypothesis", "should_stop",
+                                    "constraint_modifications"})
         # Ensure hypothesis_id is present
         if "hypothesis_id" not in data:
             data["hypothesis_id"] = state.hypothesis.id if state.hypothesis else ""
