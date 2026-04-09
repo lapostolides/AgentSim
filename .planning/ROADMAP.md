@@ -34,7 +34,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 9: Neo4j Infrastructure and Feasibility Queries** - Docker lifecycle, Python graph client, YAML seed pipeline, CLI commands, graceful degradation, and feasibility query engine with cross-family ranking
 - [ ] **Phase 10: Pipeline Integration** - Deep KG integration across all agents: graph-aware hypothesis generation, CRB-guided experimental design, feasibility-gated iteration, CRB-vs-actual evaluation, sensitivity-driven scene diversity, cross-experiment reasoning, SHARES_PHYSICS transfer suggestions, ExperimentState extended with FeasibilityResult, graceful skip when graph unavailable
 - [ ] **Phase 11: Sensor Configuration Space** - Configurable parameter ranges per sensor, CRB optimization over operating points, experiment scoping (wide/medium/narrow zoom levels)
-- [ ] **Phase 12: Computational Imaging Domain Taxonomy** - Define CI subdomains (NLOS, LOS depth, detection, tracking, reconstruction, spectral, polarimetric) as Task/Environment nodes in the knowledge graph
+- [ ] **Phase 12: Task-Aware Parameter Coupling** - Structured Task/Environment nodes in the knowledge graph defining task-dependent parameter preferences (e.g., tracking requires high frame rate), automatic task fitness scoring that feeds into the Pareto optimizer
+- [ ] **Phase 13: Computational Imaging Domain Taxonomy** - Define CI subdomains (NLOS, LOS depth, detection, tracking, reconstruction, spectral, polarimetric) as Task/Environment nodes with algorithmic approaches per subdomain
 
 ## Phase Details
 
@@ -259,7 +260,7 @@ Plans:
 
 **Execution Order:**
 v1.0: 1 -> 2 -> 02.1 -> 02.2 -> 3 -> 4 -> 5
-v2.0: 6 -> 7 -> 8 -> 9 -> 10 (Phase 8 can run in parallel with Phase 7)
+v2.0: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 (Phase 8 can run in parallel with Phase 7)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -286,12 +287,22 @@ v2.0: 6 -> 7 -> 8 -> 9 -> 10 (Phase 8 can run in parallel with Phase 7)
 Plans:
 - [ ] TBD (run /gsd:plan-phase 11 to break down)
 
-### Phase 12: Computational Imaging Domain Taxonomy
+### Phase 12: Task-Aware Parameter Coupling
 
-**Goal:** Define subdomains within computational imaging (NLOS, LOS depth, detection, tracking, reconstruction, spectral, polarimetric) as structured Task/Environment nodes in the knowledge graph. Research-heavy: map which sensor families serve which tasks and what algorithmic approaches exist per subdomain. Feeds into feasibility query engine as the "task" side of sensor-task matching.
+**Goal:** Structured Task/Environment nodes in the knowledge graph define task-dependent parameter preferences (e.g., "tracking requires high frame rate", "depth mapping needs high spatial resolution"). These preferences automatically generate task fitness scores that feed into Phase 11's Pareto optimizer as a 4th axis — enabling the system to penalize configs where CRB-optimal parameter tuning degrades task-relevant capabilities. The task_preferences hook from Phase 11 becomes auto-populated from graph data.
 **Requirements**: TBD
 **Depends on:** Phase 11
 **Plans:** 0 plans
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 12 to break down)
+
+### Phase 13: Computational Imaging Domain Taxonomy
+
+**Goal:** Define subdomains within computational imaging (NLOS, LOS depth, detection, tracking, reconstruction, spectral, polarimetric) as structured Task/Environment nodes with algorithmic approaches per subdomain. Research-heavy: map which sensor families serve which tasks and what SOTA algorithms exist. Feeds into feasibility query engine and Phase 12's task-aware coupling as the "task" side of sensor-task matching.
+**Requirements**: TBD
+**Depends on:** Phase 12
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 13 to break down)
