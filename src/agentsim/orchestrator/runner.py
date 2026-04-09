@@ -503,6 +503,57 @@ def _is_abort(decision: GateDecision | None) -> bool:
     return decision is not None and decision.action == GateAction.ABORT
 
 
+# ── Feasibility phase (KG query) ────────────────────────────────────
+
+
+async def _run_feasibility_phase(
+    state: ExperimentState,
+    config: OrchestratorConfig,
+    constraint_overrides: dict[str, float | str] | None = None,
+) -> ExperimentState:
+    """Query knowledge graph for feasible sensor configurations (D-01).
+
+    Skips with warning when graph is unavailable (D-15).
+    Called once after env discovery, and optionally after analyst re-query (D-02).
+
+    Args:
+        state: Current experiment state.
+        config: Orchestrator configuration.
+        constraint_overrides: Optional modified constraints from analyst re-query.
+
+    Returns:
+        ExperimentState with feasibility_result populated, or unchanged on skip/error.
+    """
+    from agentsim.knowledge_graph.degradation import is_graph_available
+
+    if not is_graph_available():
+        logger.warning("feasibility_phase_skipped", reason="graph_unavailable")
+        return state
+
+    try:
+        from agentsim.knowledge_graph.client import GraphClient
+        from agentsim.knowledge_graph.query_engine import FeasibilityQueryEngine
+        from agentsim.state.transitions import set_feasibility_result
+
+        constraints = constraint_overrides or {}
+        task = state.raw_hypothesis
+
+        client = GraphClient()
+        engine = FeasibilityQueryEngine(client)
+        result = engine.query(task=task, constraints=constraints)
+
+        state = set_feasibility_result(state, result)
+        logger.info(
+            "feasibility_phase_complete",
+            ranked_count=len(result.ranked_configs),
+            pruned_count=result.pruned_count,
+        )
+    except Exception:
+        logger.warning("feasibility_phase_failed", exc_info=True)
+
+    return state
+
+
 # ── Agent phase runner ───────────────────────────────────────────────
 
 async def _run_agent_phase(
@@ -768,6 +819,11 @@ async def run_experiment(
 
     # Save initial state
     save_state_snapshot(run_dir, state, "initial")
+
+    # 3b. Feasibility query (Phase 10 - PIPE-01)
+    state = await _run_feasibility_phase(state, config)
+    if on_phase_complete:
+        on_phase_complete("feasibility", state)
 
     # 4. Literature scout
     state = await _run_literature_scout_phase(state, config, agents)
@@ -1276,11 +1332,17 @@ async def _run_hypothesis_phase(
             f"Incorporate this feedback into your revised hypothesis.\n"
         )
 
+    # KG context for hypothesis generation (PIPE-02)
+    from agentsim.state.graph_context import format_hypothesis_graph_context
+
+    kg_context = format_hypothesis_graph_context(state)
+
     prompt = (
         f"Analyze this hypothesis and produce a structured experiment specification.\n\n"
         f"Hypothesis: {state.raw_hypothesis}\n\n"
         f"Files provided: {[f.path for f in state.files]}\n\n"
         f"{guidance_section}"
+        f"{kg_context}"
         f"{context}"
     )
 
@@ -1374,9 +1436,29 @@ async def _run_scene_phase(
             f"Revise the simulation code to address this feedback.\n"
         )
 
+    # KG sensitivity context for scene generation (PIPE-06)
+    from agentsim.state.graph_context import format_scene_graph_context
+
+    sensitivity_result = None
+    if state.feasibility_result is not None and state.feasibility_result.ranked_configs:
+        try:
+            from agentsim.knowledge_graph.crb.sensitivity import compute_sensitivity
+            from agentsim.knowledge_graph.client import GraphClient
+
+            top_config = state.feasibility_result.ranked_configs[0]
+            client = GraphClient()
+            sensors = client.get_sensors()
+            matching = [s for s in sensors if s.name == top_config.sensor_name]
+            if matching:
+                sensitivity_result = compute_sensitivity(matching[0])
+        except Exception:
+            logger.debug("sensitivity_computation_skipped", exc_info=True)
+    kg_scene_context = format_scene_graph_context(state, sensitivity_result=sensitivity_result)
+
     prompt = (
         f"Generate simulation scenes for this experiment.\n\n"
         f"{feedback_section}"
+        f"{kg_scene_context}"
         f"{context}"
     )
 
@@ -1489,8 +1571,15 @@ async def _run_evaluator_phase(
     agents: dict,
 ) -> ExperimentState:
     context = state_to_prompt_context(state)
+
+    # KG CRB performance floor for evaluator (PIPE-05)
+    from agentsim.state.graph_context import format_evaluator_graph_context
+
+    kg_eval_context = format_evaluator_graph_context(state)
+
     prompt = (
         f"Evaluate the simulation results and compute metrics.\n\n"
+        f"{kg_eval_context}"
         f"{context}"
     )
 
