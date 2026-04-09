@@ -103,11 +103,90 @@ def seed(clean: bool) -> None:
 
 
 @graph.command()
-@click.option("--task", required=True, type=str, help="Downstream task description")
+@click.option("--task", "-t", required=True, type=str, help="Downstream task description")
 @click.option(
-    "--constraint", multiple=True, type=str,
-    help="Environment constraint (key=value, repeatable)",
+    "--constraint", "-c", multiple=True, type=str,
+    help="Environment constraint as key=value (repeatable)",
 )
-def query(task: str, constraint: tuple[str, ...]) -> None:
-    """Run a feasibility query against the knowledge graph (placeholder)."""
-    click.echo("Feasibility query engine available after Plan 03 execution.")
+@click.option("--family", "-f", default=None, type=str, help="Filter to sensor family")
+@click.option("--max-results", "-n", default=10, type=int, help="Max results to show")
+def query(task: str, constraint: tuple[str, ...], family: str | None, max_results: int) -> None:
+    """Run a feasibility query against the knowledge graph."""
+    from agentsim.knowledge_graph.models import SensorFamily  # noqa: PLC0415
+    from agentsim.knowledge_graph.query_engine import FeasibilityQueryEngine  # noqa: PLC0415
+
+    # Parse constraint strings into dict
+    constraints: dict[str, float | str] = {}
+    for c in constraint:
+        if "=" not in c:
+            click.echo(f"Warning: skipping malformed constraint '{c}' (expected key=value)", err=True)
+            continue
+        key, _, raw_value = c.partition("=")
+        try:
+            constraints[key.strip()] = float(raw_value.strip())
+        except ValueError:
+            constraints[key.strip()] = raw_value.strip()
+
+    # Parse family filter
+    family_filter: SensorFamily | None = None
+    if family is not None:
+        try:
+            family_filter = SensorFamily(family)
+        except ValueError:
+            click.echo(f"Error: Unknown sensor family '{family}'.", err=True)
+            raise SystemExit(1)
+
+    # Run the query
+    try:
+        with GraphClient() as client:
+            engine = FeasibilityQueryEngine(client)
+            result = engine.query(task, constraints, family_filter=family_filter, max_results=max_results)
+    except (ConnectionRefusedError, OSError) as exc:
+        click.echo(
+            "Error: Cannot connect to Neo4j. Try 'agentsim graph start' first.",
+            err=True,
+        )
+        logger.debug("query_connection_error", error=str(exc))
+        raise SystemExit(1)
+    except Exception as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1)
+
+    # Print header
+    click.echo(f'\nFeasibility Results for: "{task}"')
+    if constraints:
+        constraint_str = ", ".join(f"{k}={v}" for k, v in constraints.items())
+        click.echo(f"Constraints: {constraint_str}")
+    click.echo("")
+
+    if not result.ranked_configs:
+        click.echo("No feasible sensor configurations found.")
+        click.echo(f"\nTotal: {result.total_count} sensors evaluated")
+        click.echo(f"Time: {result.computation_time_s:.2f}s")
+        return
+
+    # Print table
+    header = f"{'Rank':>4} | {'Sensor':<20} | {'Family':<20} | {'Score':>5} | {'CRB Bound':>12} | {'Confidence':<10}"
+    separator = "-" * len(header)
+    click.echo(header)
+    click.echo(separator)
+
+    for config in result.ranked_configs:
+        crb_str = (
+            f"{config.crb_bound:.4g} {config.crb_unit}"
+            if config.crb_bound is not None
+            else "N/A"
+        )
+        click.echo(
+            f"{config.rank:>4} | {config.sensor_name:<20} | "
+            f"{config.sensor_family.value:<20} | {config.feasibility_score:>5.2f} | "
+            f"{crb_str:>12} | {config.confidence.value:<10}"
+        )
+
+    # Summary line
+    feasible = sum(1 for c in result.ranked_configs if c.feasibility_score > 0.0)
+    click.echo(
+        f"\nTotal: {result.total_count} sensors | "
+        f"Feasible: {feasible} | Pruned: {result.pruned_count}"
+    )
+    click.echo(f"Time: {result.computation_time_s:.2f}s")

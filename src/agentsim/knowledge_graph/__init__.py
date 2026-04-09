@@ -56,6 +56,17 @@ from agentsim.knowledge_graph.crb import (
     jax_available,
 )
 
+from agentsim.knowledge_graph.constraint_checker import (
+    ConstraintConflict as ConstraintConflict,
+    check_constraints as check_constraints,
+    detect_conflicts as detect_conflicts,
+    feasibility_score as feasibility_score,
+)
+from agentsim.knowledge_graph.query_engine import (
+    FeasibilityQueryEngine as FeasibilityQueryEngine,
+    query_feasibility as query_feasibility,
+)
+
 # Neo4j-dependent modules -- lazy imports to avoid crashes when neo4j
 # driver is not installed or has binary incompatibilities.
 try:
