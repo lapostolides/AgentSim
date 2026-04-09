@@ -1,0 +1,99 @@
+family: lidar_solid_state
+display_name: "LiDAR (Solid-State / Flash)"
+description: "Solid-state LiDAR sensors with no moving parts, using MEMS mirrors, optical phased arrays, or flash illumination for compact, automotive-grade 3D sensing."
+
+ranges:
+  flash_fov_deg:
+    min: 30.0
+    max: 360.0
+    typical: 120.0
+    unit: degree
+    description: "Total field of view (horizontal) of the solid-state sensor"
+  point_density:
+    min: 50.0
+    max: 1000.0
+    typical: 200.0
+    unit: dimensionless
+    description: "Point density in points per square degree"
+  max_range_m:
+    min: 50.0
+    max: 300.0
+    typical: 150.0
+    unit: meter
+    description: "Maximum detection range for 10% reflectivity targets"
+
+sensors:
+  - name: "Livox Mid-360"
+    description: "Low-cost solid-state LiDAR with non-repetitive scanning and 360-degree FOV for robotics and mapping"
+    source: "Livox Mid-360 datasheet v1.0, Livox Technology 2023"
+    geometric:
+      fov: 360.0
+      fov_unit: degree
+      working_distance_min: 0.1
+      working_distance_max: 40.0
+    temporal:
+      frame_rate: 10.0
+      frame_rate_unit: hertz
+      readout_mode: "non_repetitive_scan"
+    radiometric:
+      spectral_sensitivity_peak_nm: 905.0
+    operational:
+      cost_min_usd: 500.0
+      cost_max_usd: 800.0
+      power_w: 9.0
+      weight_g: 265.0
+      form_factor: "compact_module"
+      operating_environment: "outdoor_IP67"
+    family_specs:
+      flash_fov_deg: 360.0
+      point_density: 200.0
+
+  - name: "Innoviz InnovizTwo"
+    description: "Automotive-grade MEMS-based solid-state LiDAR with long range and high point density"
+    source: "Innoviz InnovizTwo product brief, Innoviz Technologies 2023"
+    geometric:
+      fov: 125.0
+      fov_unit: degree
+      working_distance_min: 0.1
+      working_distance_max: 300.0
+    temporal:
+      frame_rate: 15.0
+      frame_rate_unit: hertz
+      readout_mode: "mems_scanning"
+    radiometric:
+      spectral_sensitivity_peak_nm: 905.0
+    operational:
+      cost_min_usd: 800.0
+      cost_max_usd: 1500.0
+      power_w: 22.0
+      weight_g: 1200.0
+      form_factor: "automotive_module"
+      operating_environment: "outdoor_automotive"
+    family_specs:
+      flash_fov_deg: 125.0
+      point_density: 500.0
+
+  - name: "Continental HRL131"
+    description: "Automotive flash LiDAR for short-to-mid-range 3D perception in ADAS applications"
+    source: "Continental HRL131 product specification, Continental AG 2022"
+    geometric:
+      fov: 120.0
+      fov_unit: degree
+      working_distance_min: 0.1
+      working_distance_max: 60.0
+    temporal:
+      frame_rate: 25.0
+      frame_rate_unit: hertz
+      readout_mode: "flash"
+    radiometric:
+      spectral_sensitivity_peak_nm: 905.0
+    operational:
+      cost_min_usd: 500.0
+      cost_max_usd: 1000.0
+      power_w: 15.0
+      weight_g: 600.0
+      form_factor: "automotive_module"
+      operating_environment: "outdoor_automotive"
+    family_specs:
+      flash_fov_deg: 120.0
+      point_density: 100.0

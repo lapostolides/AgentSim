@@ -1,0 +1,114 @@
+family: lidar_mechanical
+display_name: "LiDAR (Mechanical Spinning)"
+description: "Mechanically rotating multi-beam LiDAR sensors for 360-degree 3D point cloud acquisition, widely used in autonomous driving and robotics."
+
+ranges:
+  scan_rate_rpm:
+    min: 300.0
+    max: 1200.0
+    typical: 600.0
+    unit: revolution / minute
+    description: "Rotation rate of the spinning assembly"
+  angular_resolution_deg:
+    min: 0.1
+    max: 0.4
+    typical: 0.2
+    unit: degree
+    description: "Horizontal angular resolution between laser firings"
+  max_range_m:
+    min: 100.0
+    max: 300.0
+    typical: 200.0
+    unit: meter
+    description: "Maximum detection range for diffuse targets"
+  fov_vertical_deg:
+    min: 25.0
+    max: 45.0
+    typical: 40.0
+    unit: degree
+    description: "Vertical field of view of the multi-beam array"
+
+sensors:
+  - name: "Velodyne VLP-16"
+    description: "16-channel pulsed LiDAR with 360-degree horizontal FOV, widely used in research and autonomous driving"
+    source: "Velodyne VLP-16 User Manual 63-9243, Rev. G, Velodyne Lidar 2018"
+    geometric:
+      fov: 360.0
+      fov_unit: degree
+      spatial_resolution: 16.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 1.0
+      working_distance_max: 100.0
+    temporal:
+      frame_rate: 20.0
+      frame_rate_unit: hertz
+      readout_mode: "sequential_firing"
+    radiometric:
+      spectral_sensitivity_peak_nm: 903.0
+    operational:
+      cost_min_usd: 4000.0
+      cost_max_usd: 8000.0
+      power_w: 8.0
+      weight_g: 830.0
+      form_factor: "rotating_cylinder"
+      operating_environment: "outdoor_IP67"
+    family_specs:
+      scan_rate_rpm: 600.0
+      angular_resolution_deg: 0.2
+      max_range_m: 100.0
+
+  - name: "Ouster OS1-128"
+    description: "128-channel digital spinning LiDAR with co-located IMU, calibrated intensity, and near-infrared imagery"
+    source: "Ouster OS1 Rev. 06 datasheet, Ouster Inc. 2023"
+    geometric:
+      fov: 360.0
+      fov_unit: degree
+      spatial_resolution: 128.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.5
+      working_distance_max: 120.0
+    temporal:
+      frame_rate: 20.0
+      frame_rate_unit: hertz
+      readout_mode: "sequential_firing"
+    radiometric:
+      spectral_sensitivity_peak_nm: 865.0
+    operational:
+      cost_min_usd: 8000.0
+      cost_max_usd: 18000.0
+      power_w: 14.0
+      weight_g: 447.0
+      form_factor: "rotating_cylinder"
+      operating_environment: "outdoor_IP68"
+    family_specs:
+      scan_rate_rpm: 1200.0
+      angular_resolution_deg: 0.18
+      max_range_m: 120.0
+
+  - name: "Hesai Pandar128"
+    description: "128-channel high-resolution mechanical LiDAR for autonomous driving and 3D mapping"
+    source: "Hesai Pandar128 datasheet v2.0, Hesai Technology 2022"
+    geometric:
+      fov: 360.0
+      fov_unit: degree
+      spatial_resolution: 128.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.5
+      working_distance_max: 200.0
+    temporal:
+      frame_rate: 20.0
+      frame_rate_unit: hertz
+      readout_mode: "sequential_firing"
+    radiometric:
+      spectral_sensitivity_peak_nm: 905.0
+    operational:
+      cost_min_usd: 15000.0
+      cost_max_usd: 25000.0
+      power_w: 28.0
+      weight_g: 1540.0
+      form_factor: "rotating_cylinder"
+      operating_environment: "outdoor_IP67"
+    family_specs:
+      scan_rate_rpm: 600.0
+      angular_resolution_deg: 0.1
+      max_range_m: 200.0

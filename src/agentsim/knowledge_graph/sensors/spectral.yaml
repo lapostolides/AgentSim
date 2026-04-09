@@ -1,0 +1,117 @@
+family: spectral
+display_name: "Spectral / Hyperspectral Camera"
+description: "Cameras that capture images across many narrow spectral bands, enabling material identification, vegetation analysis, and chemical detection through spectral signatures."
+
+ranges:
+  spectral_range_nm_min:
+    min: 350.0
+    max: 900.0
+    typical: 400.0
+    unit: nanometer
+    description: "Minimum wavelength of spectral sensitivity range"
+  spectral_range_nm_max:
+    min: 900.0
+    max: 2500.0
+    typical: 1700.0
+    unit: nanometer
+    description: "Maximum wavelength of spectral sensitivity range"
+  spectral_resolution_nm:
+    min: 1.0
+    max: 20.0
+    typical: 5.0
+    unit: nanometer
+    description: "Full-width half-maximum spectral resolution per band"
+  band_count:
+    min: 10.0
+    max: 300.0
+    typical: 100.0
+    unit: dimensionless
+    description: "Number of spectral bands"
+
+sensors:
+  - name: "Ximea MQ022HG-IM-SM5x5"
+    description: "Mosaic snapshot hyperspectral camera with 5x5 Fabry-Perot filter array yielding 25 spectral bands per frame"
+    source: "Ximea xiSpec MQ022HG-IM-SM5x5 datasheet, XIMEA GmbH 2023"
+    geometric:
+      fov: 35.0
+      fov_unit: degree
+      spatial_resolution: 2048.0
+      spatial_resolution_unit: pixel
+    temporal:
+      frame_rate: 170.0
+      frame_rate_unit: hertz
+      readout_mode: "global_shutter"
+    radiometric:
+      quantum_efficiency: 0.35
+      dynamic_range_db: 60.0
+      spectral_sensitivity_peak_nm: 600.0
+    operational:
+      cost_min_usd: 5000.0
+      cost_max_usd: 10000.0
+      power_w: 2.5
+      weight_g: 32.0
+      form_factor: "compact_camera"
+      operating_environment: "indoor_industrial"
+    family_specs:
+      spectral_range_nm_min: 600.0
+      spectral_range_nm_max: 875.0
+      spectral_resolution_nm: 15.0
+      band_count: 25.0
+
+  - name: "Specim FX17"
+    description: "NIR pushbroom hyperspectral camera with 224 bands for industrial sorting and process analytics"
+    source: "Specim FX17 datasheet v3.0, Specim Spectral Imaging 2023"
+    geometric:
+      fov: 38.0
+      fov_unit: degree
+      spatial_resolution: 640.0
+      spatial_resolution_unit: pixel
+    temporal:
+      frame_rate: 670.0
+      frame_rate_unit: hertz
+      readout_mode: "line_scan"
+    radiometric:
+      quantum_efficiency: 0.70
+      dynamic_range_db: 62.0
+      spectral_sensitivity_peak_nm: 1100.0
+    operational:
+      cost_min_usd: 20000.0
+      cost_max_usd: 40000.0
+      power_w: 15.0
+      weight_g: 1300.0
+      form_factor: "industrial_camera"
+      operating_environment: "indoor_industrial"
+    family_specs:
+      spectral_range_nm_min: 900.0
+      spectral_range_nm_max: 1700.0
+      spectral_resolution_nm: 3.5
+      band_count: 224.0
+
+  - name: "Headwall Nano-Hyperspec"
+    description: "Compact airborne VNIR hyperspectral imager with 270 bands for remote sensing and precision agriculture"
+    source: "Headwall Nano-Hyperspec datasheet, Headwall Photonics 2022"
+    geometric:
+      fov: 36.5
+      fov_unit: degree
+      spatial_resolution: 640.0
+      spatial_resolution_unit: pixel
+    temporal:
+      frame_rate: 300.0
+      frame_rate_unit: hertz
+      readout_mode: "line_scan"
+    radiometric:
+      quantum_efficiency: 0.60
+      dynamic_range_db: 70.0
+      spectral_sensitivity_peak_nm: 600.0
+    operational:
+      cost_min_usd: 30000.0
+      cost_max_usd: 60000.0
+      power_w: 8.0
+      weight_g: 480.0
+      form_factor: "airborne_payload"
+      operating_environment: "airborne"
+    family_specs:
+      spectral_range_nm_min: 400.0
+      spectral_range_nm_max: 1000.0
+      spectral_resolution_nm: 2.2
+      band_count: 270.0
