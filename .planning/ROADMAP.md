@@ -190,6 +190,13 @@ Plans:
   3. Sensor definitions load into the Phase 6 Pydantic models without validation errors -- every field matches the schema
   4. Operational metadata (cost range, power, weight, form factor) is populated for each sensor family
   5. At least one concrete sensor configuration per family exists (e.g., SwissSPAD2 for SPAD, Prophesee EVK4 for event camera) with real-world parameter values from published datasheets
+**Plans**: 4 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Ranges model, loader function, and SPAD family YAML (foundation)
+- [ ] 07-02-PLAN.md — Sensor YAMLs batch 1: CW ToF, Pulsed dToF, Event Camera, Coded Aperture, Light Field, Lensless, RGB
+- [ ] 07-03-PLAN.md — Sensor YAMLs batch 2: LiDAR (3 variants), Structured Light, Polarimetric, Spectral
+- [ ] 07-04-PLAN.md — NLOS sensor YAML migration and domain loader update
 
 ### Phase 8: CRB and Information-Theoretic Bounds
 **Goal**: The system computes Cramer-Rao bounds for any sensor family -- analytically when closed-form solutions exist, numerically via JAX autodiff otherwise -- providing theoretical performance floors that prune infeasible configurations
@@ -239,7 +246,7 @@ v2.0: 6 -> 7 -> 8 -> 9 -> 10 (Phase 8 can run in parallel with Phase 7)
 | 4. Reproducibility and Reporting | v1.0 | 0/1 | Deferred | - |
 | 5. Mitsuba 3 Transient Rendering | v1.0 | 3/3 | Complete | 2026-04-08 |
 | 6. Graph Schema and Data Models | v2.0 | 0/2 | Planning | - |
-| 7. Sensor Taxonomy Population | v2.0 | 0/0 | Not started | - |
+| 7. Sensor Taxonomy Population | v2.0 | 0/4 | Planning | - |
 | 8. CRB and Information-Theoretic Bounds | v2.0 | 0/0 | Not started | - |
 | 9. Neo4j Infrastructure and Feasibility Queries | v2.0 | 0/0 | Not started | - |
 | 10. Pipeline Integration | v2.0 | 0/0 | Not started | - |
