@@ -1,0 +1,112 @@
+family: pulsed_dtof
+display_name: "Pulsed Direct Time-of-Flight"
+description: "Sensors that measure distance by emitting short laser pulses and timing the round-trip. Used in LiDAR, automotive ranging, and surveying applications."
+
+ranges:
+  pulse_width_ns:
+    min: 0.1
+    max: 10.0
+    typical: 2.0
+    unit: nanosecond
+    description: "Duration of the emitted laser pulse"
+  laser_rep_rate_khz:
+    min: 1.0
+    max: 1000.0
+    typical: 100.0
+    unit: kilohertz
+    description: "Laser pulse repetition rate"
+  channel_count:
+    min: 1.0
+    max: 256.0
+    typical: 16.0
+    unit: dimensionless
+    description: "Number of independent measurement channels"
+  max_range_m:
+    min: 5.0
+    max: 500.0
+    typical: 100.0
+    unit: meter
+    description: "Maximum measurement range"
+
+sensors:
+  - name: "Garmin LIDAR-Lite v4"
+    description: "Garmin compact pulsed dToF ranging module for drones and robotics"
+    source: "Garmin LIDAR-Lite v4 LED technical specifications, Garmin 2020"
+    geometric:
+      fov: 2.0
+      fov_unit: degree
+      spatial_resolution: 1.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.1
+      working_distance_max: 10.0
+    temporal:
+      frame_rate: 500.0
+      temporal_resolution: 1000.0
+      temporal_resolution_unit: picosecond
+    radiometric:
+      quantum_efficiency: 0.20
+    operational:
+      cost_min_usd: 50.0
+      cost_max_usd: 80.0
+      power_w: 0.3
+      weight_g: 4.5
+      form_factor: "module"
+    family_specs:
+      pulse_width_ns: 5.0
+      laser_rep_rate_khz: 0.5
+      channel_count: 1
+
+  - name: "Luminar Iris"
+    description: "Luminar automotive-grade pulsed dToF LiDAR with 1550nm fiber laser"
+    source: "Luminar Iris product specification sheet, Luminar Technologies 2022"
+    geometric:
+      fov: 120.0
+      fov_unit: degree
+      spatial_resolution: 500.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 1.0
+      working_distance_max: 250.0
+    temporal:
+      frame_rate: 20.0
+      temporal_resolution: 100.0
+      temporal_resolution_unit: picosecond
+    radiometric:
+      quantum_efficiency: 0.70
+      dynamic_range_db: 90.0
+    operational:
+      cost_min_usd: 500.0
+      cost_max_usd: 1000.0
+      power_w: 18.0
+      weight_g: 500.0
+      form_factor: "rooftop_module"
+    family_specs:
+      pulse_width_ns: 2.0
+      laser_rep_rate_khz: 500.0
+      channel_count: 1
+
+  - name: "Leica RTC360"
+    description: "Leica survey-grade 3D laser scanner with high-speed pulsed dToF measurement"
+    source: "Leica RTC360 product datasheet, Leica Geosystems 2023"
+    geometric:
+      fov: 360.0
+      fov_unit: degree
+      spatial_resolution: 2000000.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.5
+      working_distance_max: 130.0
+    temporal:
+      frame_rate: 0.5
+      temporal_resolution: 50.0
+      temporal_resolution_unit: picosecond
+    radiometric:
+      quantum_efficiency: 0.40
+    operational:
+      cost_min_usd: 50000.0
+      cost_max_usd: 70000.0
+      power_w: 65.0
+      weight_g: 5350.0
+      form_factor: "tripod_scanner"
+    family_specs:
+      pulse_width_ns: 0.5
+      laser_rep_rate_khz: 1000.0
+      channel_count: 1

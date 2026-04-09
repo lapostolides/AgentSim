@@ -1,0 +1,111 @@
+family: lensless
+display_name: "Lensless Camera"
+description: "Cameras that replace the lens with a thin optical element (diffuser, phase mask, amplitude mask) placed close to the sensor. Image is computationally reconstructed from the encoded measurement. Enables ultra-thin, wide-FOV, and high-resolution imaging."
+
+ranges:
+  mask_sensor_distance_mm:
+    min: 0.1
+    max: 10.0
+    typical: 2.0
+    unit: millimeter
+    description: "Distance between the mask element and the image sensor"
+  psf_condition_number:
+    min: 1.5
+    max: 50.0
+    typical: 10.0
+    unit: dimensionless
+    description: "Condition number of the PSF system matrix; lower improves reconstruction quality"
+  reconstruction_psnr_db:
+    min: 15.0
+    max: 40.0
+    typical: 25.0
+    unit: decibel
+    description: "Typical PSNR of computationally reconstructed images"
+
+sensors:
+  - name: "DiffuserCam"
+    description: "UC Berkeley lensless camera using a thin diffuser as the optical element for 3D capture"
+    source: "Antipa et al., DiffuserCam: Lensless Single-exposure 3D Imaging, Optica 2018"
+    geometric:
+      fov: 150.0
+      fov_unit: degree
+      spatial_resolution: 5000000.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.05
+      working_distance_max: 2.0
+    temporal:
+      exposure_time: 0.01
+      exposure_time_unit: second
+      frame_rate: 7.0
+      readout_mode: "rolling_shutter"
+    radiometric:
+      quantum_efficiency: 0.45
+      dynamic_range_db: 55.0
+    operational:
+      cost_min_usd: 50.0
+      cost_max_usd: 200.0
+      power_w: 1.0
+      weight_g: 20.0
+      form_factor: "flat_sensor_module"
+    family_specs:
+      mask_type: "diffuser"
+      mask_sensor_distance_mm: 3.0
+      psf_condition_number: 12.0
+
+  - name: "PhlatCam"
+    description: "Rice University lensless camera using an amplitude mask for thin form-factor imaging"
+    source: "Asif et al., FlatCam: Thin, Lensless Cameras Using Coded Aperture and Computation, IEEE TCI 2017"
+    geometric:
+      fov: 120.0
+      fov_unit: degree
+      spatial_resolution: 1000000.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.1
+      working_distance_max: 5.0
+    temporal:
+      exposure_time: 0.033
+      exposure_time_unit: second
+      frame_rate: 30.0
+      readout_mode: "rolling_shutter"
+    radiometric:
+      quantum_efficiency: 0.40
+      dynamic_range_db: 50.0
+    operational:
+      cost_min_usd: 30.0
+      cost_max_usd: 100.0
+      power_w: 0.5
+      weight_g: 5.0
+      form_factor: "flat_sensor_module"
+    family_specs:
+      mask_type: "amplitude_mask"
+      mask_sensor_distance_mm: 0.5
+      psf_condition_number: 15.0
+
+  - name: "FlatScope"
+    description: "Rice University lensless fluorescence microscope using a phase mask for high-resolution neural imaging"
+    source: "Adams et al., Single-frame 3D fluorescence microscopy with ultraminiature lensless FlatScope, Science Advances 2017"
+    geometric:
+      fov: 10.0
+      fov_unit: degree
+      spatial_resolution: 500000.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.0005
+      working_distance_max: 0.005
+    temporal:
+      exposure_time: 0.05
+      exposure_time_unit: second
+      frame_rate: 20.0
+      readout_mode: "rolling_shutter"
+    radiometric:
+      quantum_efficiency: 0.50
+      dynamic_range_db: 45.0
+    operational:
+      cost_min_usd: 100.0
+      cost_max_usd: 500.0
+      power_w: 0.2
+      weight_g: 0.5
+      form_factor: "miniature_module"
+    family_specs:
+      mask_type: "phase_mask"
+      mask_sensor_distance_mm: 0.2
+      psf_condition_number: 8.0

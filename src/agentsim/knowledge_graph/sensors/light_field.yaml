@@ -1,0 +1,105 @@
+family: light_field
+display_name: "Light Field Camera"
+description: "Sensors that capture both spatial and angular light information using microlens arrays or multi-camera configurations. Enable post-capture refocus, depth estimation, and 3D reconstruction."
+
+ranges:
+  microlens_pitch_um:
+    min: 10.0
+    max: 500.0
+    typical: 100.0
+    unit: micrometer
+    description: "Pitch of the microlens array"
+  angular_samples:
+    min: 2.0
+    max: 100.0
+    typical: 9.0
+    unit: dimensionless
+    description: "Number of angular samples per spatial position"
+  baseline_mm:
+    min: 0.01
+    max: 250.0
+    typical: 1.0
+    unit: millimeter
+    description: "Effective baseline between extreme angular views"
+
+sensors:
+  - name: "Lytro Illum"
+    description: "Lytro consumer light field camera with microlens array for post-capture refocus"
+    source: "Ng et al., Light Field Photography with a Hand-held Plenoptic Camera, Stanford Tech Report 2005; Lytro Illum specifications 2014"
+    geometric:
+      fov: 54.0
+      fov_unit: degree
+      spatial_resolution: 40000000.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.2
+      working_distance_max: 50.0
+    temporal:
+      frame_rate: 3.0
+      readout_mode: "rolling_shutter"
+    radiometric:
+      quantum_efficiency: 0.40
+      dynamic_range_db: 60.0
+    operational:
+      cost_min_usd: 500.0
+      cost_max_usd: 1500.0
+      power_w: 3.0
+      weight_g: 940.0
+      form_factor: "handheld_camera"
+    family_specs:
+      microlens_pitch_um: 14.0
+      angular_samples: 15
+      baseline_mm: 0.5
+
+  - name: "Raytrix R42"
+    description: "Raytrix industrial plenoptic camera for 3D metrology and particle imaging velocimetry"
+    source: "Raytrix R42 product datasheet, Raytrix GmbH 2022"
+    geometric:
+      fov: 42.0
+      fov_unit: degree
+      spatial_resolution: 26000000.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.3
+      working_distance_max: 5.0
+    temporal:
+      frame_rate: 78.0
+      readout_mode: "global_shutter"
+    radiometric:
+      quantum_efficiency: 0.50
+      dynamic_range_db: 72.0
+    operational:
+      cost_min_usd: 10000.0
+      cost_max_usd: 30000.0
+      power_w: 5.0
+      weight_g: 1500.0
+      form_factor: "industrial_camera"
+    family_specs:
+      microlens_pitch_um: 70.0
+      angular_samples: 9
+      baseline_mm: 2.0
+
+  - name: "Stanford Multi-Camera Array"
+    description: "Stanford multi-camera light field acquisition system using a planar array of synchronized cameras"
+    source: "Wilburn et al., High Performance Imaging Using Large Camera Arrays, SIGGRAPH 2005"
+    geometric:
+      fov: 60.0
+      fov_unit: degree
+      spatial_resolution: 786432.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 1.0
+      working_distance_max: 100.0
+    temporal:
+      frame_rate: 30.0
+      readout_mode: "global_shutter"
+    radiometric:
+      quantum_efficiency: 0.40
+      dynamic_range_db: 55.0
+    operational:
+      cost_min_usd: 50000.0
+      cost_max_usd: 200000.0
+      power_w: 200.0
+      weight_g: 50000.0
+      form_factor: "array_rig"
+    family_specs:
+      microlens_pitch_um: 500.0
+      angular_samples: 100
+      baseline_mm: 250.0

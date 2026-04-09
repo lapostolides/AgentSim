@@ -1,0 +1,106 @@
+family: coded_aperture
+display_name: "Coded Aperture"
+description: "Sensors using patterned masks in the optical path to multiplex spatial information, enabling computational reconstruction of depth, spectrum, or light transport. Used in gamma-ray imaging, compressive sensing, and depth estimation."
+
+ranges:
+  mask_transmittance:
+    min: 0.3
+    max: 0.7
+    typical: 0.5
+    unit: dimensionless
+    description: "Fraction of light transmitted through the mask pattern"
+  psf_condition_number:
+    min: 1.5
+    max: 100.0
+    typical: 10.0
+    unit: dimensionless
+    description: "Condition number of the PSF/system matrix; lower is better for reconstruction"
+  mask_feature_size_um:
+    min: 5.0
+    max: 5000.0
+    typical: 100.0
+    unit: micrometer
+    description: "Smallest resolvable feature on the coded aperture mask"
+
+sensors:
+  - name: "Custom MURA Mask CMOS"
+    description: "Academic coded aperture system using a Modified Uniformly Redundant Array (MURA) mask with standard CMOS sensor for depth-from-defocus research"
+    source: "Levin et al., Image and Depth from a Conventional Camera with a Coded Aperture, SIGGRAPH 2007"
+    geometric:
+      fov: 40.0
+      fov_unit: degree
+      spatial_resolution: 5000000.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.5
+      working_distance_max: 10.0
+    temporal:
+      exposure_time: 0.033
+      exposure_time_unit: second
+      frame_rate: 30.0
+      readout_mode: "rolling_shutter"
+    radiometric:
+      quantum_efficiency: 0.45
+      dynamic_range_db: 60.0
+    operational:
+      cost_min_usd: 500.0
+      cost_max_usd: 2000.0
+      form_factor: "benchtop"
+    family_specs:
+      mask_pattern_type: "mura"
+      mask_transmittance: 0.50
+      psf_condition_number: 8.0
+
+  - name: "Coded Aperture Gamma Camera"
+    description: "Medical imaging coded aperture system using URA pattern for nuclear medicine (gamma-ray imaging without focusing optics)"
+    source: "Accorsi, Design of Near-Field Coded Aperture Cameras for High-Resolution Medical and Industrial Gamma-Ray Imaging, IEEE TNS 2001"
+    geometric:
+      fov: 30.0
+      fov_unit: degree
+      spatial_resolution: 16384.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.05
+      working_distance_max: 0.5
+    temporal:
+      exposure_time: 60.0
+      exposure_time_unit: second
+      frame_rate: 0.016
+    radiometric:
+      quantum_efficiency: 0.80
+      dynamic_range_db: 50.0
+    operational:
+      cost_min_usd: 50000.0
+      cost_max_usd: 200000.0
+      power_w: 50.0
+      weight_g: 30000.0
+      form_factor: "medical_instrument"
+    family_specs:
+      mask_pattern_type: "ura"
+      mask_transmittance: 0.50
+      psf_condition_number: 3.0
+
+  - name: "Raskar Flutter Shutter Camera"
+    description: "Coded exposure camera using temporally coded aperture for motion deblurring research"
+    source: "Raskar et al., Coded Exposure Photography: Motion Deblurring using Fluttered Shutter, SIGGRAPH 2006"
+    geometric:
+      fov: 50.0
+      fov_unit: degree
+      spatial_resolution: 8000000.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.3
+      working_distance_max: 20.0
+    temporal:
+      exposure_time: 0.025
+      exposure_time_unit: second
+      frame_rate: 30.0
+      readout_mode: "global_shutter"
+    radiometric:
+      quantum_efficiency: 0.50
+      dynamic_range_db: 65.0
+    operational:
+      cost_min_usd: 1000.0
+      cost_max_usd: 5000.0
+      form_factor: "modified_dslr"
+    family_specs:
+      mask_pattern_type: "flutter_shutter"
+      mask_transmittance: 0.50
+      psf_condition_number: 5.0

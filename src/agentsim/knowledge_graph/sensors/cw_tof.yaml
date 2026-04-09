@@ -1,0 +1,110 @@
+family: cw_tof
+display_name: "Continuous-Wave Time-of-Flight"
+description: "Sensors that measure depth by correlating a continuous modulated illumination signal with reflected light. Phase difference encodes distance. Used in consumer depth cameras and gesture recognition."
+
+ranges:
+  modulation_frequency_mhz:
+    min: 10.0
+    max: 100.0
+    typical: 20.0
+    unit: megahertz
+    description: "Modulation frequency of the emitted IR signal"
+  demodulation_contrast:
+    min: 0.3
+    max: 0.95
+    typical: 0.7
+    unit: dimensionless
+    description: "Ratio of AC to DC component in correlation measurement"
+  phase_tap_count:
+    min: 2.0
+    max: 8.0
+    typical: 4.0
+    unit: dimensionless
+    description: "Number of phase sampling taps per pixel"
+  depth_precision_mm:
+    min: 1.0
+    max: 30.0
+    typical: 5.0
+    unit: millimeter
+    description: "Depth measurement precision at typical range"
+
+sensors:
+  - name: "PMD CamBoard pico flexx"
+    description: "PMD Technologies ultra-compact CW ToF module based on PMD PhotonICs 19k-S3 sensor"
+    source: "PMD Technologies pico flexx datasheet, PMD 2017"
+    geometric:
+      fov: 62.0
+      fov_unit: degree
+      spatial_resolution: 9216.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.1
+      working_distance_max: 4.0
+    temporal:
+      frame_rate: 45.0
+      readout_mode: "global_shutter"
+    radiometric:
+      quantum_efficiency: 0.35
+    operational:
+      cost_min_usd: 200.0
+      cost_max_usd: 400.0
+      power_w: 0.7
+      weight_g: 8.0
+      form_factor: "module"
+    family_specs:
+      modulation_frequency_mhz: 80.0
+      demodulation_contrast: 0.75
+      phase_tap_count: 4
+
+  - name: "Infineon REAL3 IRS2877C"
+    description: "Infineon REAL3 CW ToF image sensor for mid-range 3D depth sensing applications"
+    source: "Infineon REAL3 IRS2877C datasheet rev 2.1, Infineon Technologies 2021"
+    geometric:
+      fov: 67.0
+      fov_unit: degree
+      spatial_resolution: 38400.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.1
+      working_distance_max: 5.0
+    temporal:
+      frame_rate: 30.0
+      readout_mode: "global_shutter"
+    radiometric:
+      quantum_efficiency: 0.45
+      dynamic_range_db: 60.0
+    operational:
+      cost_min_usd: 10.0
+      cost_max_usd: 30.0
+      power_w: 0.5
+      weight_g: 1.0
+      form_factor: "chip"
+    family_specs:
+      modulation_frequency_mhz: 80.0
+      demodulation_contrast: 0.80
+      phase_tap_count: 4
+
+  - name: "Sony DepthSense IMX556"
+    description: "Sony back-illuminated ToF image sensor with high demodulation contrast for depth sensing"
+    source: "Sony IMX556PLR datasheet, Sony Semiconductor Solutions 2020"
+    geometric:
+      fov: 72.0
+      fov_unit: degree
+      spatial_resolution: 307200.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.15
+      working_distance_max: 6.0
+    temporal:
+      frame_rate: 60.0
+      readout_mode: "global_shutter"
+    radiometric:
+      quantum_efficiency: 0.50
+      dynamic_range_db: 70.0
+    operational:
+      cost_min_usd: 50.0
+      cost_max_usd: 100.0
+      power_w: 0.8
+      weight_g: 2.0
+      form_factor: "chip"
+    family_specs:
+      modulation_frequency_mhz: 100.0
+      demodulation_contrast: 0.90
+      phase_tap_count: 4

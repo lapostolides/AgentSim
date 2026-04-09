@@ -1,0 +1,111 @@
+family: rgb
+display_name: "RGB Camera"
+description: "Standard color image sensors capturing visible light through a Bayer-patterned pixel array. The baseline sensor for computational imaging, used in stereo vision, structure from motion, and photogrammetry."
+
+ranges:
+  pixel_pitch_um:
+    min: 0.7
+    max: 10.0
+    typical: 2.0
+    unit: micrometer
+    description: "Physical pitch between pixel centers"
+  well_depth_electrons:
+    min: 2000.0
+    max: 100000.0
+    typical: 10000.0
+    unit: dimensionless
+    description: "Full-well capacity in electrons per pixel"
+  read_noise_electrons:
+    min: 0.5
+    max: 15.0
+    typical: 3.0
+    unit: dimensionless
+    description: "RMS read noise in electrons per pixel"
+  dynamic_range_db:
+    min: 50.0
+    max: 90.0
+    typical: 70.0
+    unit: decibel
+    description: "Sensor dynamic range"
+
+sensors:
+  - name: "Intel RealSense D435i"
+    description: "Intel RealSense D435i stereo depth camera with RGB module and integrated IMU, widely used in robotics and AR/VR research"
+    source: "Intel RealSense D435i datasheet rev 007, Intel Corporation 2020"
+    geometric:
+      fov: 69.0
+      fov_unit: degree
+      spatial_resolution: 2073600.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.2
+      working_distance_max: 10.0
+    temporal:
+      frame_rate: 30.0
+      readout_mode: "rolling_shutter"
+    radiometric:
+      quantum_efficiency: 0.45
+      dynamic_range_db: 65.0
+    operational:
+      cost_min_usd: 200.0
+      cost_max_usd: 300.0
+      power_w: 2.5
+      weight_g: 72.0
+      form_factor: "camera_module"
+    family_specs:
+      pixel_pitch_um: 3.0
+      well_depth_electrons: 8500.0
+      read_noise_electrons: 4.0
+
+  - name: "Sony IMX477"
+    description: "Sony 12.3MP back-illuminated CMOS sensor used in Raspberry Pi HQ Camera for machine vision and research"
+    source: "Sony IMX477 datasheet, Sony Semiconductor Solutions 2020; Raspberry Pi HQ Camera specifications"
+    geometric:
+      fov: 62.0
+      fov_unit: degree
+      spatial_resolution: 12300000.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.1
+      working_distance_max: 100.0
+    temporal:
+      frame_rate: 30.0
+      readout_mode: "rolling_shutter"
+    radiometric:
+      quantum_efficiency: 0.55
+      dynamic_range_db: 70.0
+    operational:
+      cost_min_usd: 50.0
+      cost_max_usd: 80.0
+      power_w: 1.5
+      weight_g: 15.0
+      form_factor: "board_camera"
+    family_specs:
+      pixel_pitch_um: 1.55
+      well_depth_electrons: 10000.0
+      read_noise_electrons: 2.5
+
+  - name: "FLIR Blackfly S BFS-U3-51S5C"
+    description: "FLIR/Teledyne machine vision camera with Sony IMX250 global shutter sensor for industrial inspection"
+    source: "FLIR Blackfly S BFS-U3-51S5C-C datasheet, Teledyne FLIR 2022"
+    geometric:
+      fov: 50.0
+      fov_unit: degree
+      spatial_resolution: 5000000.0
+      spatial_resolution_unit: pixel
+      working_distance_min: 0.1
+      working_distance_max: 50.0
+    temporal:
+      frame_rate: 75.0
+      readout_mode: "global_shutter"
+    radiometric:
+      quantum_efficiency: 0.60
+      dynamic_range_db: 73.0
+    operational:
+      cost_min_usd: 400.0
+      cost_max_usd: 600.0
+      power_w: 3.5
+      weight_g: 90.0
+      form_factor: "industrial_camera"
+    family_specs:
+      pixel_pitch_um: 3.45
+      well_depth_electrons: 32000.0
+      read_noise_electrons: 2.3
