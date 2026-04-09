@@ -63,8 +63,8 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 - [x] **PIPE-04**: Pipeline skips the feasibility phase gracefully when knowledge graph is disabled or Neo4j is unavailable
 - [x] **PIPE-05**: Evaluator agent compares experimental results against CRB floor and reports efficiency ratio (actual_error / crb_bound), framing whether the bottleneck is the algorithm or the physics
 - [x] **PIPE-06**: Scene agent uses Morris sensitivity analysis (mu_star rankings) to generate diverse scenes that probe the most important parameters rather than uniform sweeps
-- [ ] **PIPE-07**: Analyst agent performs feasibility-gated iteration — when results identify a bottleneck parameter, re-queries the KG with tighter constraints and recommends sensor/config changes for the next iteration
-- [ ] **PIPE-08**: Cross-experiment reasoning — after multiple runs, analyst identifies patterns across experiments and suggests SHARES_PHYSICS-based algorithm transfer when applicable
+- [x] **PIPE-07**: Analyst agent performs feasibility-gated iteration — when results identify a bottleneck parameter, re-queries the KG with tighter constraints and recommends sensor/config changes for the next iteration
+- [x] **PIPE-08**: Cross-experiment reasoning — after multiple runs, analyst identifies patterns across experiments and suggests SHARES_PHYSICS-based algorithm transfer when applicable
 
 ## Future Requirements (deferred)
 
