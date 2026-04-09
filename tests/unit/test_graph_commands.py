@@ -188,7 +188,9 @@ class TestGraphSeed:
 
 
 class TestGraphQuery:
-    def test_query_placeholder_message(self) -> None:
-        result = _runner().invoke(graph, ["query", "--task", "localization"])
-        assert result.exit_code == 0
-        assert "Plan 03" in result.output or "plan 03" in result.output.lower()
+    def test_query_runs_without_crash(self) -> None:
+        result = _runner().invoke(graph, ["query", "--task", "depth estimation at 5m"])
+        # exit 0 = ran successfully; exit 1 = handled error (no Neo4j or env issue)
+        # Both are acceptable — command must not raise unhandled exceptions
+        assert result.exit_code in (0, 1)
+        assert result.exception is None or isinstance(result.exception, SystemExit)
