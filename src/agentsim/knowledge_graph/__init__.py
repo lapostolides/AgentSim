@@ -28,6 +28,14 @@ from agentsim.knowledge_graph.schema import (
     SCHEMA_CONSTRAINTS,
     SCHEMA_INDEXES,
 )
+from agentsim.knowledge_graph.loader import (
+    load_family_ranges,
+    load_sensors,
+)
+from agentsim.knowledge_graph.ranges import (
+    ParameterRange,
+    SensorFamilyRanges,
+)
 from agentsim.knowledge_graph.units import (
     CANONICAL_UNITS,
     validate_unit,
