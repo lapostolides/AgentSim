@@ -214,7 +214,7 @@ Plans:
 Plans:
 - [x] 08-01-PLAN.md — CRB result models and analytical CRB for 7 sensor families
 - [x] 08-02-PLAN.md — JAX numerical CRB with stability guards for 4 exotic families
-- [ ] 08-03-PLAN.md — CRB dispatch, sensitivity analysis, and package wiring
+- [x] 08-03-PLAN.md — CRB dispatch, sensitivity analysis, and package wiring
 
 ### Phase 9: Neo4j Infrastructure and Feasibility Queries
 **Goal**: Users can start a Neo4j container, seed it with sensor taxonomy data, and query it for feasible sensor configurations for a given task -- receiving ranked results with CRB-backed performance bounds

@@ -55,3 +55,25 @@ from agentsim.knowledge_graph.crb import (
     compute_sensitivity,
     jax_available,
 )
+
+# Neo4j-dependent modules -- lazy imports to avoid crashes when neo4j
+# driver is not installed or has binary incompatibilities.
+try:
+    from agentsim.knowledge_graph.client import GraphClient as GraphClient
+    from agentsim.knowledge_graph.degradation import (
+        graceful_graph_op as graceful_graph_op,
+        is_graph_available as is_graph_available,
+    )
+    from agentsim.knowledge_graph.docker import (
+        DockerStatus as DockerStatus,
+        start_neo4j as start_neo4j,
+        stop_neo4j as stop_neo4j,
+        neo4j_status as neo4j_status,
+        wait_for_healthy as wait_for_healthy,
+    )
+    from agentsim.knowledge_graph.seeder import (
+        seed_graph as seed_graph,
+        SeedResult as SeedResult,
+    )
+except ImportError:
+    pass

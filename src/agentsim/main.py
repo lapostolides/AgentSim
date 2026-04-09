@@ -11,6 +11,7 @@ import structlog
 from dotenv import load_dotenv
 
 from agentsim.cli.gates import CliInterventionHandler
+from agentsim.cli.graph_commands import graph
 from agentsim.orchestrator.config import OrchestratorConfig
 from agentsim.orchestrator.gates import ALL_CHECKPOINTS, GateCheckpoint
 from agentsim.orchestrator.runner import run_experiment
@@ -61,6 +62,9 @@ def cli(verbose: bool) -> None:
     """AgentSim — Autonomous hypothesis-driven simulation."""
     _load_env()
     configure_logging(verbose=verbose)
+
+
+cli.add_command(graph)
 
 
 @cli.command()

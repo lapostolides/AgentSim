@@ -43,9 +43,9 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 
 - [x] **CRB-01**: Analytical CRB module computes closed-form Cramér-Rao bounds for sensor families with known formulations (SPAD depth, CW-ToF range, pulsed dToF range, FMCW range, polarimetric Stokes, hyperspectral unmixing, structured light triangulation)
 - [x] **CRB-02**: Numerical CRB module uses JAX autodiff to compute Fisher information matrices for sensor families without analytical forms (coded aperture, lensless, event camera, light field)
-- [ ] **CRB-03**: CRB dispatch function selects analytical or numerical computation based on sensor family and estimation task, with explicit confidence qualifiers (analytical/numerical/empirical/unknown)
+- [x] **CRB-03**: CRB dispatch function selects analytical or numerical computation based on sensor family and estimation task, with explicit confidence qualifiers (analytical/numerical/empirical/unknown)
 - [x] **CRB-04**: CRB results include bound type, confidence qualifier, model assumptions, and condition number to prevent misinterpretation of theoretical bounds as achievable performance
-- [ ] **CRB-05**: Sensitivity analysis module quantifies how CRB changes with perturbations to sensor parameters (e.g., how depth precision degrades as ambient light increases), enabling parameter importance ranking
+- [x] **CRB-05**: Sensitivity analysis module quantifies how CRB changes with perturbations to sensor parameters (e.g., how depth precision degrades as ambient light increases), enabling parameter importance ranking
 - [x] **CRB-06**: Numerical CRB computation includes explicit stability guards: condition number checks, positive-variance assertions, Tikhonov regularization for near-singular Fisher matrices
 
 ### Feasibility Query Engine
