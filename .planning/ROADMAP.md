@@ -276,16 +276,20 @@ v2.0: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 (Phase 8 can run in parallel with
 | 8. CRB and Information-Theoretic Bounds | v2.0 | 1/3 | In Progress|  |
 | 9. Neo4j Infrastructure and Feasibility Queries | v2.0 | 2/3 | In Progress|  |
 | 10. Pipeline Integration | v2.0 | 4/4 | Complete    | 2026-04-09 |
+| 11. Sensor Configuration Space | v2.0 | 0/4 | Planned | - |
 
 ### Phase 11: Sensor Configuration Space
 
 **Goal:** Each sensor has configurable parameter ranges (not just defaults), the CRB optimizer finds the best operating point for a given task, and the feasibility engine uses configuration flexibility as a ranking signal. Wide-mode queries propagate configurability — a sensor that CAN reach the target via parameter tuning ranks higher than one stuck at a fixed point. Experiment scoping (wide/medium/narrow) determines how deeply the system explores the configuration space.
-**Requirements**: TBD
+**Requirements**: CFG-01, CFG-02, CFG-03, CFG-04, CFG-05, CFG-06, CFG-07, CFG-08, CFG-09, CFG-10, CFG-11, CFG-12, CFG-13
 **Depends on:** Phase 10
-**Plans:** 4/4 plans complete
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 11 to break down)
+- [ ] 11-01-PLAN.md — Optimizer data models, GP, Pareto extraction, and cost computation
+- [ ] 11-02-PLAN.md — Experiment scoping (wide/medium/narrow) and auto-detection
+- [ ] 11-03-PLAN.md — SensorOptimizer BO loop orchestrating all primitives
+- [ ] 11-04-PLAN.md — Pipeline integration (ExperimentState, runner, CLI, graph context formatters)
 
 ### Phase 12: Task-Aware Parameter Coupling
 
