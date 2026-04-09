@@ -9,12 +9,12 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 
 ### Graph Infrastructure
 
-- [ ] **GRAPH-01**: Neo4j graph database runs as a local Docker container with programmatic lifecycle management (start, stop, status, health check)
+- [x] **GRAPH-01**: Neo4j graph database runs as a local Docker container with programmatic lifecycle management (start, stop, status, health check)
 - [x] **GRAPH-02**: Graph schema defines node types (Sensor, SensorFamily, Algorithm, PhysicsProperty, Task, Environment) and relationship types (HAS_PROPERTY, COMPATIBLE_WITH, ENABLES, REQUIRES, SHARES_PHYSICS) with typed properties
-- [ ] **GRAPH-03**: Graph client provides a Python API for CRUD operations on sensors, algorithms, and relationships, returning frozen Pydantic models
+- [x] **GRAPH-03**: Graph client provides a Python API for CRUD operations on sensors, algorithms, and relationships, returning frozen Pydantic models
 - [ ] **GRAPH-04**: Seed pipeline populates the graph from structured YAML/JSON sensor definition files, including migration of existing NLOS sensor profiles
 - [ ] **GRAPH-05**: CLI commands (`agentsim graph start|stop|seed|status`) manage the Neo4j container and data lifecycle
-- [ ] **GRAPH-06**: Pipeline degrades gracefully when Neo4j is unavailable — existing experiment workflow continues unchanged with a warning
+- [x] **GRAPH-06**: Pipeline degrades gracefully when Neo4j is unavailable — existing experiment workflow continues unchanged with a warning
 
 ### Sensor Taxonomy
 
@@ -41,10 +41,10 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 
 ### CRB / Information-Theoretic Bounds
 
-- [ ] **CRB-01**: Analytical CRB module computes closed-form Cramér-Rao bounds for sensor families with known formulations (SPAD depth, CW-ToF range, pulsed dToF range, FMCW range, polarimetric Stokes, hyperspectral unmixing, structured light triangulation)
+- [x] **CRB-01**: Analytical CRB module computes closed-form Cramér-Rao bounds for sensor families with known formulations (SPAD depth, CW-ToF range, pulsed dToF range, FMCW range, polarimetric Stokes, hyperspectral unmixing, structured light triangulation)
 - [x] **CRB-02**: Numerical CRB module uses JAX autodiff to compute Fisher information matrices for sensor families without analytical forms (coded aperture, lensless, event camera, light field)
 - [ ] **CRB-03**: CRB dispatch function selects analytical or numerical computation based on sensor family and estimation task, with explicit confidence qualifiers (analytical/numerical/empirical/unknown)
-- [ ] **CRB-04**: CRB results include bound type, confidence qualifier, model assumptions, and condition number to prevent misinterpretation of theoretical bounds as achievable performance
+- [x] **CRB-04**: CRB results include bound type, confidence qualifier, model assumptions, and condition number to prevent misinterpretation of theoretical bounds as achievable performance
 - [ ] **CRB-05**: Sensitivity analysis module quantifies how CRB changes with perturbations to sensor parameters (e.g., how depth precision degrades as ambient light increases), enabling parameter importance ranking
 - [x] **CRB-06**: Numerical CRB computation includes explicit stability guards: condition number checks, positive-variance assertions, Tikhonov regularization for near-singular Fisher matrices
 

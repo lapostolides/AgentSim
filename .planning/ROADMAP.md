@@ -212,7 +212,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — CRB result models and analytical CRB for 7 sensor families
+- [x] 08-01-PLAN.md — CRB result models and analytical CRB for 7 sensor families
 - [x] 08-02-PLAN.md — JAX numerical CRB with stability guards for 4 exotic families
 - [ ] 08-03-PLAN.md — CRB dispatch, sensitivity analysis, and package wiring
 
@@ -229,7 +229,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Neo4j Docker lifecycle, Python graph client, and graceful degradation layer
+- [x] 09-01-PLAN.md — Neo4j Docker lifecycle, Python graph client, and graceful degradation layer
 - [ ] 09-02-PLAN.md — YAML seed pipeline and CLI graph commands (start, stop, status, seed, query)
 - [ ] 09-03-PLAN.md — Feasibility query engine with constraint checking, cross-family ranking, and conflict detection
 
