@@ -158,20 +158,30 @@ def _load_bundle_from_directory(
             paradigms[pk.paradigm] = pk
 
     # 3. Sensor classes (top-level YAML in sensors/, excluding profiles/)
+    #    Also extract inline profiles from each class YAML (new format).
     sensor_classes: dict[str, SensorClass] = {}
+    sensor_profiles: dict[str, SensorProfile] = {}
     sensors_dir = domain_dir / "sensors"
     if sensors_dir.is_dir():
         for p in sorted(sensors_dir.glob("*.yaml")):
-            sc = SensorClass.model_validate(_load_yaml(p))
+            raw = _load_yaml(p)
+            sc = SensorClass.model_validate(raw)  # Pydantic ignores extra 'profiles' key
             sensor_classes[sc.name] = sc
 
-    # 4. Sensor profiles (sensors/profiles/*.yaml)
-    sensor_profiles: dict[str, SensorProfile] = {}
+            # Extract inline profiles from the same YAML (new KG format)
+            for profile_data in raw.get("profiles", []):
+                sp = SensorProfile.model_validate(profile_data)
+                key = sp.name.lower().replace(" ", "")
+                sensor_profiles[key] = sp
+
+    # 4. Sensor profiles — prefer inline, fall back to profiles/ directory
     profiles_dir = sensors_dir / "profiles" if sensors_dir.is_dir() else None
     if profiles_dir is not None and profiles_dir.is_dir():
         for p in sorted(profiles_dir.glob("*.yaml")):
-            sp = SensorProfile.model_validate(_load_yaml(p))
-            sensor_profiles[p.stem] = sp
+            key = p.stem
+            if key not in sensor_profiles:  # Don't overwrite inline
+                sp = SensorProfile.model_validate(_load_yaml(p))
+                sensor_profiles[key] = sp
 
     # 5. Algorithms
     algorithms: dict[str, AlgorithmKnowledge] = {}
