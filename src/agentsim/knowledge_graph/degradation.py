@@ -44,7 +44,9 @@ def graceful_graph_op(fallback: Any) -> Callable:  # noqa: ANN401
                 from neo4j.exceptions import ServiceUnavailable
 
                 caught_exceptions = (*caught_exceptions, ServiceUnavailable)
-            except ImportError:
+            except (ImportError, ValueError, Exception):
+                # ImportError: neo4j not installed
+                # ValueError/Exception: binary incompatibility in optional deps
                 pass
 
             try:
