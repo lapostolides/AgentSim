@@ -251,7 +251,7 @@ Plans:
 
 Plans:
 - [x] 10-01-PLAN.md — ExperimentState extension and graph context formatters
-- [ ] 10-02-PLAN.md — Feasibility phase in runner with graceful degradation
+- [x] 10-02-PLAN.md — Feasibility phase in runner with graceful degradation
 - [x] 10-03-PLAN.md — Agent prompt enrichment (hypothesis, scene, evaluator)
 - [ ] 10-04-PLAN.md — Analyst KG integration and re-query loop
 
@@ -274,14 +274,14 @@ v2.0: 6 -> 7 -> 8 -> 9 -> 10 (Phase 8 can run in parallel with Phase 7)
 | 7. Sensor Taxonomy Population | v2.0 | 0/4 | Planning | - |
 | 8. CRB and Information-Theoretic Bounds | v2.0 | 1/3 | In Progress|  |
 | 9. Neo4j Infrastructure and Feasibility Queries | v2.0 | 2/3 | In Progress|  |
-| 10. Pipeline Integration | v2.0 | 2/4 | In Progress|  |
+| 10. Pipeline Integration | v2.0 | 3/4 | In Progress|  |
 
 ### Phase 11: Sensor Configuration Space
 
 **Goal:** Each sensor has configurable parameter ranges (not just defaults), the CRB optimizer finds the best operating point for a given task, and the feasibility engine uses configuration flexibility as a ranking signal. Wide-mode queries propagate configurability — a sensor that CAN reach the target via parameter tuning ranks higher than one stuck at a fixed point. Experiment scoping (wide/medium/narrow) determines how deeply the system explores the configuration space.
 **Requirements**: TBD
 **Depends on:** Phase 10
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 11 to break down)

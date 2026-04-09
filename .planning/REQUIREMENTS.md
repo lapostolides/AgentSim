@@ -57,10 +57,10 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 
 ### Pipeline Integration
 
-- [ ] **PIPE-01**: Orchestrator runner includes a feasibility phase between environment discovery and hypothesis generation that queries the knowledge graph
+- [x] **PIPE-01**: Orchestrator runner includes a feasibility phase between environment discovery and hypothesis generation that queries the knowledge graph
 - [x] **PIPE-02**: Hypothesis agent receives feasibility context in its prompt, constraining proposals to physically viable sensor configurations — and can propose novel experiments by identifying gaps in the sensor-task landscape
 - [x] **PIPE-03**: ExperimentState includes an optional `feasibility_result: FeasibilityResult | None` field tracking the graph query results for the current experiment
-- [ ] **PIPE-04**: Pipeline skips the feasibility phase gracefully when knowledge graph is disabled or Neo4j is unavailable
+- [x] **PIPE-04**: Pipeline skips the feasibility phase gracefully when knowledge graph is disabled or Neo4j is unavailable
 - [x] **PIPE-05**: Evaluator agent compares experimental results against CRB floor and reports efficiency ratio (actual_error / crb_bound), framing whether the bottleneck is the algorithm or the physics
 - [x] **PIPE-06**: Scene agent uses Morris sensitivity analysis (mu_star rankings) to generate diverse scenes that probe the most important parameters rather than uniform sweeps
 - [ ] **PIPE-07**: Analyst agent performs feasibility-gated iteration — when results identify a bottleneck parameter, re-queries the KG with tighter constraints and recommends sensor/config changes for the next iteration
