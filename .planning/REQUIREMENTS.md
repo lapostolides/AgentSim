@@ -58,9 +58,13 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 ### Pipeline Integration
 
 - [ ] **PIPE-01**: Orchestrator runner includes a feasibility phase between environment discovery and hypothesis generation that queries the knowledge graph
-- [ ] **PIPE-02**: Hypothesis agent receives feasibility context in its prompt, constraining proposals to physically viable sensor configurations
-- [ ] **PIPE-03**: ExperimentState includes an optional `feasibility_result: FeasibilityResult | None` field tracking the graph query results for the current experiment
+- [ ] **PIPE-02**: Hypothesis agent receives feasibility context in its prompt, constraining proposals to physically viable sensor configurations — and can propose novel experiments by identifying gaps in the sensor-task landscape
+- [x] **PIPE-03**: ExperimentState includes an optional `feasibility_result: FeasibilityResult | None` field tracking the graph query results for the current experiment
 - [ ] **PIPE-04**: Pipeline skips the feasibility phase gracefully when knowledge graph is disabled or Neo4j is unavailable
+- [ ] **PIPE-05**: Evaluator agent compares experimental results against CRB floor and reports efficiency ratio (actual_error / crb_bound), framing whether the bottleneck is the algorithm or the physics
+- [x] **PIPE-06**: Scene agent uses Morris sensitivity analysis (mu_star rankings) to generate diverse scenes that probe the most important parameters rather than uniform sweeps
+- [ ] **PIPE-07**: Analyst agent performs feasibility-gated iteration — when results identify a bottleneck parameter, re-queries the KG with tighter constraints and recommends sensor/config changes for the next iteration
+- [ ] **PIPE-08**: Cross-experiment reasoning — after multiple runs, analyst identifies patterns across experiments and suggests SHARES_PHYSICS-based algorithm transfer when applicable
 
 ## Future Requirements (deferred)
 
@@ -120,3 +124,7 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 | PIPE-02 | Phase 10 | — | Pending |
 | PIPE-03 | Phase 10 | — | Pending |
 | PIPE-04 | Phase 10 | — | Pending |
+| PIPE-05 | Phase 10 | — | Pending |
+| PIPE-06 | Phase 10 | — | Pending |
+| PIPE-07 | Phase 10 | — | Pending |
+| PIPE-08 | Phase 10 | — | Pending |
