@@ -19,16 +19,16 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 ### Sensor Taxonomy
 
 - [x] **SENS-01**: Graph contains SPAD sensor family with physics specs (timing resolution, dead time, dark count rate, PDE, pixel count, FOV, gate width)
-- [ ] **SENS-02**: Graph contains ToF sensor families — both continuous-wave (modulation frequency, dealiasing range, integration time) and pulsed (pulse width, repetition rate, range resolution)
-- [ ] **SENS-03**: Graph contains event camera family with specs (temporal resolution, contrast threshold, dynamic range, bandwidth, pixel count)
-- [ ] **SENS-04**: Graph contains coded aperture camera family with specs (mask pattern, mask transmittance, PSF characterization, condition number)
-- [ ] **SENS-05**: Graph contains light field camera family with specs (angular resolution, spatial resolution, baseline, disparity range, microlens pitch)
-- [ ] **SENS-06**: Graph contains LiDAR families — mechanical (scan rate, angular resolution, range), solid-state (flash FOV, point density), and FMCW (chirp bandwidth, coherence length)
-- [ ] **SENS-07**: Graph contains lensless camera family with specs (mask type, diffraction pattern, reconstruction condition number, working distance)
-- [ ] **SENS-08**: Graph contains RGB camera family with specs (pixel pitch, well depth, read noise, quantum efficiency, dynamic range, frame rate, FOV)
-- [ ] **SENS-09**: Graph contains structured light family with specs (pattern type, projector resolution, baseline, triangulation angle, ambient light rejection)
-- [ ] **SENS-10**: Graph contains polarimetric camera family with specs (Stokes parameters measured, extinction ratio, micropolarizer pitch, DoLP accuracy)
-- [ ] **SENS-11**: Graph contains spectral/hyperspectral camera family with specs (spectral range, spectral resolution, spatial resolution, number of bands)
+- [x] **SENS-02**: Graph contains ToF sensor families — both continuous-wave (modulation frequency, dealiasing range, integration time) and pulsed (pulse width, repetition rate, range resolution)
+- [x] **SENS-03**: Graph contains event camera family with specs (temporal resolution, contrast threshold, dynamic range, bandwidth, pixel count)
+- [x] **SENS-04**: Graph contains coded aperture camera family with specs (mask pattern, mask transmittance, PSF characterization, condition number)
+- [x] **SENS-05**: Graph contains light field camera family with specs (angular resolution, spatial resolution, baseline, disparity range, microlens pitch)
+- [x] **SENS-06**: Graph contains LiDAR families — mechanical (scan rate, angular resolution, range), solid-state (flash FOV, point density), and FMCW (chirp bandwidth, coherence length)
+- [x] **SENS-07**: Graph contains lensless camera family with specs (mask type, diffraction pattern, reconstruction condition number, working distance)
+- [x] **SENS-08**: Graph contains RGB camera family with specs (pixel pitch, well depth, read noise, quantum efficiency, dynamic range, frame rate, FOV)
+- [x] **SENS-09**: Graph contains structured light family with specs (pattern type, projector resolution, baseline, triangulation angle, ambient light rejection)
+- [x] **SENS-10**: Graph contains polarimetric camera family with specs (Stokes parameters measured, extinction ratio, micropolarizer pitch, DoLP accuracy)
+- [x] **SENS-11**: Graph contains spectral/hyperspectral camera family with specs (spectral range, spectral resolution, spatial resolution, number of bands)
 
 ### Shared Physics Foundation
 
