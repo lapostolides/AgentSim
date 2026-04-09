@@ -12,8 +12,8 @@ Requirements for the computational imaging knowledge graph milestone. Each maps 
 - [x] **GRAPH-01**: Neo4j graph database runs as a local Docker container with programmatic lifecycle management (start, stop, status, health check)
 - [x] **GRAPH-02**: Graph schema defines node types (Sensor, SensorFamily, Algorithm, PhysicsProperty, Task, Environment) and relationship types (HAS_PROPERTY, COMPATIBLE_WITH, ENABLES, REQUIRES, SHARES_PHYSICS) with typed properties
 - [x] **GRAPH-03**: Graph client provides a Python API for CRUD operations on sensors, algorithms, and relationships, returning frozen Pydantic models
-- [ ] **GRAPH-04**: Seed pipeline populates the graph from structured YAML/JSON sensor definition files, including migration of existing NLOS sensor profiles
-- [ ] **GRAPH-05**: CLI commands (`agentsim graph start|stop|seed|status`) manage the Neo4j container and data lifecycle
+- [x] **GRAPH-04**: Seed pipeline populates the graph from structured YAML/JSON sensor definition files, including migration of existing NLOS sensor profiles
+- [x] **GRAPH-05**: CLI commands (`agentsim graph start|stop|seed|status`) manage the Neo4j container and data lifecycle
 - [x] **GRAPH-06**: Pipeline degrades gracefully when Neo4j is unavailable — existing experiment workflow continues unchanged with a warning
 
 ### Sensor Taxonomy

@@ -230,7 +230,7 @@ Plans:
 
 Plans:
 - [x] 09-01-PLAN.md — Neo4j Docker lifecycle, Python graph client, and graceful degradation layer
-- [ ] 09-02-PLAN.md — YAML seed pipeline and CLI graph commands (start, stop, status, seed, query)
+- [x] 09-02-PLAN.md — YAML seed pipeline and CLI graph commands (start, stop, status, seed, query)
 - [ ] 09-03-PLAN.md — Feasibility query engine with constraint checking, cross-family ranking, and conflict detection
 
 ### Phase 10: Pipeline Integration
@@ -261,7 +261,7 @@ v2.0: 6 -> 7 -> 8 -> 9 -> 10 (Phase 8 can run in parallel with Phase 7)
 | 6. Graph Schema and Data Models | v2.0 | 0/2 | Planning | - |
 | 7. Sensor Taxonomy Population | v2.0 | 0/4 | Planning | - |
 | 8. CRB and Information-Theoretic Bounds | v2.0 | 1/3 | In Progress|  |
-| 9. Neo4j Infrastructure and Feasibility Queries | v2.0 | 0/3 | Planning | - |
+| 9. Neo4j Infrastructure and Feasibility Queries | v2.0 | 2/3 | In Progress|  |
 | 10. Pipeline Integration | v2.0 | 0/0 | Not started | - |
 
 ### Phase 11: Computational Imaging Domain Taxonomy
@@ -269,7 +269,7 @@ v2.0: 6 -> 7 -> 8 -> 9 -> 10 (Phase 8 can run in parallel with Phase 7)
 **Goal:** Define subdomains within computational imaging (NLOS, LOS depth, detection, tracking, reconstruction, spectral, polarimetric) as structured Task/Environment nodes in the knowledge graph. Research-heavy: map which sensor families serve which tasks and what algorithmic approaches exist per subdomain. Feeds into feasibility query engine as the "task" side of sensor-task matching.
 **Requirements**: TBD
 **Depends on:** Phase 10
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 11 to break down)
