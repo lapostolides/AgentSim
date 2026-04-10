@@ -554,6 +554,58 @@ async def _run_feasibility_phase(
     return state
 
 
+# ── Optimization phase (BO on feasible sensors) ──────────────────────
+
+
+async def _run_optimization_phase(
+    state: ExperimentState,
+    config: OrchestratorConfig,
+) -> ExperimentState:
+    """Run Bayesian optimization on feasible sensors (D-11).
+
+    Skips if feasibility_result is None or has no ranked configs.
+    Uses lazy imports for optimizer module.
+    """
+    if state.feasibility_result is None:
+        logger.warning("optimization_phase_skipped", reason="no_feasibility_result")
+        return state
+
+    if not state.feasibility_result.ranked_configs:
+        logger.warning("optimization_phase_skipped", reason="no_feasible_sensors")
+        return state
+
+    try:
+        from agentsim.knowledge_graph.optimizer.optimizer import optimize_sensors
+        from agentsim.state.transitions import set_optimization_result
+
+        scope = config.scope
+        # Auto-detect scope if default and hypothesis is available (D-07)
+        if scope == "medium":
+            from agentsim.knowledge_graph.optimizer.scoping import detect_scope
+
+            detected = detect_scope(state.raw_hypothesis)
+            if detected != "medium":
+                scope = detected
+                logger.info("scope_auto_overridden", scope=scope)
+
+        result = optimize_sensors(
+            feasibility_result=state.feasibility_result,
+            scope=scope,
+            task=state.raw_hypothesis,
+        )
+        state = set_optimization_result(state, result)
+        logger.info(
+            "optimization_phase_complete",
+            total_evaluations=result.total_evaluations,
+            families=len(result.family_results),
+            scope=result.scope,
+        )
+    except Exception:
+        logger.warning("optimization_phase_failed", exc_info=True)
+
+    return state
+
+
 # ── Agent phase runner ───────────────────────────────────────────────
 
 async def _run_agent_phase(
@@ -824,6 +876,11 @@ async def run_experiment(
     state = await _run_feasibility_phase(state, config)
     if on_phase_complete:
         on_phase_complete("feasibility", state)
+
+    # 3c. Configuration space optimization (Phase 11)
+    state = await _run_optimization_phase(state, config)
+    if on_phase_complete:
+        on_phase_complete("optimization", state)
 
     # 4. Literature scout
     state = await _run_literature_scout_phase(state, config, agents)

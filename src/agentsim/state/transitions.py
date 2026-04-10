@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from agentsim.knowledge_graph.models import FeasibilityResult
+from agentsim.knowledge_graph.optimizer.models import OptimizationResult
 from agentsim.physics.models import PhysicsConsultationSummary, PhysicsValidation
 from agentsim.state.models import (
     AnalysisReport,
@@ -251,6 +252,14 @@ def set_feasibility_result(
 ) -> ExperimentState:
     """Record feasibility query result (supplementary -- does not change status)."""
     return state.model_copy(update={"feasibility_result": result})
+
+
+def set_optimization_result(
+    state: ExperimentState,
+    result: OptimizationResult,
+) -> ExperimentState:
+    """Record optimization result (supplementary -- does not change status)."""
+    return state.model_copy(update={"optimization_result": result})
 
 
 def add_error(

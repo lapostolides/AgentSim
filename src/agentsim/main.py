@@ -78,6 +78,11 @@ cli.add_command(graph)
     "--gates", "-g", multiple=True, type=click.Choice(_GATE_CHOICES, case_sensitive=False),
     help="Intervention gates to enable (default: all). Use 'none' for autonomous mode.",
 )
+@click.option(
+    "--scope", "-s", default="medium",
+    type=click.Choice(["wide", "medium", "narrow"], case_sensitive=False),
+    help="Configuration space search scope (default: medium). Wide=all Pareto configs, narrow=best per family.",
+)
 def run(
     hypothesis: str,
     files: tuple[str, ...],
@@ -86,6 +91,7 @@ def run(
     max_budget: float,
     json_output: bool,
     gates: tuple[str, ...],
+    scope: str,
 ) -> None:
     """Run an experiment from a hypothesis.
 
@@ -109,6 +115,7 @@ def run(
         max_budget_usd=max_budget,
         output_dir=Path(output),
         intervention_checkpoints=checkpoints,
+        scope=scope,
     )
 
     file_paths = list(files) if files else None

@@ -38,3 +38,6 @@ class OrchestratorConfig(BaseModel, frozen=True):
 
     # Max scene feedback rounds before forcing approval
     max_scene_feedback_rounds: int = 5
+
+    # Experiment scope for configuration space search (Phase 11)
+    scope: str = "medium"  # wide | medium | narrow
