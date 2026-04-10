@@ -3,7 +3,8 @@
 ## Milestones
 
 - 🚧 **v1.0 Physics-Aware Enhancement** - Phases 1-5 (in progress)
-- 📋 **v2.0 Computational Imaging Knowledge Graph** - Phases 6-10 (planned)
+- 📋 **v2.0 Computational Imaging Knowledge Graph** - Phases 6-13 (planned)
+- 📋 **v3.0 Hardware Composition and System Design** - Phases 14-16 (planned)
 
 ## Phases
 
@@ -276,20 +277,20 @@ v2.0: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 11.1 -> 12 -> 13 (Phase 8 can run in paral
 | 8. CRB and Information-Theoretic Bounds | v2.0 | 1/3 | In Progress|  |
 | 9. Neo4j Infrastructure and Feasibility Queries | v2.0 | 2/3 | In Progress|  |
 | 10. Pipeline Integration | v2.0 | 4/4 | Complete    | 2026-04-09 |
-| 11. Sensor Configuration Space | v2.0 | 3/4 | In Progress|  |
+| 11. Sensor Configuration Space | v2.0 | 4/4 | Complete   | 2026-04-10 |
 
 ### Phase 11: Sensor Configuration Space
 
 **Goal:** Each sensor has configurable parameter ranges (not just defaults), the CRB optimizer finds the best operating point for a given task, and the feasibility engine uses configuration flexibility as a ranking signal. Wide-mode queries propagate configurability — a sensor that CAN reach the target via parameter tuning ranks higher than one stuck at a fixed point. Experiment scoping (wide/medium/narrow) determines how deeply the system explores the configuration space.
 **Requirements**: CFG-01, CFG-02, CFG-03, CFG-04, CFG-05, CFG-06, CFG-07, CFG-08, CFG-09, CFG-10, CFG-11, CFG-12, CFG-13
 **Depends on:** Phase 10
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 - [x] 11-01-PLAN.md — Optimizer data models, GP, Pareto extraction, and cost computation
 - [x] 11-02-PLAN.md — Experiment scoping (wide/medium/narrow) and auto-detection
 - [x] 11-03-PLAN.md — SensorOptimizer BO loop orchestrating all primitives
-- [ ] 11-04-PLAN.md — Pipeline integration (ExperimentState, runner, CLI, graph context formatters)
+- [x] 11-04-PLAN.md — Pipeline integration (ExperimentState, runner, CLI, graph context formatters)
 
 ### Phase 11.1: Multi-Modal Sensor Composition (INSERTED)
 
@@ -319,3 +320,35 @@ Plans:
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 13 to break down)
+
+### v3.0 Hardware Composition and System Design
+
+### Phase 14: Component Graph Foundation
+
+**Goal:** The knowledge graph models measurement systems as compositions of discrete hardware components — laser sources, optics, timing electronics, scanning stages, optical filters, and housings. Each component type has its own node schema with physics-relevant specs, and edges (REQUIRES, MODIFIES, CONSTRAINS) encode how components interact. YAML-defined catalogs of common lab and commercial components (e.g., PicoQuant lasers, Thorlabs optics, HydraHarp TCSPC) are loadable into the graph. Existing SensorNode entries that are bare components (e.g., MPD PDM) gain REQUIRES edges to the component types they need, while integrated sensors (e.g., TMF8828) are marked as self-contained assemblies. Assembly composition (COMPOSED_INTO) links components into named measurement systems with aggregated cost, power, and weight.
+**Requirements**: COMP-01, COMP-02, COMP-03, COMP-04, COMP-05, COMP-06, COMP-07, COMP-08, COMP-09, COMP-10
+**Depends on:** Phase 13 (domain taxonomy provides task context for component relevance)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 14 to break down)
+
+### Phase 15: Physics Propagation Through Assemblies
+
+**Goal:** The system computes system-level specs from component-level specs using physics propagation rules. A lens's focal length and NA determine the system FOV and collection efficiency. A laser's pulse width lower-bounds the system temporal resolution. These propagation rules are declarative (graph edges with formulas) so adding a new component type automatically participates in system-level computation. CRB dispatch operates on the assembled system, not individual components — the Fisher information accounts for the full signal chain from source through optics through detector through electronics.
+**Requirements**: PROP-01, PROP-02, PROP-03, PROP-04, PROP-05, PROP-06
+**Depends on:** Phase 14 (component graph must exist)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 15 to break down)
+
+### Phase 16: Assembly Optimization and Design Space Exploration
+
+**Goal:** The optimizer searches over component combinations — not just single-sensor parameter ranges — to find Pareto-optimal measurement system assemblies for a given task. Joint optimization over which laser × which detector × which optics configuration minimizes system CRB while satisfying cost, power, weight, and compatibility constraints. Feasibility queries become subgraph matching problems ("find all valid assemblies under $20k for NLOS at 5m"). The system can propose novel assemblies that don't exist in the catalog by combining components in new ways, enabling R&D planning and SOTA sensor design exploration.
+**Requirements**: ASSY-01, ASSY-02, ASSY-03, ASSY-04, ASSY-05, ASSY-06, ASSY-07
+**Depends on:** Phase 15 (system-level CRB must work before optimizing over assemblies)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 16 to break down)
