@@ -260,7 +260,7 @@ Plans:
 
 **Execution Order:**
 v1.0: 1 -> 2 -> 02.1 -> 02.2 -> 3 -> 4 -> 5
-v2.0: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 (Phase 8 can run in parallel with Phase 7)
+v2.0: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 11.1 -> 12 -> 13 (Phase 8 can run in parallel with Phase 7)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -276,26 +276,35 @@ v2.0: 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 (Phase 8 can run in parallel with
 | 8. CRB and Information-Theoretic Bounds | v2.0 | 1/3 | In Progress|  |
 | 9. Neo4j Infrastructure and Feasibility Queries | v2.0 | 2/3 | In Progress|  |
 | 10. Pipeline Integration | v2.0 | 4/4 | Complete    | 2026-04-09 |
-| 11. Sensor Configuration Space | v2.0 | 2/4 | In Progress|  |
+| 11. Sensor Configuration Space | v2.0 | 3/4 | In Progress|  |
 
 ### Phase 11: Sensor Configuration Space
 
 **Goal:** Each sensor has configurable parameter ranges (not just defaults), the CRB optimizer finds the best operating point for a given task, and the feasibility engine uses configuration flexibility as a ranking signal. Wide-mode queries propagate configurability — a sensor that CAN reach the target via parameter tuning ranks higher than one stuck at a fixed point. Experiment scoping (wide/medium/narrow) determines how deeply the system explores the configuration space.
 **Requirements**: CFG-01, CFG-02, CFG-03, CFG-04, CFG-05, CFG-06, CFG-07, CFG-08, CFG-09, CFG-10, CFG-11, CFG-12, CFG-13
 **Depends on:** Phase 10
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 - [x] 11-01-PLAN.md — Optimizer data models, GP, Pareto extraction, and cost computation
 - [x] 11-02-PLAN.md — Experiment scoping (wide/medium/narrow) and auto-detection
-- [ ] 11-03-PLAN.md — SensorOptimizer BO loop orchestrating all primitives
+- [x] 11-03-PLAN.md — SensorOptimizer BO loop orchestrating all primitives
 - [ ] 11-04-PLAN.md — Pipeline integration (ExperimentState, runner, CLI, graph context formatters)
+
+### Phase 11.1: Multi-Modal Sensor Composition (INSERTED)
+
+**Goal:** SensorNode supports multi-family sensors (e.g., Intel RealSense D435i = structured_light + RGB + IMU) with per-modality physics specs, CRB dispatch, and unified operational metadata. A single physical device is one SensorNode with multiple families — not split across separate nodes — so constraint checking (cost, power, weight) stays unified while CRB and family_specs are per-modality.
+**Requirements**: MMOD-01, MMOD-02, MMOD-03, MMOD-04, MMOD-05, MMOD-06, MMOD-07
+**Depends on:** Phase 11 (optimizer must be complete; multi-modal extends the per-family BO loop)
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 11.1 to break down)
 
 ### Phase 12: Task-Aware Parameter Coupling
 
 **Goal:** Structured Task/Environment nodes in the knowledge graph define task-dependent parameter preferences (e.g., "tracking requires high frame rate", "depth mapping needs high spatial resolution"). These preferences automatically generate task fitness scores that feed into Phase 11's Pareto optimizer as a 4th axis — enabling the system to penalize configs where CRB-optimal parameter tuning degrades task-relevant capabilities. The task_preferences hook from Phase 11 becomes auto-populated from graph data.
 **Requirements**: TBD
-**Depends on:** Phase 11
+**Depends on:** Phase 11.1
 **Plans:** 0 plans
 
 Plans:
