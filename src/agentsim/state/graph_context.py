@@ -13,6 +13,12 @@ from agentsim.knowledge_graph.models import (
     SensorConfig,
     SensorFamily,
 )
+from agentsim.knowledge_graph.optimizer.models import (
+    FamilyOptimizationResult,
+    OptimizationResult,
+    ParetoPoint,
+)
+from agentsim.knowledge_graph.optimizer.scoping import filter_by_scope
 from agentsim.knowledge_graph.seeder import SHARED_PHYSICS_EDGES
 from agentsim.state.models import ExperimentState
 
@@ -159,6 +165,70 @@ def _shares_physics_neighbors(family: SensorFamily) -> list[str]:
     return lines
 
 
+def _scope_filtered_optimization(optimization: OptimizationResult) -> OptimizationResult:
+    """Apply scope filtering for non-analyst agents.
+
+    Per D-05, the analyst receives the FULL unfiltered Pareto front.
+    All other agents receive the scope-filtered version.
+    """
+    return filter_by_scope(optimization, optimization.scope)
+
+
+def _pareto_front_section(
+    optimization: OptimizationResult,
+    *,
+    detail_level: str = "summary",
+) -> list[str]:
+    """Render Pareto front information from optimization result.
+
+    Args:
+        optimization: OptimizationResult (pre-filtered or full).
+        detail_level: "summary" (other agents) or "full" (analyst).
+
+    Returns:
+        List of formatted markdown lines.
+    """
+    lines: list[str] = []
+
+    for fr in optimization.family_results:
+        if not fr.pareto_front:
+            continue
+
+        lines.append(f"### {fr.family.value} -- Pareto-Optimal Configs")
+        lines.append("")
+        lines.append("| Config | CRB Bound | Op. Cost | Margin | Confidence |")
+        lines.append("|--------|-----------|----------|--------|------------|")
+
+        points = fr.pareto_front
+        show_count = len(points) if detail_level == "full" else min(3, len(points))
+
+        for point in points[:show_count]:
+            lines.append(
+                f"| {point.sensor_name} "
+                f"| {point.crb_bound:.4g} {point.crb_unit} "
+                f"| {point.operational_cost:.2f} "
+                f"| {point.constraint_margin:.2g} "
+                f"| {point.confidence.value} |"
+            )
+
+        remaining = len(points) - show_count
+        if detail_level == "summary" and remaining > 0:
+            lines.append(
+                f"... and {remaining} more Pareto-optimal configs "
+                "(use --scope wide to see all)"
+            )
+
+        lines.append("")
+
+    lines.append(
+        f"**Scope:** {optimization.scope} "
+        f"| **Total BO evals:** {optimization.total_evaluations}"
+    )
+    lines.append("")
+
+    return lines
+
+
 # ---------------------------------------------------------------------------
 # Public formatters
 # ---------------------------------------------------------------------------
@@ -208,6 +278,13 @@ def format_hypothesis_graph_context(state: ExperimentState) -> str:
         "Proposing experiments that fill these gaps creates high-value novelty."
     )
     lines.append("")
+
+    # Optimization: Pareto front (scope-filtered per D-05)
+    if state.optimization_result is not None:
+        filtered = _scope_filtered_optimization(state.optimization_result)
+        lines.append("## Configuration Space: Pareto-Optimal Operating Points")
+        lines.append("")
+        lines.extend(_pareto_front_section(filtered, detail_level="summary"))
 
     return "\n".join(lines)
 
@@ -270,6 +347,23 @@ def format_scene_graph_context(
         )
         lines.append("")
 
+    # Optimization: scope-filtered parameter settings (D-05)
+    if state.optimization_result is not None:
+        filtered = _scope_filtered_optimization(state.optimization_result)
+        lines.append("### Optimized Parameter Settings")
+        lines.append("")
+        for fr in filtered.family_results:
+            if fr.pareto_front:
+                best = fr.pareto_front[0]
+                params = ", ".join(
+                    f"{k}={v:.4g}" for k, v in best.parameter_values.items()
+                )
+                lines.append(
+                    f"- **{best.family.value}** best: {params} "
+                    f"(CRB={best.crb_bound:.4g})"
+                )
+        lines.append("")
+
     return "\n".join(lines)
 
 
@@ -296,6 +390,20 @@ def format_evaluator_graph_context(state: ExperimentState) -> str:
 
     if top is not None:
         lines.extend(_crb_efficiency_section(top))
+
+    # Optimization: scope-filtered optimized CRB (D-05)
+    if state.optimization_result is not None:
+        filtered = _scope_filtered_optimization(state.optimization_result)
+        lines.append("### Optimized CRB (Configuration Space Search)")
+        lines.append("")
+        for fr in filtered.family_results:
+            if fr.pareto_front:
+                best = fr.pareto_front[0]
+                lines.append(
+                    f"- **{best.family.value}**: optimized CRB = {best.crb_bound:.4g} "
+                    f"{best.crb_unit} (vs default sensor CRB above)"
+                )
+        lines.append("")
 
     return "\n".join(lines)
 
@@ -363,5 +471,20 @@ def format_analyst_graph_context(state: ExperimentState) -> str:
         "The runner will re-query the knowledge graph with these constraints."
     )
     lines.append("")
+
+    # D-05: Analyst receives full unfiltered Pareto front -- NO filter_by_scope
+    if state.optimization_result is not None:
+        lines.append("## Configuration Space: Full Pareto Analysis")
+        lines.append("")
+        lines.extend(
+            _pareto_front_section(state.optimization_result, detail_level="full")
+        )
+        lines.append("")
+        lines.append(
+            "Examine the Pareto front tradeoffs. Highlight configs where "
+            "small CRB sacrifices yield large cost savings, or where constraint "
+            "margin is tight (risk of infeasibility under perturbation)."
+        )
+        lines.append("")
 
     return "\n".join(lines)
